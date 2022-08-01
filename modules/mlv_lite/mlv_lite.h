@@ -1,0 +1,1 @@
+#define MAX_PATH 100
