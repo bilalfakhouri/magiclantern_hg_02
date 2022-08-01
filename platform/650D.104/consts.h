@@ -225,6 +225,7 @@
 #define FRAME_SHUTTER_TIMER (*(uint16_t*)(VIDEO_PARAMETERS_SRC_3+6))
 #define FRAME_BV ((int)FRAME_SHUTTER + (int)FRAME_APERTURE - (int)FRAME_ISO)
 
+//FIXME: Shutter blanking regsiters addreses are dynamic on 650D https://www.magiclantern.fm/forum/index.php?topic=19300.msg208547#msg208547
 #define FRAME_SHUTTER_BLANKING_ZOOM   (*(uint16_t*)0x4049fb18) // ADTG register 805f
 #define FRAME_SHUTTER_BLANKING_NOZOOM (*(uint16_t*)0x4049fb1c) // ADTG register 8061
 #define FRAME_SHUTTER_BLANKING_READ   (lv_dispsize > 1 ? FRAME_SHUTTER_BLANKING_NOZOOM : FRAME_SHUTTER_BLANKING_ZOOM) /* when reading, use the other mode, as it contains the original value (not overriden) */
