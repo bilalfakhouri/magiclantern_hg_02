@@ -125,8 +125,6 @@
 #define MALLOC_FREE_MEMORY (MEM(MALLOC_STRUCT + 8) - MEM(MALLOC_STRUCT + 0x1C)) // "Total Size" - "Allocated Size"
 #define SRM_BUFFER_SIZE 0x14E8000   /* print it from srm_malloc_cbr */
 
-//~ #define ARROW_MODE_TOGGLE_KEY ""
-
 // In bindGUIEventFromGUICBR, look for "LV Set" => arg0 = 8
 // Next, in SetGUIRequestMode, look at what code calls NotifyGUIEvent(8, something)
 #define GUIMODE_ML_MENU (RECORDING ? 0 : lv ? 68 : 2)

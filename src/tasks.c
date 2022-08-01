@@ -369,6 +369,13 @@ MENU_UPDATE_FUNC(tasks_print)
 #include "gps.h"
 #endif
 
+static void leds_on()
+{
+    _card_led_on();
+    //info_led_on();    /* crashes on 5D2, 500D, possibly also 50D */
+    delayed_call(20, leds_on, 0);
+}
+
 /* to refactor with CBR */
 extern int module_shutdown();
 
@@ -400,6 +407,10 @@ PROP_HANDLER(PROP_TERMINATE_SHUT_REQ)
     /* 3 appears too late for saving config files */
     if (buf[0] == 0)
     {
+        /* keep the LEDs on until shutdown completes */
+        info_led_on();
+        delayed_call(20, leds_on, 0);
+
         ml_shutdown();
     }
 }
@@ -411,20 +422,20 @@ PROP_HANDLER(PROP_ABORT)
 
     if (buf[0] == 1)
     {
-        /* 5D3: this prevents RING and RASEN from being saved
+		/* 5D3: this prevents RING and RASEN from being saved
          * when opening battery door (check with e.g. PROP_VIDEO_SYSTEM) */
 #ifdef CONFIG_5D3
         extern int terminateAbort_save_settings;
         terminateAbort_save_settings = 0;
 #endif
+        /* keep the LEDs on until shutdown completes */
+        info_led_on();
+        delayed_call(20, leds_on, 0);
 
         #if defined(CONFIG_MODULES)
         /* if no hard crash, load the modules after taking the battery out */
         module_shutdown();
         #endif
-
-        /* minimalist feedback that battery door event was processed */
-        info_led_on();
     }
 }
 

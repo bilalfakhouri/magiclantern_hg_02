@@ -104,7 +104,7 @@
 // Next, in SetGUIRequestMode, look at what code calls NotifyGUIEvent(8, something) => valid values from 90 to 102
 // 99 shows the same dialog as 97 on 700D/650D
 // 93 shows the same dialog as 91 on 700D/650D
-#define GUIMODE_ML_MENU ( RECORDING_H264 ? 99 : 93 )
+#define GUIMODE_ML_MENU ( RECORDING_H264 ? 99 : lv ? 93 : 2 )
 
 // for displaying TRAP FOCUS msg outside LV
 #define DISPLAY_TRAP_FOCUS_POS_X 50
@@ -166,7 +166,6 @@
 
 #define INFO_BTN_NAME "INFO"
 #define Q_BTN_NAME "[1-Finger Tap]"
-    #define ARROW_MODE_TOGGLE_KEY "IDK"
 
 #define DISPLAY_STATEOBJ (*(struct state_object **)0x3E758)
 #define DISPLAY_IS_ON (DISPLAY_STATEOBJ->current_state != 0)

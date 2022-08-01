@@ -139,8 +139,12 @@ static int is_customize_selected();
 
 extern void CancelDateTimer();
 
-#define CAN_HAVE_PICKBOX(entry) ((entry)->max > (entry)->min && (((entry)->max - (entry)->min < 15) || (entry)->choices) && IS_ML_PTR((entry)->priv))
-#define SHOULD_HAVE_PICKBOX(entry) ((entry)->max > (entry)->min + 1 && (entry)->max - (entry)->min < 10 && IS_ML_PTR((entry)->priv))
+#define CAN_HAVE_PICKBOX(entry) (                               \
+    (entry)->max > (entry)->min &&                              \
+    (((entry)->max - (entry)->min < 15) || (entry)->choices) && \
+    IS_ML_PTR((entry)->priv) &&                                 \
+    !uses_caret_editing(entry))
+
 #define IS_BOOL(entry) (((entry)->max - (entry)->min == 1 && IS_ML_PTR((entry)->priv)) || (entry->icon_type == IT_BOOL))
 #define IS_ACTION(entry) ((entry)->icon_type == IT_ACTION || (entry)->icon_type == IT_SUBMENU)
 #define SHOULD_USE_EDIT_MODE(entry) (!IS_BOOL(entry) && !IS_ACTION(entry))
@@ -639,7 +643,7 @@ static void menu_numeric_toggle_long_range(int* val, int delta, int min, int max
 }
 
 /* for editing with caret */
-static int get_caret_delta(struct menu_entry * entry, int sign)
+static int64_t get_caret_delta(struct menu_entry * entry, int64_t sign)
 {
     if(!EDIT_OR_TRANSPARENT)
     {
@@ -657,7 +661,7 @@ static int get_caret_delta(struct menu_entry * entry, int sign)
 
         case UNIT_HEX:
         {
-            return sign * powi(16, caret_position);
+            return sign * (int64_t) powi(16, caret_position);
         }
 
         case UNIT_TIME:
@@ -689,23 +693,62 @@ static int editing_with_caret(struct menu_entry * entry)
 static void caret_move(struct menu_entry * entry, int delta)
 {
     int max = (entry->unit == UNIT_TIME) ? 7 :
-              (entry->unit == UNIT_HEX)  ? log2i(MAX(ABS(entry->max),ABS(entry->min)))/4
-                                         : log10i(MAX(ABS(entry->max),ABS(entry->min))/2) ;
+              (entry->unit == UNIT_HEX)  ? log2i((uint32_t)entry->max) / 4
+                                         : log10i(MAX(ABS(entry->max),ABS(entry->min))) ;
 
-    menu_numeric_toggle(&caret_position, delta, 0, max);
+    caret_position = MOD(caret_position + delta, max + 1);
 
     /* skip "h", "m" and "s" positions for time fields */
     if(entry->unit == UNIT_TIME && (caret_position == 0 || caret_position == 3 || caret_position == 6))
     {
-        menu_numeric_toggle(&caret_position, delta, 0, max);
+        caret_position = MOD(caret_position + delta, max + 1);
     }
 }
 
 void menu_numeric_toggle(int* val, int delta, int min, int max)
 {
     ASSERT(IS_ML_PTR(val));
+    int old_val = (*val);
+    int new_val = old_val + delta;
 
-    set_config_var_ptr(val, MOD(*val - min + delta, max - min + 1) + min);
+    /* wrap around, keeping the lower digits unchanged */
+    new_val = (new_val < min) ? max : (new_val > max) ? min : new_val;
+
+    /* keep lower digits from the old value */
+    /* 13 -> 3 -> -7 -> -17 doesn't look very intuitive */
+    /* 13 -> 3 -> -3 -> -13 might be a bit better */
+    int lo = MOD(ABS(old_val), ABS(delta));
+    int hi = ABS(new_val) / ABS(delta);
+    new_val = (hi * ABS(delta) + lo) * SGN(new_val);
+
+    /* out of range? perform one more increment in the same direction
+     * e.g. [25-150] 25 -> delta -10 -> wrap at 150 -> keep lower digit -> 155 -> one more increment -> 145 */
+    if (new_val < min || new_val > max)
+    {
+        new_val += delta;
+    }
+
+    set_config_var_ptr(val, new_val);
+}
+
+/* same as above, but unsigned; max range: 0 - FFFFFFFF */
+static void menu_numeric_toggle_hex(uint32_t * val, int64_t delta, uint32_t min, uint32_t max)
+{
+    int64_t old_val = (*val);
+    int64_t new_val = old_val + delta;
+    int64_t adelta = ABS(delta);
+
+    /* wrap around, keeping the lower digits unchanged */
+    new_val = (new_val < min) ? max : (new_val > max) ? min : new_val;
+    new_val += (old_val % adelta) - (new_val % adelta);
+
+    /* out of range? perform one more "delta" increment */
+    if (new_val < min || new_val > max)
+    {
+        new_val += delta;
+    }
+
+    set_config_var_ptr((int *) val, (int) new_val);
 }
 
 void menu_numeric_toggle_time(int * val, int delta, int min, int max)
@@ -2515,10 +2558,10 @@ entry_default_display_info(
                 }
                 case UNIT_DEC:
                 {
-                    if(edit_mode)
+                    if (EDIT_OR_TRANSPARENT)
                     {
                         char* zero_pad = "00000000";
-                        STR_APPEND(value, "%s%d", (zero_pad + COERCE(8-(caret_position - log10i(MEM(entry->priv))),0,8)), MEM(entry->priv));
+                        STR_APPEND(value, "%s%d", (zero_pad + COERCE(8-(caret_position-log10i(MEM(entry->priv))), 0, 8)), MEM(entry->priv));
                     }
                     else
                     {
@@ -2528,10 +2571,10 @@ entry_default_display_info(
                 }
                 case UNIT_HEX:
                 {
-                    if(edit_mode)
+                    if (EDIT_OR_TRANSPARENT)
                     {
                         char* zero_pad = "00000000";
-                        STR_APPEND(value, "0x%s%x", (zero_pad + COERCE(8-(caret_position - log2i(MEM(entry->priv))/4),0,8)), MEM(entry->priv));
+                        STR_APPEND(value, "0x%s%x", (zero_pad + COERCE(8-(caret_position-(log2i(MEM(entry->priv))/4)), 0, 8)), MEM(entry->priv));
                     }
                     else
                     {
@@ -2566,7 +2609,7 @@ entry_default_display_info(
                 case UNIT_TIME_MS:
                 case UNIT_TIME_US:
                 {
-                    if(edit_mode)
+                    if (EDIT_OR_TRANSPARENT)
                     {
                         char* zero_pad = "00000000";
                         STR_APPEND(value, "%s%d", (zero_pad + COERCE(8-(caret_position - log10i(MEM(entry->priv))),0,8)), MEM(entry->priv));
@@ -4344,7 +4387,9 @@ void menu_entry_select(
         {
             /* .priv is a variable? in edit mode, increment according to caret_position, otherwise use exponential R20 toggle */
             /* exception: hex fields are never fast-toggled */
-            if (editing_with_caret(entry) || (entry->unit == UNIT_HEX))
+            if (entry->unit == UNIT_HEX)
+                menu_numeric_toggle_hex(entry->priv, get_caret_delta(entry,-1), entry->min, entry->max);
+            else if (editing_with_caret(entry))
                 menu_numeric_toggle(entry->priv, get_caret_delta(entry,-1), entry->min, entry->max);
             else
                 menu_numeric_toggle_fast(entry->priv, -1, entry->min, entry->max, entry->unit, entry->edit_mode, 0);
@@ -4436,7 +4481,9 @@ void menu_entry_select(
         }
         else if (IS_ML_PTR(entry->priv))
         {
-            if (editing_with_caret(entry) || (entry->unit == UNIT_HEX))
+            if (entry->unit == UNIT_HEX)
+                menu_numeric_toggle_hex(entry->priv, get_caret_delta(entry,1), entry->min, entry->max);
+            else if (editing_with_caret(entry))
                 menu_numeric_toggle(entry->priv, get_caret_delta(entry,1), entry->min, entry->max);
             else
                 menu_numeric_toggle_fast(entry->priv, 1, entry->min, entry->max, entry->unit, entry->edit_mode, 0);
@@ -5123,7 +5170,8 @@ handle_ml_menu_keys(struct event * event)
         break;
 
     case BGMT_PRESS_UP:
-        if (edit_mode && !menu_lv_transparent_mode)
+        if ((edit_mode && !menu_lv_transparent_mode) ||
+            (menu_lv_transparent_mode && !CURRENT_GUI_MODE))
         {
             struct menu_entry * entry = get_selected_menu_entry(menu);
             if(entry && uses_caret_editing(entry))
@@ -5146,7 +5194,8 @@ handle_ml_menu_keys(struct event * event)
         break;
 
     case BGMT_PRESS_DOWN:
-        if (edit_mode && !menu_lv_transparent_mode)
+        if ((edit_mode && !menu_lv_transparent_mode) ||
+            (menu_lv_transparent_mode && !CURRENT_GUI_MODE))
         {
             struct menu_entry * entry = get_selected_menu_entry(menu);
             if(entry && uses_caret_editing(entry))
@@ -5963,11 +6012,6 @@ static void longpress_check(int timer, void * opaque)
     }
     else if (longpress->count < 15 && !longpress->pressed)
     {
-        if (!gui_menu_shown())
-        {
-            return;
-        }
-
         if (!longpress->short_cbr || longpress->short_cbr())
         {
             /* optional short press ( < 300 ms) */
@@ -6015,14 +6059,15 @@ static struct longpress erase_longpress = {
     .long_btn_press     = BGMT_TRASH,           /* long press (500ms) opens ML menu */
     .short_btn_press    = BGMT_PRESS_DOWN,      /* short press => do a regular "down/erase" */
     .short_btn_unpress  = BGMT_UNPRESS_DOWN,
-    .pos_x = 680,   /* in LiveView */
-    .pos_y = 350,   /* above ExpSim */
+    .pos_x = 670,   /* in LiveView */
+    .pos_y = 343,   /* above ExpSim */
 };
 #endif
 
 #ifdef BGMT_Q_SET
 static struct longpress qset_longpress = {
     .long_btn_press     = BGMT_Q_SET,           /* long press opens Q-menu */
+    .long_btn_unpress   = BGMT_UNPRESS_SET,     /* hack: Q-menu will disable the "unpress SET" event */
     .short_btn_press    = BGMT_PRESS_SET,       /* short press => fake SET button (centering AF Frame in LV etc...) */
     .short_btn_unpress  = BGMT_UNPRESS_SET,
     .pos_x = 670,   /* outside ML menu, on the Q screen */

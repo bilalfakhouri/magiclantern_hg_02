@@ -1,8 +1,8 @@
 /* Integer math routines */
 
-int powi(int base, int power);
-int log2i(int x);
-int log10i(int x);
+uint32_t powi(uint32_t base, uint32_t power);
+uint32_t log2i(uint32_t x);
+uint32_t log10i(uint32_t x);
 
 #ifdef PYCPARSER
     #define MOD(x,m) ((((int)x) % ((int)m) + ((int)m)) % ((int)m))
@@ -81,3 +81,11 @@ int log10i(int x);
 
 /* log2(x) * 100 */
 uint32_t log_length(int v);
+
+/* log2 on constants */
+/* https://stackoverflow.com/a/27593398 */
+#define LOG_1(n) (((n) >= 2) ? 1 : 0)
+#define LOG_2(n) (((n) >= 1<<2) ? (2 + LOG_1((n)>>2)) : LOG_1(n))
+#define LOG_4(n) (((n) >= 1<<4) ? (4 + LOG_2((n)>>4)) : LOG_2(n))
+#define LOG_8(n) (((n) >= 1<<8) ? (8 + LOG_4((n)>>8)) : LOG_4(n))
+#define LOG2(n)  (((n) >= 1<<16) ? (16 + LOG_8((n)>>16)) : LOG_8(n))
