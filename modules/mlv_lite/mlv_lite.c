@@ -2106,6 +2106,13 @@ void FAST hack_liveview_vsync()
      * so undoing this hack is no longer needed */
 }
 
+static void (*lvfaceEnd)() = 0;
+static void (*aewbSuspend)() = 0;
+static void (*CartridgeCancel)() = 0;
+
+static int more_hacks_are_supported = 0;
+static int CartridgeCancel_works = 0;
+
 static REQUIRES(RawRecTask)
 void hack_liveview(int unhack)
 {
@@ -2173,6 +2180,32 @@ void hack_liveview(int unhack)
             }
         }
     }
+	
+	/*  https://www.magiclantern.fm/forum/index.php?topic=26443.0 */
+	/*	The hacks would be disabled/reset after calling PauseLiveView after stopping RAW video recording */
+		
+	if (more_hacks_are_supported) //Not all of models support these hacks (like 550D/5D2); the functions are not presented in Canon firmware
+	{
+		if (!video_mode_crop && !h264_proxy_menu) /*  Exlude Movie Crop Mode and H.264 Proxy from these hacks  */
+		{
+			if (!unhack) /* hack */
+			{
+				if (small_hacks == 2)
+				{
+					lvfaceEnd();
+					aewbSuspend();
+				}
+		
+				if (small_hacks == 3 && CartridgeCancel_works) //CartridgeCancel_works: calling CartridgeCancel(); freezes LiveView in some models
+				{
+					lvfaceEnd();
+					aewbSuspend();
+					CartridgeCancel();
+					wait_lv_frames(2); /* In some cases the first frame would be corrupted when calling CartridgeCancel */
+				}
+			}
+		}
+	}
 }
 
 static REQUIRES(LiveViewTask) FAST
@@ -3875,6 +3908,21 @@ static MENU_UPDATE_FUNC(raw_playback_update)
         MENU_SET_WARNING(MENU_WARN_NOT_WORKING, "Record a video clip first.");
 }
 
+static MENU_UPDATE_FUNC(small_hacks_update)
+{
+	if (video_mode_crop && small_hacks >= 2)
+	{
+		MENU_SET_WARNING(MENU_WARN_NOT_WORKING, "More and All options don't work with Movie crop mode.");
+		MENU_SET_VALUE("ON");
+	}
+	
+	if (h264_proxy_menu && small_hacks >= 2)
+	{
+		MENU_SET_WARNING(MENU_WARN_NOT_WORKING, "More and All options don't work with H.264 proxy.");
+		MENU_SET_VALUE("ON");
+	}
+}
+
 static struct menu_entry raw_video_menu[] =
 {
     {
@@ -3996,10 +4044,16 @@ static struct menu_entry raw_video_menu[] =
                 .advanced = 1,
             },
             {
-                .name = "Small hacks",
-                .priv = &small_hacks,
-                .max = 1,
-                .help  = "Slow down Canon GUI, disable auto exposure, white balance...",
+                .name     = "Small hacks",
+                .priv     = &small_hacks,
+                .max      = 3,
+				.update     = small_hacks_update,
+				.choices  = CHOICES("OFF", "ON", "More", "All"),
+                .help     = "Disable some tasks, helps with increasing write speeed performance.",
+				.help2    = "\n"
+							"Slow down Canon GUI, disable auto exposure, white balance...\n"
+							"+ Suspend white balance and exposure task. Locks WB/Exposure!\n"
+							"+ Disable some of LiveView streams.\n",
                 .advanced = 1,
             },
             {
@@ -4359,6 +4413,75 @@ static struct lvinfo_item info_items[] = {
 
 static unsigned int raw_rec_init()
 {
+	if (is_camera("5D3", "1.1.3"))
+    {
+		lvfaceEnd  = (void *) 0xFF23BC60;
+		aewbSuspend = (void *) 0xFF16D77C;
+		CartridgeCancel = (void *) 0xFF17FD68;
+		more_hacks_are_supported = 1;
+		CartridgeCancel_works = 1;
+    }
+	
+	if (is_camera("5D3", "1.2.3"))
+    {
+        lvfaceEnd  = (void *) 0xFF16E318;
+		aewbSuspend = (void *) 0xFF23FF10;
+		CartridgeCancel = (void *) 0xFF181340;
+		more_hacks_are_supported = 1;
+		CartridgeCancel_works = 1;
+    }
+	
+    if (is_camera("6D", "1.1.6"))
+    {
+        lvfaceEnd  = (void *) 0xFF170D08;
+		aewbSuspend = (void *) 0xFF24C5E4;
+		CartridgeCancel = (void *) 0xFFCEFFDC;
+		more_hacks_are_supported = 1;
+    }
+
+    if (is_camera("700D", "1.1.5"))
+    {
+        lvfaceEnd  = (void *) 0xFF17D63C;
+		aewbSuspend = (void *) 0xFF261F34;
+		CartridgeCancel = (void *) 0xFF19D558;
+		more_hacks_are_supported = 1;
+		CartridgeCancel_works = 1;
+    }
+	
+	if (is_camera("650D", "1.0.4"))
+    {
+        lvfaceEnd  = (void *) 0xFF17C564;
+		aewbSuspend = (void *) 0xFF25FB90;
+		CartridgeCancel = (void *) 0xFF19B9B4;
+		more_hacks_are_supported = 1;
+		CartridgeCancel_works = 1;
+    }
+	
+	if (is_camera("100D", "1.0.1"))
+    {
+        lvfaceEnd  = (void *) 0xFF16F49C;
+		aewbSuspend = (void *) 0xFF253F98;
+		CartridgeCancel = (void *) 0xFFAB6BCC;
+		more_hacks_are_supported = 1;
+    }
+	
+	if (is_camera("EOSM", "2.0.2"))
+    {
+        lvfaceEnd  = (void *) 0xFF177FF8;
+		aewbSuspend = (void *) 0xFF2606F4;
+		CartridgeCancel = (void *) 0xFFA7E7D8;
+		more_hacks_are_supported = 1;
+    }
+	
+	if (is_camera("70D", "1.1.2"))
+    {
+        lvfaceEnd  = (void *) 0xFF1702D8;
+		aewbSuspend = (void *) 0xFF258818;
+		CartridgeCancel = (void *) 0xFFD6B71C;
+		more_hacks_are_supported = 1;
+		CartridgeCancel_works = 1; /* Not tested! Keep it on for now for tetsing */
+    }
+	
     cam_eos_m = is_camera("EOSM", "2.0.2");
     cam_5d2   = is_camera("5D2",  "2.1.2");
     cam_50d   = is_camera("50D",  "1.0.9");
@@ -4394,6 +4517,18 @@ static unsigned int raw_rec_init()
             e->shidden = 1;
             card_spanning = 0; /* Just to make sure */
         }
+    }
+	
+	/* Hide More/All hacks options from not supported models  */
+	if (!more_hacks_are_supported)
+    {
+        raw_video_menu[0].children[11].max = 1;
+    }
+	
+	/* Hide All hacks option from not supported models */
+	if (more_hacks_are_supported && !CartridgeCancel_works)
+    {
+        raw_video_menu[0].children[11].max = 2;
     }
 
     menu_add("Movie", raw_video_menu, COUNT(raw_video_menu));
