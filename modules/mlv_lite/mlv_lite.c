@@ -4415,8 +4415,8 @@ static unsigned int raw_rec_init()
 {
 	if (is_camera("5D3", "1.1.3"))
     {
-		lvfaceEnd  = (void *) 0xFF23BC60;
-		aewbSuspend = (void *) 0xFF16D77C;
+		lvfaceEnd  = (void *) 0xFF16D77C;
+		aewbSuspend = (void *) 0xFF23BC60;
 		CartridgeCancel = (void *) 0xFF17FD68;
 		more_hacks_are_supported = 1;
 		CartridgeCancel_works = 1;
