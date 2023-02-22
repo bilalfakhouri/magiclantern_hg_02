@@ -31,6 +31,7 @@ static uint32_t uhs_vals[COUNT(uhs_regs)];  /* current values */
 static int sd_setup_mode_enable = 0;
 static int turned_on = 0;
 static CONFIG_INT("sd.sd_overclock", sd_overclock, 0);
+static CONFIG_INT("sd.sd_access_mode", access_mode, 1);
 
 /* start of the function */
 static void sd_setup_mode_log(uint32_t* regs, uint32_t* stack, uint32_t pc)
@@ -198,7 +199,11 @@ static void sd_overclock_task()
         SD_ReConfiguration();
     
         /* enable SDR104 */
-        patch_hook_function(sd_set_function, MEM(sd_set_function), sd_set_function_log, "SDR104");
+        if (access_mode)
+        {
+            patch_hook_function(sd_set_function, MEM(sd_set_function), sd_set_function_log, "SDR104");
+        }
+        
         SD_ReConfiguration();
     
         if (sd_overclock == 1) memcpy(uhs_vals, sdr_160MHz2, sizeof(uhs_vals));
@@ -226,7 +231,11 @@ static void sd_overclock_task()
         patch_hook_function(sd_setup_mode_in, MEM(sd_setup_mode_in), sd_setup_mode_in_log, "SD UHS");
     
         /* enable SDR104 */
-        patch_hook_function(sd_set_function, MEM(sd_set_function), sd_set_function_log, "SDR104");
+        if (access_mode)
+        {
+            patch_hook_function(sd_set_function, MEM(sd_set_function), sd_set_function_log, "SDR104");
+        }
+        
         SD_ReConfiguration();
 
         patch_instruction(GPIO_cmp, 0xe3540001, 0xe3540008, "GPIO_cmp");   // Patch cmp instruction to avoid loading default GPIO registers values
@@ -263,7 +272,11 @@ static void sd_overclock_task()
         patch_hook_function(sd_setup_mode_in, MEM(sd_setup_mode_in), sd_setup_mode_in_log, "SD UHS");
     
         /* enable SDR104 */
-        patch_hook_function(sd_set_function, MEM(sd_set_function), sd_set_function_log, "SDR104");
+        if (access_mode)
+        {
+            patch_hook_function(sd_set_function, MEM(sd_set_function), sd_set_function_log, "SDR104");
+        }
+        
         SD_ReConfiguration();
         
         patch_instruction(GPIO_cmp, 0xe3550001, 0xe3550008, "GPIO_cmp");   // Patch cmp instruction to avoid loading default GPIO registers values
@@ -299,7 +312,10 @@ static void sd_overclock_task()
         patch_hook_function(sd_setup_mode_in, MEM(sd_setup_mode_in), sd_setup_mode_in_log, "SD UHS");
         
         /* enable SDR104 */
-        patch_hook_function(sd_set_function, MEM(sd_set_function), sd_set_function_log, "SDR104");
+        if (access_mode)
+        {
+            patch_hook_function(sd_set_function, MEM(sd_set_function), sd_set_function_log, "SDR104");
+        }
 
         SD_ReConfiguration();
         SD_ReConfiguration();
@@ -320,6 +336,17 @@ static struct menu_entry sd_uhs_menu[] =
         .max    = 3,
         .choices = CHOICES("OFF", "160MHz", "192MHz", "240MHz"),
         .help   = "Choose a preset then restart the camera.",
+        .children =  (struct menu_entry[]) {
+            {
+                .name       = "Access Mode",
+                .priv       = &access_mode,
+                .max        = 1,
+                .choices    = CHOICES("SDR50", "SDR104"),
+                .help       = "SDR104 mode is required for higher frequencies than 100 MHz. It's ON by",
+                .help2      = "default. However some SD cards prefer SDR50 for high frequencies.",
+            },
+            MENU_EOL,
+        },
     },
 };
 
@@ -521,4 +548,5 @@ MODULE_INFO_END()
 
 MODULE_CONFIGS_START()
     MODULE_CONFIG(sd_overclock)
+    MODULE_CONFIG(access_mode)
 MODULE_CONFIGS_END()
