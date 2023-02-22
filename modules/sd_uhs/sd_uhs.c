@@ -134,6 +134,22 @@ static void ReadClock5D3(uint32_t* regs, uint32_t* stack, uint32_t pc)
     memcpy(uhs_vals, sdr_160MHz2, sizeof(uhs_vals));
 }
 
+static void WriteClock6D(uint32_t* regs, uint32_t* stack, uint32_t pc)
+{
+   	while (overclock_task_in_progress)
+	{
+		msleep(100);
+	}
+}
+
+static void ReadClock6D(uint32_t* regs, uint32_t* stack, uint32_t pc)
+{
+    while (overclock_task_in_progress)
+	{
+		msleep(100);
+	}
+}
+
 static void WriteClock(uint32_t* regs, uint32_t* stack, uint32_t pc)
 {
     memcpy(uhs_vals, sdr_240MHz2, sizeof(uhs_vals));
@@ -348,6 +364,15 @@ static void sd_overclock_task()
     
     else
     {
+        overclock_task_in_progress = 1;
+        
+        /* Patch sdReadBlk and sdWriteBlk Now! for pausing SD reads/writes operations on 6D */
+        if (is_camera("6D", "1.1.6"))
+        {
+            patch_hook_function(sd_read_clock, MEM(sd_read_clock), ReadClock6D, "R_Clock");
+            patch_hook_function(sd_write_clock, MEM(sd_write_clock), WriteClock6D, "W_Clock");
+        }
+        
         /* install the hack */
         memcpy(uhs_vals, sdr50_700D, sizeof(uhs_vals));
         patch_hook_function(sd_setup_mode, MEM(sd_setup_mode), sd_setup_mode_log, "SD UHS");
@@ -373,6 +398,16 @@ static void sd_overclock_task()
         if (sd_overclock == 1 && (is_camera("70D", "1.1.2") || is_camera("6D", "1.1.6"))) memcpy(uhs_vals, sdr_160MHz2, sizeof(uhs_vals));
         if (sd_overclock == 2) memcpy(uhs_vals, sdr_192MHz, sizeof(uhs_vals));
         if (sd_overclock == 3) memcpy(uhs_vals, sdr_240MHz, sizeof(uhs_vals));
+        
+        overclock_task_in_progress = 0;
+        
+        // Overclocking is done, these are not needed anymore
+        if (is_camera("6D", "1.1.6"))
+        {
+            msleep(100);
+            unpatch_memory(sd_read_clock);
+            unpatch_memory(sd_write_clock);
+        }
     }
 }
 
@@ -622,6 +657,8 @@ static unsigned int sd_uhs_init()
         sd_setup_mode_in    = 0xFF325AA8;
         sd_setup_mode_reg   = 1;            /* switch variable is in R1 (likely all D5 other than 5D3) */
         sd_set_function     = 0xFF78F308;
+        sd_write_clock		= 0xff7929d4;   /* sdWriteBlk */
+		sd_read_clock		= 0xff792cb8;   /* sdReadBlk */
         SD_ReConfiguration  = (void *) 0xFF791408;
         
         if (sd_overclock)
