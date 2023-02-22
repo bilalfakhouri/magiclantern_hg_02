@@ -136,18 +136,18 @@ static void ReadClock5D3(uint32_t* regs, uint32_t* stack, uint32_t pc)
 
 static void WriteClock6D(uint32_t* regs, uint32_t* stack, uint32_t pc)
 {
-   	while (overclock_task_in_progress)
-	{
-		msleep(100);
-	}
+       while (overclock_task_in_progress)
+    {
+        msleep(100);
+    }
 }
 
 static void ReadClock6D(uint32_t* regs, uint32_t* stack, uint32_t pc)
 {
     while (overclock_task_in_progress)
-	{
-		msleep(100);
-	}
+    {
+        msleep(100);
+    }
 }
 
 static void WriteClock(uint32_t* regs, uint32_t* stack, uint32_t pc)
@@ -657,8 +657,8 @@ static unsigned int sd_uhs_init()
         sd_setup_mode_in    = 0xFF325AA8;
         sd_setup_mode_reg   = 1;            /* switch variable is in R1 (likely all D5 other than 5D3) */
         sd_set_function     = 0xFF78F308;
-        sd_write_clock		= 0xff7929d4;   /* sdWriteBlk */
-		sd_read_clock		= 0xff792cb8;   /* sdReadBlk */
+        sd_write_clock      = 0xff7929d4;   /* sdWriteBlk */
+        sd_read_clock       = 0xff792cb8;   /* sdReadBlk */
         SD_ReConfiguration  = (void *) 0xFF791408;
         
         if (sd_overclock)
