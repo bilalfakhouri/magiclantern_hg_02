@@ -136,7 +136,7 @@ static void ReadClock5D3(uint32_t* regs, uint32_t* stack, uint32_t pc)
 
 static void WriteClock6D(uint32_t* regs, uint32_t* stack, uint32_t pc)
 {
-       while (overclock_task_in_progress)
+    while (overclock_task_in_progress)
     {
         msleep(100);
     }
