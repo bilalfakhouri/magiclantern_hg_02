@@ -11,6 +11,7 @@
 /* camera-specific parameters */
 static uint32_t GPIO = 0;
 static uint32_t GPIO_cmp = 0;
+static uint32_t CID_hook = 0;
 static uint32_t sd_write_clock = 0;
 static uint32_t sd_read_clock = 0;
 static uint32_t sd_enable_18V = 0;
@@ -32,6 +33,29 @@ static int sd_setup_mode_enable = 0;
 static int turned_on = 0;
 static CONFIG_INT("sd.sd_overclock", sd_overclock, 0);
 static CONFIG_INT("sd.sd_access_mode", access_mode, 1);
+
+/* CID info hook, should work on all DIGIC 5 models */
+unsigned int MID;
+unsigned int OID;
+unsigned int PNM_1;
+unsigned int PNM_2;
+unsigned int PRV;
+unsigned int PSN_1;
+unsigned int PSN_2;
+unsigned int MDT;
+unsigned int CRC;
+static void GetCID(uint32_t* regs, uint32_t* stack, uint32_t pc)
+{
+    MID = regs[5] >> 0x18;
+    OID = regs[5];
+    PNM_1 = regs[5];
+    PNM_2 = regs[4];
+    PRV = regs[6];
+    PSN_1 = regs[6];
+    PSN_2 = regs[7];
+    MDT = regs[7];
+    CRC = regs[7];
+}
 
 /* start of the function */
 static void sd_setup_mode_log(uint32_t* regs, uint32_t* stack, uint32_t pc)
@@ -204,6 +228,9 @@ static void sd_overclock_task()
             patch_hook_function(sd_set_function, MEM(sd_set_function), sd_set_function_log, "SDR104");
         }
         
+        /* Get CID info */
+        patch_hook_function(CID_hook, MEM(CID_hook), GetCID, "CID");
+        
         SD_ReConfiguration();
     
         if (sd_overclock == 1) memcpy(uhs_vals, sdr_160MHz2, sizeof(uhs_vals));
@@ -219,6 +246,9 @@ static void sd_overclock_task()
             unpatch_memory(sd_read_clock);
             unpatch_memory(sd_write_clock);
         }
+
+        /* CID hook isn't needed anymore */
+        unpatch_memory(CID_hook);
 
         NotifyBoxHide();
     }
@@ -236,7 +266,13 @@ static void sd_overclock_task()
             patch_hook_function(sd_set_function, MEM(sd_set_function), sd_set_function_log, "SDR104");
         }
         
+        /* Get CID info */
+        patch_hook_function(CID_hook, MEM(CID_hook), GetCID, "CID");
+        
         SD_ReConfiguration();
+        
+        /* CID hook isn't needed anymore */
+        unpatch_memory(CID_hook);
 
         patch_instruction(GPIO_cmp, 0xe3540001, 0xe3540008, "GPIO_cmp");   // Patch cmp instruction to avoid loading default GPIO registers values
         patch_hook_function(GPIO, MEM(GPIO), GPIO_registers, "GPIO");      // Set our GPIO values
@@ -277,7 +313,13 @@ static void sd_overclock_task()
             patch_hook_function(sd_set_function, MEM(sd_set_function), sd_set_function_log, "SDR104");
         }
         
+        /* Get CID info */
+        patch_hook_function(CID_hook, MEM(CID_hook), GetCID, "CID");
+        
         SD_ReConfiguration();
+        
+        /* CID hook isn't needed anymore */
+        unpatch_memory(CID_hook);
         
         patch_instruction(GPIO_cmp, 0xe3550001, 0xe3550008, "GPIO_cmp");   // Patch cmp instruction to avoid loading default GPIO registers values
         patch_hook_function(GPIO, MEM(GPIO), GPIO_registers, "GPIO");      // Set our GPIO values
@@ -316,9 +358,15 @@ static void sd_overclock_task()
         {
             patch_hook_function(sd_set_function, MEM(sd_set_function), sd_set_function_log, "SDR104");
         }
+        
+        /* Get CID info */
+        patch_hook_function(CID_hook, MEM(CID_hook), GetCID, "CID");
 
         SD_ReConfiguration();
         SD_ReConfiguration();
+        
+        /* CID hook isn't needed anymore */
+        unpatch_memory(CID_hook);
         
         /* 160MHz1 doesn't work on 70D, 160MHz1 acts as 192 MHz on 6D / 5D3 which is weird*/
         if (sd_overclock == 1 && !is_camera("70D", "1.1.2") && !is_camera("6D", "1.1.6")) memcpy(uhs_vals, sdr_160MHz1, sizeof(uhs_vals));
@@ -326,6 +374,107 @@ static void sd_overclock_task()
         if (sd_overclock == 2) memcpy(uhs_vals, sdr_192MHz, sizeof(uhs_vals));
         if (sd_overclock == 3) memcpy(uhs_vals, sdr_240MHz, sizeof(uhs_vals));
     }
+}
+
+static MENU_UPDATE_FUNC(MID_display)
+{
+    MENU_SET_VALUE("%#02x", MID);
+    
+    /* https://www.cameramemoryspeed.com/sd-memory-card-faq/reading-sd-card-cid-serial-psn-internal-numbers/ */
+    if (MID == 0x01)
+    {
+        MENU_SET_WARNING(MENU_WARN_INFO, "Manufactured by Panasonic.");
+    }
+    
+    if (MID == 0x02)
+    {
+        MENU_SET_WARNING(MENU_WARN_INFO, "Manufactured by Toshiba.");
+    }
+    
+    if (MID == 0x03)
+    {
+        MENU_SET_WARNING(MENU_WARN_INFO, "Manufactured by SanDisk.");
+    }
+    
+    if (MID == 0x1b)
+    {
+        MENU_SET_WARNING(MENU_WARN_INFO, "Manufactured by Samsung.");
+    }
+    
+    if (MID == 0x1d)
+    {
+        MENU_SET_WARNING(MENU_WARN_INFO, "Manufactured by AData.");
+    }
+    
+    if (MID == 0x27)
+    {
+        MENU_SET_WARNING(MENU_WARN_INFO, "Manufactured by Phison.");
+    }
+    
+    if (MID == 0x28)
+    {
+        MENU_SET_WARNING(MENU_WARN_INFO, "Manufactured by Lexar.");
+    }
+    
+    if (MID == 0x31)
+    {
+        MENU_SET_WARNING(MENU_WARN_INFO, "Manufactured by Silicon Power.");
+    }
+    
+    if (MID == 0x41)
+    {
+        MENU_SET_WARNING(MENU_WARN_INFO, "Manufactured by Kingston.");
+    }
+    
+    if (MID == 0x74)
+    {
+        MENU_SET_WARNING(MENU_WARN_INFO, "Manufactured by Transcend.");
+    }
+    
+    if (MID == 0x76)
+    {
+        MENU_SET_WARNING(MENU_WARN_INFO, "Manufactured by Patriot.");
+    }
+    
+    if (MID == 0x82)
+    {
+        MENU_SET_WARNING(MENU_WARN_INFO, "Manufactured by Sony.");
+    }
+    
+    if (MID == 0x9C)
+    {
+        MENU_SET_WARNING(MENU_WARN_INFO, "Manufactured by Angelbird.");
+    }
+}
+
+static MENU_UPDATE_FUNC(OID_display)
+{
+    MENU_SET_VALUE("%#02x%02x", (OID << 0x8) >> 0x18, (OID << 0x10) >> 0x18);
+}
+
+static MENU_UPDATE_FUNC(PNM_display)
+{
+    MENU_SET_VALUE("%1c%1c%1c%1c%1c", PNM_1 & 0xFF, PNM_2 >> 0x18, (PNM_2 << 0x8) >> 0x18, (PNM_2 << 0x10) >> 0x18, PNM_2 & 0xFF);
+}
+
+static MENU_UPDATE_FUNC(PRV_display)
+{
+    MENU_SET_VALUE("%01d.%01d", PRV >> 0x1c, (PRV << 0x4) >> 0x1c);
+}
+
+static MENU_UPDATE_FUNC(PSN_display)
+{
+    MENU_SET_VALUE("%#02x%02x%02x%02x", (PSN_1 << 0x8) >> 0x18, (PSN_1 << 0x10) >> 0x18, PSN_1 & 0xFF, PSN_2 >> 0x18);
+}
+
+static MENU_UPDATE_FUNC(MDT_display)
+{
+    MENU_SET_VALUE("%04d/%02d", ((MDT << 0xc) >> 0x18) + 2000, (MDT << 0x14) >> 0x1c);
+}
+
+static MENU_UPDATE_FUNC(CRC_display)
+{
+    MENU_SET_VALUE("%#02x", (CRC << 0x17) >> 0x18);
 }
 
 static struct menu_entry sd_uhs_menu[] =
@@ -344,6 +493,58 @@ static struct menu_entry sd_uhs_menu[] =
                 .choices    = CHOICES("SDR50", "SDR104"),
                 .help       = "SDR104 mode is required for higher frequencies than 100 MHz. It's ON by",
                 .help2      = "default. However some SD cards prefer SDR50 for high frequencies.",
+            },
+            {
+                .name       = "Show CID info",
+                .select     = menu_open_submenu,
+                .help       = "Read the contents of CID register.",
+                .help2      = "CID register contains some information about an SD card.",
+                .icon_type  = IT_ACTION,
+                .children   =  (struct menu_entry[]) {
+                    {
+                        .name = "MID:",
+                        .update = MID_display,
+                        .help = "Manufacturer ID.",
+                        .icon_type  = IT_ALWAYS_ON,
+                    },
+                    {
+                        .name = "OID:",
+                        .update = OID_display,
+                        .help = "OEM/Application ID.",
+                        .icon_type  = IT_ALWAYS_ON,
+                    },
+                    {
+                        .name = "PNM:",
+                        .update = PNM_display,
+                        .help = "Product Name.",
+                        .icon_type  = IT_ALWAYS_ON,
+                    },
+                    {
+                        .name = "PRV:",
+                        .update = PRV_display,
+                        .help = "Product Revision.",
+                        .icon_type  = IT_ALWAYS_ON,
+                    },
+                    {
+                        .name = "PSN:",
+                        .update = PSN_display,
+                        .help = "Serial Number.",
+                        .icon_type  = IT_ALWAYS_ON,
+                    },
+                    {
+                        .name = "MDT:",
+                        .update = MDT_display,
+                        .help = "Manufacture Date Code.",
+                        .icon_type  = IT_ALWAYS_ON,
+                    },
+                    {
+                        .name = "CRC:",
+                        .update = CRC_display,
+                        .help = "CRC7 checksum.",
+                        .icon_type  = IT_ALWAYS_ON,
+                    },
+                    MENU_EOL,
+                },
             },
             MENU_EOL,
         },
@@ -378,6 +579,7 @@ static unsigned int sd_uhs_init()
          * sd_setup_mode(dev) if dev is 1 or 2 ->
          * logging hooks are placed both at start of sd_setup_mode and before the case switch
          */
+        CID_hook            = 0xff6aed04;
         sd_setup_mode       = 0xFF47B4C0;   /* start of the function; not strictly needed on 5D3 */
         sd_setup_mode_in    = 0xFF47B4EC;   /* after loading sd_mode in R0, before the switch */
         sd_setup_mode_reg   = 0;            /* switch variable is in R0 */
@@ -396,6 +598,7 @@ static unsigned int sd_uhs_init()
     
     if (is_camera("5D3", "1.2.3"))
     {
+        CID_hook            = 0xff6b9ea0;
         sd_setup_mode       = 0xFF484474;
         sd_setup_mode_in    = 0xFF4844A0;
         sd_setup_mode_reg   = 0;
@@ -414,6 +617,7 @@ static unsigned int sd_uhs_init()
     
     if (is_camera("6D", "1.1.6"))
     {
+        CID_hook            = 0xff7901e4;
         sd_setup_mode       = 0xFF325A20;
         sd_setup_mode_in    = 0xFF325AA8;
         sd_setup_mode_reg   = 1;            /* switch variable is in R1 (likely all D5 other than 5D3) */
@@ -429,6 +633,7 @@ static unsigned int sd_uhs_init()
 
     if (is_camera("700D", "1.1.5"))
     {
+        CID_hook            = 0xff749e7c;
         sd_setup_mode       = 0xFF3376E8;   /* start of the function */
         sd_setup_mode_in    = 0xFF337770;   /* right before the switch */
         sd_setup_mode_reg   = 1;            /* switch variable is in R1 (likely all D5 other than 5D3) */
@@ -446,6 +651,7 @@ static unsigned int sd_uhs_init()
     
     if (is_camera("650D", "1.0.4"))
     {
+        CID_hook            = 0xff740bfc;
         sd_setup_mode       = 0xFF334C4C;
         sd_setup_mode_in    = 0xFF334CD4;
         sd_setup_mode_reg   = 1;
@@ -463,6 +669,7 @@ static unsigned int sd_uhs_init()
     
     if (is_camera("100D", "1.0.1"))
     {
+        CID_hook            = 0xff653f80;
         GPIO                = 0xff335a34;
         GPIO_cmp            = 0xff335a3c;
         sd_setup_mode       = 0xFF3355B0;
@@ -482,6 +689,7 @@ static unsigned int sd_uhs_init()
     
     if (is_camera("EOSM", "2.0.2"))
     {
+        CID_hook            = 0xff63fe3c;
         GPIO                = 0xff3391f8;
         GPIO_cmp            = 0xff339200;
         sd_setup_mode       = 0xFF338D40;
@@ -501,6 +709,7 @@ static unsigned int sd_uhs_init()
     
     if (is_camera("EOSM2", "1.0.3"))
     {
+        CID_hook            = 0xff693c58;
         GPIO                = 0xff349a10;
         GPIO_cmp            = 0xff349a18;
         sd_setup_mode       = 0xff349550;
@@ -520,6 +729,7 @@ static unsigned int sd_uhs_init()
     
     if (is_camera("70D", "1.1.2"))
     {
+        CID_hook            = 0xff7cf394;
         sd_setup_mode       = 0xFF33E078;
         sd_setup_mode_in    = 0xFF33E100;
         sd_setup_mode_reg   = 1;
