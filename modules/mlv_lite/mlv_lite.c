@@ -2180,32 +2180,32 @@ void hack_liveview(int unhack)
             }
         }
     }
-	
-	/*  https://www.magiclantern.fm/forum/index.php?topic=26443.0 */
-	/*	The hacks would be disabled/reset after calling PauseLiveView after stopping RAW video recording */
-		
-	if (more_hacks_are_supported) //Not all of models support these hacks (like 550D/5D2); the functions are not presented in Canon firmware
-	{
-		if (!video_mode_crop && !use_h264_proxy()) /*  Exlude Movie Crop Mode and H.264 Proxy from these hacks  */
-		{
-			if (!unhack) /* hack */
-			{
-				if (small_hacks == 2)
-				{
-					lvfaceEnd();
-					aewbSuspend();
-				}
-		
-				if (small_hacks == 3 && CartridgeCancel_works) //CartridgeCancel_works: calling CartridgeCancel(); freezes LiveView in some models
-				{
-					lvfaceEnd();
-					aewbSuspend();
-					CartridgeCancel();
-					wait_lv_frames(2); /* In some cases the first frame would be corrupted when calling CartridgeCancel */
-				}
-			}
-		}
-	}
+    
+    /*  https://www.magiclantern.fm/forum/index.php?topic=26443.0 */
+    /*  The hacks would be disabled/reset after calling PauseLiveView after stopping RAW video recording */
+        
+    if (more_hacks_are_supported) // Not all of models support these hacks (like 550D/5D2); the functions are not presented in Canon firmware
+    {
+        if (!video_mode_crop && !use_h264_proxy()) /*  Exlude Movie Crop Mode and H.264 Proxy from these hacks  */
+        {
+            if (!unhack) /* hack */
+            {
+                if (small_hacks == 2)
+                {
+                    lvfaceEnd();
+                    aewbSuspend();
+                }
+        
+                if (small_hacks == 3 && CartridgeCancel_works) // CartridgeCancel_works: calling CartridgeCancel(); freezes LiveView in some models
+                {
+                    lvfaceEnd();
+                    aewbSuspend();
+                    CartridgeCancel();
+                    wait_lv_frames(2); /* In some cases the first frame would be corrupted when calling CartridgeCancel */
+                }
+            }
+        }
+    }
 }
 
 static REQUIRES(LiveViewTask) FAST
@@ -3221,9 +3221,9 @@ int write_frames(FILE** pf, void* ptr, int group_size, int num_frames, int threa
         {
             printf("Failed before 4GB limit. Card full?\n");
             /* don't try and write the remaining frames, the card is full */
-			if (card_spanning) take_semaphore(queue_sem, 0);
+            if (card_spanning) take_semaphore(queue_sem, 0);
             writing_queue_head = writing_queue_tail;
-			if (card_spanning) give_semaphore(queue_sem);
+            if (card_spanning) give_semaphore(queue_sem);
             return 0;
         }
         
@@ -3301,12 +3301,12 @@ static REQUIRES(RawRecTask) EXCLUDES(settings_sem)
 void raw_video_rec_task(uint32_t thread)
 {
     //~ console_show();
-	
+    
     /* locals */
     FILE* f = 0;
     int last_block_size = 0; /* for detecting early stops */
     int liveview_hacked = 0;
-	int last_write_timestamp = 0;    /* last FIO_WriteFile call */        
+    int last_write_timestamp = 0;    /* last FIO_WriteFile call */        
     int last_processed_frame = 0;
     static int fps;
 
@@ -3446,7 +3446,7 @@ void raw_video_rec_task(uint32_t thread)
 
         written_total[thread] = written_chunk[thread] = write_mlv_chunk_headers(f, mlv_chunk, thread);
     }
-	
+    
     /* main recording loop */
     while (RAW_IS_RECORDING && lv)
     {
@@ -3473,9 +3473,9 @@ void raw_video_rec_task(uint32_t thread)
                 NotifyBox(5000, "Emergency Stop");
                 raw_recording_state = RAW_FINISHING;
                 wait_lv_frames(2);
-				if (card_spanning) take_semaphore(queue_sem, 0);
+                if (card_spanning) take_semaphore(queue_sem, 0);
                 writing_queue_head = writing_queue_tail;
-				if (card_spanning) give_semaphore(queue_sem);
+                if (card_spanning) give_semaphore(queue_sem);
                 break;
             }
         }
@@ -3489,7 +3489,7 @@ void raw_video_rec_task(uint32_t thread)
         /* writing queue empty? nothing to do */ 
         if (w_head == w_tail)
         {
-			if (card_spanning) give_semaphore(queue_sem);
+            if (card_spanning) give_semaphore(queue_sem);
             msleep(10);
             continue;
         }
@@ -3501,7 +3501,7 @@ void raw_video_rec_task(uint32_t thread)
         
         if (slots[first_slot].status != SLOT_FULL)
         {
-			if (card_spanning) give_semaphore(queue_sem);
+            if (card_spanning) give_semaphore(queue_sem);
             msleep(20);
             continue;
         }
@@ -3572,8 +3572,8 @@ void raw_video_rec_task(uint32_t thread)
         }
         
         int after_last_grouped = MOD(w_head + num_frames, COUNT(writing_queue));
-		
-		/* remove these frames from the queue */
+        
+        /* remove these frames from the queue */
         writing_queue_head = after_last_grouped;
 
         /* We are done with writing_queue_head */
@@ -3651,14 +3651,14 @@ void raw_video_rec_task(uint32_t thread)
                 
                 if (slots[slot_index].frame_number != last_processed_frame + 1)
                 {
-					/* FIXME: Frame order error is always presented when using Card Spanning, does frame order matter in this case? */
-					if (!card_spanning)
-					{
-						bmp_printf( FONT_MED, 30, 110, 
+                    /* FIXME: Frame order error is always presented when using Card Spanning, does frame order matter in this case? */
+                    if (!card_spanning)
+                    {
+                        bmp_printf( FONT_MED, 30, 110, 
                         "Frame order error: slot %d, frame %d, expected %d ", slot_index, slots[slot_index].frame_number, last_processed_frame + 1
-						);
-						beep();
-					}
+                        );
+                        beep();
+                    }
                 }
                 last_processed_frame++;
             }
@@ -3795,7 +3795,7 @@ abort_and_check_early_stop:
                     ASSERT(slots[slot_index].size < max_frame_size);
                 }
             }
-			
+            
             slots[slot_index].status = SLOT_WRITING;
             
             if (indicator_display == INDICATOR_RAW_BUFFER) show_buffer_status();
@@ -3805,7 +3805,7 @@ abort_and_check_early_stop:
                 beep();
                 break;
             }
-			free_slot(slot_index);
+            free_slot(slot_index);
         }
     }
 
@@ -3823,10 +3823,10 @@ cleanup:
     if (!written_total[thread])
     {
         FIO_RemoveFile(raw_movie_filename);
-		raw_movie_filename[0] = 0;
+        raw_movie_filename[0] = 0;
     }
     
-	if (thread == 0) /* Only do this part of cleanup on main thread */
+    if (thread == 0) /* Only do this part of cleanup on main thread */
     {
         take_semaphore(settings_sem, 0);
         free_buffers();
@@ -3910,17 +3910,17 @@ static MENU_UPDATE_FUNC(raw_playback_update)
 
 static MENU_UPDATE_FUNC(small_hacks_update)
 {
-	if (video_mode_crop && small_hacks >= 2)
-	{
-		MENU_SET_WARNING(MENU_WARN_NOT_WORKING, "More and All options don't work with Movie crop mode.");
-		MENU_SET_VALUE("ON");
-	}
-	
-	if (use_h264_proxy() && small_hacks >= 2)
-	{
-		MENU_SET_WARNING(MENU_WARN_NOT_WORKING, "More and All options don't work with H.264 proxy.");
-		MENU_SET_VALUE("ON");
-	}
+    if (video_mode_crop && small_hacks >= 2)
+    {
+        MENU_SET_WARNING(MENU_WARN_NOT_WORKING, "More and All options don't work with Movie crop mode.");
+        MENU_SET_VALUE("ON");
+    }
+    
+    if (use_h264_proxy() && small_hacks >= 2)
+    {
+        MENU_SET_WARNING(MENU_WARN_NOT_WORKING, "More and All options don't work with H.264 proxy.");
+        MENU_SET_VALUE("ON");
+    }
 }
 
 static struct menu_entry raw_video_menu[] =
@@ -4002,7 +4002,7 @@ static struct menu_entry raw_video_menu[] =
                            "Press and hold the shutter halfway to record (e.g. for short events).\n"
                            "Half-shutter to save only the pre-recorded frames (at least 1 frame).\n",
             },
-			{
+            {
                 .name = "Card Spanning",
                 .priv = &card_spanning,
                 .max = 1,
@@ -4047,13 +4047,13 @@ static struct menu_entry raw_video_menu[] =
                 .name     = "Small hacks",
                 .priv     = &small_hacks,
                 .max      = 3,
-				.update     = small_hacks_update,
-				.choices  = CHOICES("OFF", "ON", "More", "All"),
+                .update     = small_hacks_update,
+                .choices  = CHOICES("OFF", "ON", "More", "All"),
                 .help     = "Disable some tasks, helps with increasing write speeed performance.",
-				.help2    = "\n"
-							"Slow down Canon GUI, disable auto exposure, white balance...\n"
-							"+ Suspend white balance and exposure task. Locks WB/Exposure!\n"
-							"+ Disable some of LiveView streams.\n",
+                .help2    = "\n"
+                            "Slow down Canon GUI, disable auto exposure, white balance...\n"
+                            "+ Suspend white balance and exposure task. Locks WB/Exposure!\n"
+                            "+ Disable some of LiveView streams.\n",
                 .advanced = 1,
             },
             {
@@ -4413,75 +4413,75 @@ static struct lvinfo_item info_items[] = {
 
 static unsigned int raw_rec_init()
 {
-	if (is_camera("5D3", "1.1.3"))
+    if (is_camera("5D3", "1.1.3"))
     {
-		lvfaceEnd  = (void *) 0xFF16D77C;
-		aewbSuspend = (void *) 0xFF23BC60;
-		CartridgeCancel = (void *) 0xFF17FD68;
-		more_hacks_are_supported = 1;
-		CartridgeCancel_works = 1;
+        lvfaceEnd  = (void *) 0xFF16D77C;
+        aewbSuspend = (void *) 0xFF23BC60;
+        CartridgeCancel = (void *) 0xFF17FD68;
+        more_hacks_are_supported = 1;
+        CartridgeCancel_works = 1;
     }
-	
-	if (is_camera("5D3", "1.2.3"))
+    
+    if (is_camera("5D3", "1.2.3"))
     {
         lvfaceEnd  = (void *) 0xFF16E318;
-		aewbSuspend = (void *) 0xFF23FF10;
-		CartridgeCancel = (void *) 0xFF181340;
-		more_hacks_are_supported = 1;
-		CartridgeCancel_works = 1;
+        aewbSuspend = (void *) 0xFF23FF10;
+        CartridgeCancel = (void *) 0xFF181340;
+        more_hacks_are_supported = 1;
+        CartridgeCancel_works = 1;
     }
-	
+    
     if (is_camera("6D", "1.1.6"))
     {
         lvfaceEnd  = (void *) 0xFF170D08;
-		aewbSuspend = (void *) 0xFF24C5E4;
-		CartridgeCancel = (void *) 0xFFCEFFDC;
-		more_hacks_are_supported = 1;
+        aewbSuspend = (void *) 0xFF24C5E4;
+        CartridgeCancel = (void *) 0xFFCEFFDC;
+        more_hacks_are_supported = 1;
     }
 
     if (is_camera("700D", "1.1.5"))
     {
         lvfaceEnd  = (void *) 0xFF17D63C;
-		aewbSuspend = (void *) 0xFF261F34;
-		CartridgeCancel = (void *) 0xFF19D558;
-		more_hacks_are_supported = 1;
-		CartridgeCancel_works = 1;
+        aewbSuspend = (void *) 0xFF261F34;
+        CartridgeCancel = (void *) 0xFF19D558;
+        more_hacks_are_supported = 1;
+        CartridgeCancel_works = 1;
     }
-	
-	if (is_camera("650D", "1.0.4"))
+    
+    if (is_camera("650D", "1.0.4"))
     {
         lvfaceEnd  = (void *) 0xFF17C564;
-		aewbSuspend = (void *) 0xFF25FB90;
-		CartridgeCancel = (void *) 0xFF19B9B4;
-		more_hacks_are_supported = 1;
-		CartridgeCancel_works = 1;
+        aewbSuspend = (void *) 0xFF25FB90;
+        CartridgeCancel = (void *) 0xFF19B9B4;
+        more_hacks_are_supported = 1;
+        CartridgeCancel_works = 1;
     }
-	
-	if (is_camera("100D", "1.0.1"))
+    
+    if (is_camera("100D", "1.0.1"))
     {
         lvfaceEnd  = (void *) 0xFF16F49C;
-		aewbSuspend = (void *) 0xFF253F98;
-		CartridgeCancel = (void *) 0xFFAB6BCC;
-		more_hacks_are_supported = 1;
+        aewbSuspend = (void *) 0xFF253F98;
+        CartridgeCancel = (void *) 0xFFAB6BCC;
+        more_hacks_are_supported = 1;
     }
-	
-	if (is_camera("EOSM", "2.0.2"))
+    
+    if (is_camera("EOSM", "2.0.2"))
     {
         lvfaceEnd  = (void *) 0xFF177FF8;
-		aewbSuspend = (void *) 0xFF2606F4;
-		CartridgeCancel = (void *) 0xFFA7E7D8;
-		more_hacks_are_supported = 1;
+        aewbSuspend = (void *) 0xFF2606F4;
+        CartridgeCancel = (void *) 0xFFA7E7D8;
+        more_hacks_are_supported = 1;
     }
-	
-	if (is_camera("70D", "1.1.2"))
+    
+    if (is_camera("70D", "1.1.2"))
     {
         lvfaceEnd  = (void *) 0xFF1702D8;
-		aewbSuspend = (void *) 0xFF258818;
-		CartridgeCancel = (void *) 0xFFD6B71C;
-		more_hacks_are_supported = 1;
-		CartridgeCancel_works = 1; /* Not tested! Keep it on for now for tetsing */
+        aewbSuspend = (void *) 0xFF258818;
+        CartridgeCancel = (void *) 0xFFD6B71C;
+        more_hacks_are_supported = 1;
+        CartridgeCancel_works = 1; /* Not tested! Keep it on for now for tetsing */
     }
-	
+    
     cam_eos_m = is_camera("EOSM", "2.0.2");
     cam_5d2   = is_camera("5D2",  "2.1.2");
     cam_50d   = is_camera("50D",  "1.0.9");
@@ -4500,15 +4500,15 @@ static unsigned int raw_rec_init()
     cam_5d3_113 = is_camera("5D3",  "1.1.3");
     cam_5d3_123 = is_camera("5D3",  "1.2.3");
     cam_5d3 = (cam_5d3_113 || cam_5d3_123);
-	
-	/* Both SD and CF cards should be presented in camera */
-	if (is_dir("A:/") && is_dir("B:/")) cam_dualcard = cam_5d3; /* Add any new models later */
+    
+    /* Both SD and CF cards should be presented in camera */
+    if (is_dir("A:/") && is_dir("B:/")) cam_dualcard = cam_5d3; /* Add any new models later */
     
     if (cam_5d2 || cam_50d)
     {
        raw_video_menu[0].help = "Record RAW video. Press SET to start.";
     }
-	
+    
     /* Hide card spanning on models other than 5D3 */
     for (struct menu_entry * e = raw_video_menu[0].children; !MENU_IS_EOL(e); e++)
     {
@@ -4518,15 +4518,15 @@ static unsigned int raw_rec_init()
             card_spanning = 0; /* Just to make sure */
         }
     }
-	
-	/* Hide More/All hacks options from not supported models  */
-	if (!more_hacks_are_supported)
+    
+    /* Hide More/All hacks options from not supported models  */
+    if (!more_hacks_are_supported)
     {
         raw_video_menu[0].children[11].max = 1;
     }
-	
-	/* Hide All hacks option from not supported models */
-	if (more_hacks_are_supported && !CartridgeCancel_works)
+    
+    /* Hide All hacks option from not supported models */
+    if (more_hacks_are_supported && !CartridgeCancel_works)
     {
         raw_video_menu[0].children[11].max = 2;
     }
@@ -4560,7 +4560,7 @@ static unsigned int raw_rec_init()
     lossless_init();
 
     settings_sem = create_named_semaphore(0, 1);
-	if (cam_dualcard) queue_sem = create_named_semaphore("queue_sem", 1);
+    if (cam_dualcard) queue_sem = create_named_semaphore("queue_sem", 1);
 
     ASSERT(((uint32_t)task_create("compress_task", 0x0F, 0x1000, compress_task, (void*)0) & 1) == 0);
 
@@ -4594,7 +4594,7 @@ MODULE_CONFIGS_START()
     MODULE_CONFIG(measured_write_speed)
     MODULE_CONFIG(pre_record)
     MODULE_CONFIG(rec_trigger)
-	MODULE_CONFIG(card_spanning)
+    MODULE_CONFIG(card_spanning)
     MODULE_CONFIG(dolly_mode)
     MODULE_CONFIG(preview_mode)
     MODULE_CONFIG(use_srm_memory)
