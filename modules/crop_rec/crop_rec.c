@@ -134,43 +134,134 @@ static uint32_t ENGIO_WRITE     = 0;
 static uint32_t MEM_ENGIO_WRITE = 0;
 
 /* video modes */
-/* note: zoom mode is identified by checking registers directly */
+
+/* properties are fired AFTER the new video mode is fully up and running
+ * to apply our presets, we need to know the video more DURING the switch
+ * we'll peek into the PathDriveMode structure for that
+ * 
+ * Example: x10 -> x1 on 5D3
+ * This sequence cannot be identified just by looking at C0F06804;
+ * some ADTG registers that we need to overide are configured before that.
+ * 
+ * CtrlSrv: DlgLiveView.c PRESS_TELE_MAG_BUTTON KeyRepeat[0]
+ *     Gmt: gmtModeChange
+ *     Evf: evfModeChangeRequest(4)
+ *     Evf: PATH_SelectPathDriveMode S:0 Z:10000 R:0 DZ:0 SM:1
+ *      (lots of stuff going on)
+ *     Evf: evfModeChangeComplete
+ *      (some more stuff)
+ *     Gmt: VisibleParam 720, 480, 0, 38, 720, 404.
+ *     Gmt: gmtUpdateDispSize (10 -> 1)
+ * PropMgr: *** mpu_send(06 05 09 11 01 00)     ; finally triggered PROP_LV_DISPSIZE...
+ */
+
+/* PATH_SelectPathDriveMode S:%d Z:%lx R:%lx DZ:%d SM:%d */
+/* offsets verified on 5D3, 6D, 70D, EOSM, 100D, 60D, 80D, 200D */
+const struct PathDriveMode
+{
+    uint32_t SM;            /* 5D3,700D: 0 during zoom, 1 in all other modes; 6D: 2 is flicker-related?! */
+    uint32_t fps_mode;      /* 5D3,700D: 0=60p, 1=50p, 2=30p/zoom, 3=25p, 4=24p */
+    uint32_t S;             /* 5D3,700D: 0=1080p, 1=720p, 8=zoom, 6=1080crop (700D) */
+    uint32_t resolution_idx;/* 5D3,700D: 0=1080p/zoom, 1=720p, 2=640x480 (PathDriveMode->resolution_idx) */
+    uint16_t zoom_lo;       /* 5D3,700D: lower word of zoom; unused? */
+    uint16_t zoom;          /* 5D3,700D: 1, 5 or 10 */
+    uint32_t unk_14;        /* 5D3: unused? */
+    uint32_t DZ;            /* 5D3: unused? 700D: 2=1080crop */
+    uint32_t unk_1c;
+    uint32_t unk_20;
+    uint32_t CF;            /* 100D, 80D: ? */
+    uint32_t SV;            /* 100D, EOSM, 80D: ? */
+    uint32_t unk_2c;
+    uint32_t unk_30;
+    uint32_t unk_34;
+    uint32_t unk_38;
+    uint32_t unk_3c;
+    uint32_t unk_40;
+    uint32_t DT;            /* 100D, EOSM: ? */
+} * PathDriveMode = 0;
+
+enum fps_mode {
+    FPS_60 = 0,
+    FPS_50 = 1,
+    FPS_30 = 2,
+    FPS_25 = 3,
+    FPS_24 = 4,
+};
 
 static int is_1080p()
 {
+    /* properties triggered too late */
+    if (PathDriveMode->zoom != 1)
+    {
+        return 0;
+    }
+
+    /* unsure whether fast enough or not; to be tested */
+    if (PathDriveMode->DZ)
+    {
+        return 0;
+    }
+
+    /* this snippet seems OK with properties */
     /* note: on 5D2 and 5D3 (maybe also 6D, not sure),
      * sensor configuration in photo mode is identical to 1080p.
      * other cameras may be different */
-    return !is_movie_mode() || video_mode_resolution == 0;
+    return !is_movie_mode() || PathDriveMode->resolution_idx == 0;
 }
 
 static int is_720p()
 {
-    if (is_EOSM)
+    /* properties triggered too late */
+    if (PathDriveMode->zoom != 1)
     {
-        if (lv_dispsize == 1 && !RECORDING_H264)
-        {
-            return 1;
-        }
+        return 0;
     }
 
-    return is_movie_mode() && video_mode_resolution == 1;
+    /* unsure whether fast enough or not; to be tested */
+    if (PathDriveMode->DZ)
+    {
+        return 0;
+    }
+
+    if (is_EOSM && !RECORDING_H264)
+    {
+        /* EOS M stays in 720p30 during standby */
+        return 1;
+    }
+
+    /* this snippet seems OK with properties */
+    return is_movie_mode() && PathDriveMode->resolution_idx == 1;
 }
 
 static int is_supported_mode()
 {
     if (!lv) return 0;
 
-    switch (crop_preset)
+    if (0)
     {
-        /* note: zoom check is also covered by check_cmos_vidmode */
-        /* (we need to apply CMOS settings before PROP_LV_DISPSIZE fires) */
-        case CROP_PRESET_CENTER_Z:
-            return 1;
-
-        default:
-            return is_1080p() || is_720p();
+        printf(
+            "Path: SM=%d S=%d res=%d DZ=%d zoom=%d mode=%d\n", 
+            PathDriveMode->SM, PathDriveMode->S, PathDriveMode->resolution_idx,
+            PathDriveMode->DZ, PathDriveMode->zoom, PathDriveMode->fps_mode
+        );
     }
+
+    if (PathDriveMode->zoom == 10)
+    {
+        /* leave the x10 zoom unaltered, for focusing */
+        return 0; 
+    }
+
+    if (PathDriveMode->zoom == 5)
+    {
+        /* leave the x5 zoom unaltered, just for CROP_PRESET_CENTER_Z for now */
+        if (crop_preset != CROP_PRESET_CENTER_Z)
+        {
+            return 0;
+        }
+    }
+
+    return 1;
 }
 
 static int32_t  target_yres = 0;
@@ -1933,6 +2024,8 @@ static unsigned int crop_rec_init()
         ENGIO_WRITE = is_camera("5D3", "1.2.3") ? 0xFF290F98 : 0xFF28CC3C;
         MEM_ENGIO_WRITE = 0xE51FC15C;
         
+        PathDriveMode = (void *) (is_camera("5D3", "1.2.3") ? 0x56414 : 0x563BC);   /* argument of PATH_SelectPathDriveMode */
+        
         is_5D3 = 1;
         crop_presets                = crop_presets_5d3;
         crop_rec_menu[0].choices    = crop_choices_5d3;
@@ -1947,6 +2040,8 @@ static unsigned int crop_rec_init()
         
         ADTG_WRITE = 0x2986C;
         MEM_ADTG_WRITE = 0xE92D43F8;
+        
+        PathDriveMode = (void *) 0x24AB8;   /* argument of PATH_SelectPathDriveMode */
 
         is_EOSM = 1;
         is_basic = 1;
@@ -1964,6 +2059,8 @@ static unsigned int crop_rec_init()
         ADTG_WRITE = 0x178FC;
         MEM_ADTG_WRITE = 0xE92D43F8;
         
+        PathDriveMode = (void *) (is_camera("700D", "1.1.5") ? 0x6B7F4 : 0x6AEC0);   /* argument of PATH_SelectPathDriveMode */
+        
         is_basic = 1;
         crop_presets                = crop_presets_basic;
         crop_rec_menu[0].choices    = crop_choices_basic;
@@ -1979,6 +2076,8 @@ static unsigned int crop_rec_init()
         ADTG_WRITE = 0x47144;
         MEM_ADTG_WRITE = 0xE92D43F8;
         
+        PathDriveMode = (void *) 0x3C358;   /* argument of PATH_SelectPathDriveMode */
+        
         is_basic = 1;
         crop_presets                = crop_presets_basic;
         crop_rec_menu[0].choices    = crop_choices_basic;
@@ -1993,6 +2092,8 @@ static unsigned int crop_rec_init()
         
         ADTG_WRITE = 0x24108;
         MEM_ADTG_WRITE = 0xE92D41F0;
+        
+        PathDriveMode = (void *) 0x3BD70;   /* argument of PATH_SelectPathDriveMode */
         
         is_6D = 1;
         is_basic = 1;
