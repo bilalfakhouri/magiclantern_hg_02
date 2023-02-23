@@ -538,9 +538,12 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
         switch (crop_preset)
         {
             case CROP_PRESET_3x3_1X:
+            if (is_720p())
+            {
                 /* start/stop scanning line, very large increments */
                 cmos_new[7] = (is_6D) ? PACK12(37,10) : PACK12(6,29);
-                break;            
+            }
+            break; 
         }
     }
 
