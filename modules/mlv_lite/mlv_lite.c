@@ -1330,6 +1330,10 @@ static inline int use_h264_proxy()
     return 1;
 }
 
+/* flags from raw.c to let mlv_lite free buffers and reallocate when needed */
+extern int allocating_new_buffer_is_needed;
+extern int mlv_lite_reallocate_please;
+
 static void * alloc_fullsize_buffer(struct memSuite * mem_suite, int fullres_buf_size)
 {
     void * best_buffer = 0;
@@ -1494,7 +1498,7 @@ void realloc_buffers()
     /* reallocate all memory from Canon */
     info_led_on();
     free_buffers();
-
+    
     /* allocate the entire memory, but only use large chunks */
     /* yes, this may be a bit wasteful, but at least it works */
     /* note: full memory allocation is very slow (1-2 seconds) */
@@ -2004,6 +2008,22 @@ unsigned int raw_rec_polling_cbr(unsigned int unused)
         realloc = 1;
     }
     prev_state = current_state;
+    
+    /* free our buffers when raw.c request a new buffer then reallocate when raw.c is done 
+       free our buffers when raw.c goes back to DEFAULT_RAW_BUFFER and reallocate freed memory */
+    if (allocating_new_buffer_is_needed || mlv_lite_reallocate_please)
+    {
+        gui_uilock(UILOCK_EVERYTHING);
+        take_semaphore(settings_sem, 0);
+        free_buffers();
+        realloc = 1;
+        if (mlv_lite_reallocate_please == 1)
+        {
+            mlv_lite_reallocate_please = 0;
+        }
+        give_semaphore(settings_sem);
+        gui_uilock(UILOCK_NONE);
+    }
 
     /* caveat: we may get out of LiveView before recording fully stops
      * don't free the resources if the raw video task is still active */
@@ -2022,7 +2042,9 @@ unsigned int raw_rec_polling_cbr(unsigned int unused)
     }
 
     /* reallocate buffers if needed (only if not recording) */
-    if (realloc && (RAW_IS_IDLE || RAW_IS_PREPARING) && gui_state == GUISTATE_IDLE)
+    /* reallocate buffers only after raw.c finish allocating its buffer */
+    if (realloc && (RAW_IS_IDLE || RAW_IS_PREPARING) && gui_state == GUISTATE_IDLE
+        && !allocating_new_buffer_is_needed && !mlv_lite_reallocate_please)
     {
         gui_uilock(UILOCK_EVERYTHING);
         take_semaphore(settings_sem, 0);
@@ -2356,7 +2378,7 @@ void free_slot(int slot_index)
 
     ASSERT(slots[i].size < max_frame_size);
 
-    /* re-allocate all reserved slots from this chunk to full frames */
+    /* reallocate all reserved slots from this chunk to full frames */
     /* the remaining reserved slots will be moved at the end */
 
     /* find first slot from this chunk */
