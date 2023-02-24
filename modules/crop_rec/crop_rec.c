@@ -22,6 +22,9 @@
 
 static int is_5D3 = 0;
 static int is_6D = 0;
+static int is_700D = 0;
+static int is_650D = 0;
+static int is_100D = 0;
 static int is_EOSM = 0;
 static int is_basic = 0;
 
@@ -2048,6 +2051,9 @@ static unsigned int crop_rec_init()
         ADTG_WRITE = 0x2986C;
         MEM_ADTG_WRITE = 0xE92D43F8;
         
+        ENGIO_WRITE = 0xFF2C19AC;
+        MEM_ENGIO_WRITE = 0xE51FC15C;
+        
         PathDriveMode = (void *) 0x24AB8;   /* argument of PATH_SelectPathDriveMode */
 
         is_EOSM = 1;
@@ -2066,8 +2072,13 @@ static unsigned int crop_rec_init()
         ADTG_WRITE = 0x178FC;
         MEM_ADTG_WRITE = 0xE92D43F8;
         
+        ENGIO_WRITE = is_camera("700D", "1.1.5") ? 0xFF2C2D00 : 0xFF2C0778;
+        MEM_ENGIO_WRITE = 0xE51FC15C;
+        
         PathDriveMode = (void *) (is_camera("700D", "1.1.5") ? 0x6B7F4 : 0x6AEC0);   /* argument of PATH_SelectPathDriveMode */
         
+        is_650D = 1;
+        is_700D = 1;
         is_basic = 1;
         crop_presets                = crop_presets_basic;
         crop_rec_menu[0].choices    = crop_choices_basic;
@@ -2083,8 +2094,12 @@ static unsigned int crop_rec_init()
         ADTG_WRITE = 0x47144;
         MEM_ADTG_WRITE = 0xE92D43F8;
         
+        ENGIO_WRITE = 0xFF2B2460;
+        MEM_ENGIO_WRITE = 0xE51FC15C;
+        
         PathDriveMode = (void *) 0x3C358;   /* argument of PATH_SelectPathDriveMode */
         
+        is_100D = 1;
         is_basic = 1;
         crop_presets                = crop_presets_basic;
         crop_rec_menu[0].choices    = crop_choices_basic;
