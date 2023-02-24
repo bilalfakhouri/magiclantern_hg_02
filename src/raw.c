@@ -65,6 +65,10 @@ void raw_set_dirty(void)
     dirty = 1;
 }
 
+/* flags for mlv_lite to free buffers and reallocate when needed */
+int allocating_new_buffer_is_needed = 0;
+int mlv_lite_reallocate_please = 0;
+
 /* dual ISO interface */
 static int (*dual_iso_get_recovery_iso)() = MODULE_FUNCTION(dual_iso_get_recovery_iso);
 static int (*dual_iso_get_dr_improvement)() = MODULE_FUNCTION(dual_iso_get_dr_improvement);
@@ -589,6 +593,7 @@ static int raw_lv_get_resolution(int* width, int* height)
  * on models where it's known, and throw an assertion if they are not large enough.
  * This will be especially useful for implementing 3K, 4K and full-res LiveView.
  */
+ 
 #ifdef CONFIG_EDMAC_RAW_SLURP
 
 /* requires raw_sem */
@@ -626,6 +631,10 @@ static void raw_lv_realloc_buffer()
             {
                 printf(" - back to default.\n");
                 raw_lv_free_buffer();
+                
+                // flag to tell mlv_lite we got back to DEFAULT_RAW_BUFFER
+                // to let it reallocate its buffers and re-use freed memory
+                mlv_lite_reallocate_please = 1;
             }
             else if (raw_lv_buffer)
             {
@@ -639,12 +648,14 @@ static void raw_lv_realloc_buffer()
 
         raw_lv_buffer = (void *) DEFAULT_RAW_BUFFER;
         raw_lv_buffer_size = DEFAULT_RAW_BUFFER_SIZE;
+        allocating_new_buffer_is_needed = 0;
         return;
     }
 
     if (raw_lv_buffer_size >= required_size)
     {
         /* no need for a larger buffer */
+        allocating_new_buffer_is_needed = 0;
         return;
     }
 
@@ -658,9 +669,16 @@ static void raw_lv_realloc_buffer()
     }
 
 #ifdef CONFIG_ALLOCATE_RAW_LV_BUFFER
+    allocating_new_buffer_is_needed = 1; // flag to tell mlv_lite to free its buffers while we allocate a new buufer
     raw_allocated_lv_buffer = fio_malloc(RAW_LV_BUFFER_ALLOC_SIZE);
+    if (!raw_allocated_lv_buffer)
+    {
+        printf("New buffer isn't allocated");
+        return; // retry
+    }
     raw_lv_buffer = raw_allocated_lv_buffer;
     raw_lv_buffer_size = RAW_LV_BUFFER_ALLOC_SIZE;
+    allocating_new_buffer_is_needed = 0;
     return;
 #endif /* CONFIG_ALLOCATE_RAW_LV_BUFFER */
 
