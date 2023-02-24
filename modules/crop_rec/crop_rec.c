@@ -277,7 +277,10 @@ static inline int get_video_mode_index()
 {
     if (lv_dispsize > 1)
     {
-        return 5;
+        if (PathDriveMode->zoom == 5)
+        {
+            return 5;
+        }
     }
 
     return
