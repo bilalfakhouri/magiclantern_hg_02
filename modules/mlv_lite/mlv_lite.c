@@ -237,6 +237,12 @@ static int bpp_digital_gain()
     return 8;
 }
 
+static int default_width_1080p = 0;
+static int default_height_1080p = 0;
+static int default_width_x5 = 0;
+static int default_height_x5 = 0;
+static int default_height_720p = 0;
+
 static int raw_digital_gain_ok()
 {
     if (output_format > OUTPUT_14BIT_LOSSLESS)
@@ -244,8 +250,8 @@ static int raw_digital_gain_ok()
         /* fixme: not working in modes with higher resolution */
         /* the numbers here are an upper bound that should cover all models */
         /* our hi-res crop_rec modes will go higher than these limits, so this heuristic should be OK */
-        int default_width  = (lv_dispsize > 1) ? 3744 : 2080;
-        int default_height = (lv_dispsize > 1) ? 1380 : video_mode_fps <= 30 ? 2080 : 728;
+        int default_width  = (lv_dispsize > 1) ? default_width_x5 : default_width_1080p;
+        int default_height = (lv_dispsize > 1) ? default_height_x5 : video_mode_fps <= 30 ? default_height_1080p : default_height_720p;
 
         if (raw_info.width > default_width || raw_info.height > default_height)
         {
@@ -4442,6 +4448,12 @@ static unsigned int raw_rec_init()
         CartridgeCancel = (void *) 0xFF17FD68;
         more_hacks_are_supported = 1;
         CartridgeCancel_works = 1;
+        
+        default_width_1080p = 2080;
+        default_height_1080p = 2080;
+        default_width_x5 = 3744;
+        default_height_x5 = 1380;
+        default_height_720p = 728;
     }
     
     if (is_camera("5D3", "1.2.3"))
@@ -4451,6 +4463,12 @@ static unsigned int raw_rec_init()
         CartridgeCancel = (void *) 0xFF181340;
         more_hacks_are_supported = 1;
         CartridgeCancel_works = 1;
+        
+        default_width_1080p = 2080;
+        default_height_1080p = 2080;
+        default_width_x5 = 3744;
+        default_height_x5 = 1380;
+        default_height_720p = 728;
     }
     
     if (is_camera("6D", "1.1.6"))
@@ -4459,6 +4477,13 @@ static unsigned int raw_rec_init()
         aewbSuspend = (void *) 0xFF24C5E4;
         CartridgeCancel = (void *) 0xFFCEFFDC;
         more_hacks_are_supported = 1;
+        
+        /* fixme: these are dummy values from 5D3 */
+        default_width_1080p = 2080;
+        default_height_1080p = 2080;
+        default_width_x5 = 3744;
+        default_height_x5 = 1380;
+        default_height_720p = 728;
     }
 
     if (is_camera("700D", "1.1.5"))
@@ -4468,6 +4493,12 @@ static unsigned int raw_rec_init()
         CartridgeCancel = (void *) 0xFF19D558;
         more_hacks_are_supported = 1;
         CartridgeCancel_works = 1;
+        
+        default_width_1080p = 1808;
+        default_height_1080p = 1190;
+        default_width_x5 = 2592;
+        default_height_x5 = 1108;
+        default_height_720p = 727;
     }
     
     if (is_camera("650D", "1.0.4"))
@@ -4477,6 +4508,12 @@ static unsigned int raw_rec_init()
         CartridgeCancel = (void *) 0xFF19B9B4;
         more_hacks_are_supported = 1;
         CartridgeCancel_works = 1;
+        
+        default_width_1080p = 1808;
+        default_height_1080p = 1190;
+        default_width_x5 = 2592;
+        default_height_x5 = 1108;
+        default_height_720p = 727;
     }
     
     if (is_camera("100D", "1.0.1"))
@@ -4485,6 +4522,12 @@ static unsigned int raw_rec_init()
         aewbSuspend = (void *) 0xFF253F98;
         CartridgeCancel = (void *) 0xFFAB6BCC;
         more_hacks_are_supported = 1;
+        
+        default_width_1080p = 1808;
+        default_height_1080p = 1189;
+        default_width_x5 = 2592;
+        default_height_x5 = 1107;
+        default_height_720p = 726;
     }
     
     if (is_camera("EOSM", "2.0.2"))
@@ -4493,6 +4536,13 @@ static unsigned int raw_rec_init()
         aewbSuspend = (void *) 0xFF2606F4;
         CartridgeCancel = (void *) 0xFFA7E7D8;
         more_hacks_are_supported = 1;
+        
+        /* fixme: these are dummy values from 100D */
+        default_width_1080p = 1808;
+        default_height_1080p = 726;
+        default_width_x5 = 2592;
+        default_height_x5 = 1107;
+        default_height_720p = 726;
     }
     
     if (is_camera("70D", "1.1.2"))
@@ -4502,6 +4552,13 @@ static unsigned int raw_rec_init()
         CartridgeCancel = (void *) 0xFFD6B71C;
         more_hacks_are_supported = 1;
         CartridgeCancel_works = 1; /* Not tested! Keep it on for now for tetsing */
+        
+        /* fixme: these are dummy values from 5D3 */
+        default_width_1080p = 2080;
+        default_height_1080p = 2080;
+        default_width_x5 = 3744;
+        default_height_x5 = 1380;
+        default_height_720p = 728;
     }
     
     cam_eos_m = is_camera("EOSM", "2.0.2");
