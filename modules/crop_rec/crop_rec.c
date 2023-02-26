@@ -1693,7 +1693,6 @@ static inline uint32_t reg_override_zoom_fps(uint32_t reg, uint32_t old_val)
 }
 
 /* 650D / 700D / EOSM/M2 / 100D reg_override presets */
-
 static int REG_6804 = 0;
 static int TimerB = 0;
 static int TimerA = 0;
@@ -2295,7 +2294,7 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
     if (is_DIGIC_5)
     {
         // all of our presets work in x5 mode because of preview, even none-cropped ones
-        if (lv_dispsize == 1) 
+        if (lv_dispsize == 1 && CROP_PRESET_MENU) 
         {
             set_zoom(5);
         }
