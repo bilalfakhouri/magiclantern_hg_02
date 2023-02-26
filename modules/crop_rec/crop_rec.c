@@ -198,6 +198,12 @@ static uint32_t MEM_ADTG_WRITE  = 0;
 static uint32_t ENGIO_WRITE     = 0;
 static uint32_t MEM_ENGIO_WRITE = 0;
 
+/* from SENSOR_TIMING_TABLE (fps-engio.c) or FPS override submenu */
+static int fps_main_clock = 0;
+static int default_timerA[11]; /* 1080p  1080p  1080p   720p   720p   zoom   crop   crop   crop   crop   crop */
+static int default_timerB[11]; /*   24p    25p    30p    50p    60p     x5    24p    25p    30p    50p    60p */
+static int default_fps_1k[11] = { 23976, 25000, 29970, 50000, 59940, 29970, 23976, 25000, 29970, 50000, 59940 };
+
 /* video modes */
 
 /* properties are fired AFTER the new video mode is fully up and running
@@ -847,17 +853,22 @@ static int FAST adtg_lookup(uint32_t* data_buf, int reg_needle)
     return -1;
 }
 
-/* from SENSOR_TIMING_TABLE (fps-engio.c) */
-/* hardcoded for 5D3 */
-const int default_timerA[] = { 0x1B8, 0x1E0, 0x1B8, 0x1E0, 0x1B8, 0x206 };
-const int default_timerB[] = { 0x8E3, 0x7D0, 0x71C, 0x3E8, 0x38E, 0x614 };
-const int default_fps_1k[] = { 23976, 25000, 29970, 50000, 59940, 29776 };
-
 /* adapted from fps_override_shutter_blanking in fps-engio.c */
 static int adjust_shutter_blanking(int old)
 {
     /* sensor duty cycle: range 0 ... timer B */
     int current_blanking = nrzi_decode(old);
+    
+    static int previous_blanking = -1;
+    
+    if (ABS(current_blanking - previous_blanking) == 1) 
+    {
+        current_blanking = previous_blanking;
+    } 
+    else 
+    {
+       previous_blanking = current_blanking;
+    }
 
     int video_mode = get_video_mode_index();
 
@@ -916,7 +927,7 @@ static int adjust_shutter_blanking(int old)
     return nrzi_encode(new_blanking);
 }
 
-extern WEAK_FUNC(ret_0) void fps_override_shutter_blanking();
+extern void fps_override_shutter_blanking();
 
 static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
 {
@@ -978,12 +989,16 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     /* we will use [ADTG2/4] 8882/8884/8886/8888 registers, they change values slightly with ISO changes */
     int shutter_blanking = 0;
     int analog_gain = 0;
-    int adtg_blanking_reg = (lv_dispsize == 1) ? 0x8060 : 0x805E;
+    
+    const int blanking_reg_zoom   = (is_5D3) ? 0x805E : 0x805F;
+    const int blanking_reg_nozoom = (is_5D3) ? 0x8060 : 0x8061;
+    const int blanking_reg        = (lv_dispsize == 1) ? blanking_reg_nozoom : blanking_reg_zoom;
+    
     int adtg_analog_gain_reg = 0x8882;
     for (uint32_t * buf = data_buf; *buf != 0xFFFFFFFF; buf++)
     {
         int reg = (*buf) >> 16;
-        if (reg == adtg_blanking_reg)
+        if (reg == blanking_reg)
         {
             int val = (*buf) & 0xFFFF;
             shutter_blanking = val;
@@ -1000,21 +1015,17 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     {
         /* FIXME: remove this kind of hardcoded conditions */
         if ((crop_preset == CROP_PRESET_CENTER_Z && lv_dispsize != 1) ||
-            (crop_preset != CROP_PRESET_CENTER_Z && lv_dispsize == 1))
+            (crop_preset != CROP_PRESET_CENTER_Z && lv_dispsize == 1) || is_DIGIC_5)
         {
             shutter_blanking = adjust_shutter_blanking(shutter_blanking);
         }
     }
 
-    /* should probably be made generic */
-    if (is_5D3)
-    {
-        /* all modes may want to override shutter speed */
-        /* ADTG[0x8060]: shutter blanking for 3x3 mode  */
-        /* ADTG[0x805E]: shutter blanking for zoom mode  */
-        adtg_new[0] = (struct adtg_new) {6, 0x8060, shutter_blanking};
-        adtg_new[1] = (struct adtg_new) {6, 0x805E, shutter_blanking};
-    }
+    /* all modes may want to override shutter speed */
+    /* ADTG[0x8060]: shutter blanking for 3x3 mode  */
+    /* ADTG[0x805E]: shutter blanking for zoom mode  */
+    adtg_new[0] = (struct adtg_new) {6, blanking_reg_nozoom, shutter_blanking};
+    adtg_new[1] = (struct adtg_new) {6, blanking_reg_zoom, shutter_blanking};   
 
     /* hopefully generic; to be tested later */
     if (1)
@@ -1197,7 +1208,7 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                 dbg_printf("ADTG%x[%x] = %x\n", dst, reg, new_value);
                 *(uint16_t*)copy_ptr = new_value;
 
-                if (reg == 0x805E || reg == 0x8060)
+                if (reg == blanking_reg_zoom || reg == blanking_reg_nozoom)
                 {
                     /* also override in original data structure */
                     /* to be picked up on the screen indicators */
@@ -1312,7 +1323,7 @@ static inline uint32_t reg_override_fps(uint32_t reg, uint32_t timerA, uint32_t 
         {
             uint32_t expected = default_timerA[get_video_mode_index()] - 1;
 
-            if (old_val == expected)
+            if (old_val == expected || old_val == expected + 1)
             {
                 return timerA;
             }
@@ -1326,7 +1337,7 @@ static inline uint32_t reg_override_fps(uint32_t reg, uint32_t timerA, uint32_t 
             uint32_t expected = default_timerA[get_video_mode_index()] - 1;
             expected |= (expected << 16);
 
-            if (old_val == expected)
+            if (old_val == expected || old_val == expected + 0x00010001)
             {
                 return timerA | (timerA << 16);
             }
@@ -1338,7 +1349,7 @@ static inline uint32_t reg_override_fps(uint32_t reg, uint32_t timerA, uint32_t 
         {
             uint32_t expected = default_timerB[get_video_mode_index()] - 1;
 
-            if (old_val == expected)
+            if (old_val == expected || old_val == expected + 1)
             {
                 return timerB;
             }
@@ -2508,6 +2519,11 @@ static unsigned int crop_rec_init()
         crop_rec_menu[0].max        = COUNT(crop_choices_5d3) - 1;
         crop_rec_menu[0].help       = crop_choices_help_5d3;
         crop_rec_menu[0].help2      = crop_choices_help2_5d3;
+        
+        fps_main_clock = 24000000;
+                                       /* 24p,  25p,  30p,  50p,  60p,   x5 */
+        memcpy(default_timerA, (int[]) {  440,  480,  440,  480,  440,  518 }, 24);
+        memcpy(default_timerB, (int[]) { 2275, 2000, 1820, 1000,  910, 1556 }, 24);
     }
     else if (is_camera("EOSM", "2.0.2"))
     {
@@ -2587,6 +2603,63 @@ static unsigned int crop_rec_init()
         crop_rec_menu[0].max        = COUNT(crop_choices_basic) - 1;
         crop_rec_menu[0].help       = crop_choices_help_basic;
         crop_rec_menu[0].help2      = crop_choices_help2_basic;
+        
+        fps_main_clock = 25600000;
+                                       /* 24p,  25p,  30p,  50p,  60p,   x5 */
+        memcpy(default_timerA, (int[]) {  546,  640,  546,  640,  520,  730 }, 24);
+        memcpy(default_timerB, (int[]) { 1955, 1600, 1564,  800,  821, 1172 }, 24);
+                                   /* or 1956        1565         822        2445        1956 */
+    }
+    
+    /* default FPS timers are the same on all these models */
+    if (is_EOSM || is_700D || is_650D || is_100D)
+    {
+        fps_main_clock = 32000000;
+                                       /* 24p,  25p,  30p,  50p,  60p,   x5, c24p, c25p, c30p */
+        memcpy(default_timerA, (int[]) {  528,  640,  528,  640,  528,  716,  546,  640,  546 }, 36);
+        memcpy(default_timerB, (int[]) { 2527, 2000, 2022, 1000, 1011, 1491, 2444, 2000, 1955 }, 36);
+                                   /* or 2528        2023        1012        2445        1956 */
+    }
+
+    /* FPS in x5 zoom may be model-dependent; assume exact */
+    default_fps_1k[5] = (uint64_t) fps_main_clock * 1000ULL / default_timerA[5] / default_timerB[5];
+
+    printf("[crop_rec] checking FPS timer values...\n");
+    for (int i = 0; i < COUNT(default_fps_1k); i++)
+    {
+        if (default_timerA[i])
+        {
+            int fps_i = (uint64_t) fps_main_clock * 1000ULL / default_timerA[i] / default_timerB[i];
+            if (fps_i == default_fps_1k[i])
+            {
+                printf("%d) %s%d.%03d: A=%d B=%d (exact)\n", i, FMT_FIXEDPOINT3(default_fps_1k[i]), default_timerA[i], default_timerB[i]);
+
+                if (i == 5 && default_fps_1k[i] != 29970)
+                {
+                    printf("-> unusual FPS in x5 zoom\n", i);
+                }
+            }
+            else
+            {
+                int fps_p = (uint64_t) fps_main_clock * 1000ULL / default_timerA[i] / (default_timerB[i] + 1);
+                if (fps_i > default_fps_1k[i] && fps_p < default_fps_1k[i])
+                {
+                    printf("%d) %s%d.%03d: A=%d B=%d/%d (averaged)\n", i, FMT_FIXEDPOINT3(default_fps_1k[i]), default_timerA[i], default_timerB[i], default_timerB[i] + 1);
+                }
+                else
+                {
+                    printf("%d) %s%d.%03d: A=%d B=%d (%s%d.%03d ?!?)\n", i, FMT_FIXEDPOINT3(default_fps_1k[i]), default_timerA[i], default_timerB[i], FMT_FIXEDPOINT3(fps_i));
+                    return CBR_RET_ERROR;
+                }
+
+                /* assume 25p is exact on all models */
+                if (i == 1)
+                {
+                    printf("-> 25p check error\n");
+                    return CBR_RET_ERROR;
+                }
+            }
+        }
     }
     
     menu_add("Movie", crop_rec_menu, COUNT(crop_rec_menu));
