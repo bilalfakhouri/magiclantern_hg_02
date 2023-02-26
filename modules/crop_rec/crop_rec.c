@@ -11,6 +11,8 @@
 #include <raw.h>
 #include <fps.h>
 #include <shoot.h>
+#include <lens.h>
+#include "../mlv_lite/mlv_lite.h"
 
 #undef CROP_DEBUG
 
@@ -30,6 +32,12 @@ static int is_basic = 0;
 
 static CONFIG_INT("crop.preset", crop_preset_index, 0);
 static CONFIG_INT("crop.shutter_range", shutter_range, 0);
+
+static CONFIG_INT("crop.bit_depth", bit_depth_analog, 0);
+#define OUTPUT_14BIT (bit_depth_analog == 0)
+#define OUTPUT_12BIT (bit_depth_analog == 1)
+#define OUTPUT_11BIT (bit_depth_analog == 2)
+#define OUTPUT_10BIT (bit_depth_analog == 3)
 
 enum crop_preset {
     CROP_PRESET_OFF = 0,
@@ -834,13 +842,19 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     };
     
     /* expand this as required */
-    struct adtg_new adtg_new[15] = {{0}};
+    struct adtg_new adtg_new[19] = {{0}};
 
     /* scan for shutter blanking and make both zoom and non-zoom value equal */
     /* (the values are different when using FPS override with ADTG shutter override) */
     /* (fixme: might be better to handle this in ML core?) */
+    /* also scan for one ADTG gain register and get its value to be used for lower bit-depth */
+    /* this is similair method to lowering digital gain to get "fake" lossless compression 
+       in lower bit-depths, digital gain method only works with native RAW resolutions       */
+    /* we will use [ADTG2/4] 8882/8884/8886/8888 registers, they change values slightly with ISO changes */
     int shutter_blanking = 0;
+    int analog_gain = 0;
     int adtg_blanking_reg = (lv_dispsize == 1) ? 0x8060 : 0x805E;
+    int adtg_analog_gain_reg = 0x8882;
     for (uint32_t * buf = data_buf; *buf != 0xFFFFFFFF; buf++)
     {
         int reg = (*buf) >> 16;
@@ -848,6 +862,11 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
         {
             int val = (*buf) & 0xFFFF;
             shutter_blanking = val;
+        }
+        if (reg == adtg_analog_gain_reg)
+        {
+            int val = (*buf) & 0xFFFF;
+            analog_gain = val;
         }
     }
 
@@ -962,6 +981,34 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             }
         }
     }
+    
+    /* divid signal to achieve lower bit-depths using negative analog gain */
+    if (which_output_format() >= 3) // don't patch if uncompressed RAW is selected
+    {
+        if (OUTPUT_12BIT)
+        {
+            adtg_new[15] = (struct adtg_new) {6, 0x8882, analog_gain / 4};
+            adtg_new[16] = (struct adtg_new) {6, 0x8884, analog_gain / 4};
+            adtg_new[17] = (struct adtg_new) {6, 0x8886, analog_gain / 4};
+            adtg_new[18] = (struct adtg_new) {6, 0x8888, analog_gain / 4};
+        }
+    
+        if (OUTPUT_11BIT)
+        {
+            adtg_new[15] = (struct adtg_new) {6, 0x8882, analog_gain / 8};
+            adtg_new[16] = (struct adtg_new) {6, 0x8884, analog_gain / 8};
+            adtg_new[17] = (struct adtg_new) {6, 0x8886, analog_gain / 8};
+            adtg_new[18] = (struct adtg_new) {6, 0x8888, analog_gain / 8};
+        }
+
+        if (OUTPUT_10BIT)
+        {
+            adtg_new[15] = (struct adtg_new) {6, 0x8882, analog_gain / 16};
+            adtg_new[16] = (struct adtg_new) {6, 0x8884, analog_gain / 16};
+            adtg_new[17] = (struct adtg_new) {6, 0x8886, analog_gain / 16};
+            adtg_new[18] = (struct adtg_new) {6, 0x8888, analog_gain / 16};
+        } 
+    }
 
     while(*data_buf != 0xFFFFFFFF)
     {
@@ -991,6 +1038,36 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     
     /* pass our modified register list to adtg_write */
     regs[1] = (uint32_t) copy;
+}
+
+int analog_gain_is_acive()
+{
+    if (bit_depth_analog == 1)
+    {
+        return 1;
+    }
+    
+    if (bit_depth_analog == 2)
+    {
+        return 2;
+    }
+    
+    if (bit_depth_analog == 3)
+    {
+        return 3;
+    }
+    
+    return 0;
+}
+
+int crop_rec_is_enabled()
+{
+    if (CROP_PRESET_MENU)
+    {
+        return 1;
+    }
+    
+    return 0;
 }
 
 /* this is used to cover the black bar at the top of the image in 1:1 modes */
@@ -1141,7 +1218,7 @@ static inline uint32_t reg_override_3X_tall(uint32_t reg, uint32_t old_val)
 
 static inline uint32_t reg_override_3x3_tall(uint32_t reg, uint32_t old_val)
 {
-    if (!is_720p())
+    if (!is_720p() || !is_5D3)
     {
         /* 1080p not patched in 3x3 */
         return 0;
@@ -1477,9 +1554,25 @@ static void FAST engio_write_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
         uint32_t old = *(buf+1);
         if (reg == 0xC0F06804)
         {
-            engio_vidmode_ok = (crop_preset == CROP_PRESET_CENTER_Z)
+            if (is_5D3)
+            {
+                engio_vidmode_ok = (crop_preset == CROP_PRESET_CENTER_Z)
                 ? (old == 0x56601EB)                        /* x5 zoom */
                 : (old == 0x528011B || old == 0x2B6011B);   /* 1080p or 720p */
+            }
+            
+            else
+            {
+                if (PathDriveMode->zoom > 1) // don't brighten up LiveView in x5/x10 modes for now for is_basic
+                {
+                    engio_vidmode_ok = 0;
+                }
+                
+                else
+                {
+                    engio_vidmode_ok = 1;
+                }
+            }
         }
     }
 
@@ -1500,7 +1593,31 @@ static void FAST engio_write_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             dbg_printf("[%x] %x: %x -> %x\n", regs[0], reg, old, new);
             *(buf+1) = new;
         }
+        
+        // brighten up LiveView when using negative analog gain in lower bit-depths
+        if (reg == 0xC0F42744) 
+        {
+            if (which_output_format() >= 3) // don't patch if we are using uncompressed RAW 
+            {
+                if (OUTPUT_12BIT && old != 0x2020202)
+                {
+                    *(buf+1) = 0x2020202;
+                }
+            
+                if (OUTPUT_11BIT && old != 0x3030303)
+                {
+                    *(buf+1) = 0x3030303;
+                }
+            
+                if (OUTPUT_10BIT && old != 0x4040404)
+                {
+                *(buf+1) = 0x4040404;
+                }
+            }
+        }
     }
+    
+    // implement me: adjust LiveView black level when using lower bit-depths with negative analog gain
 }
 
 static int patch_active = 0;
@@ -1594,6 +1711,14 @@ static MENU_UPDATE_FUNC(target_yres_update)
     MENU_SET_RINFO("from %d", max_resolutions[crop_preset][get_video_mode_index()]);
 }
 
+static MENU_UPDATE_FUNC(bit_depth_analog_update)
+{
+    if (which_output_format() < 3)
+    {
+        MENU_SET_WARNING(MENU_WARN_NOT_WORKING, "To use this option, change Data format to lossless in RAW video.");
+    }
+}
+
 static struct menu_entry crop_rec_menu[] =
 {
     {
@@ -1610,6 +1735,15 @@ static struct menu_entry crop_rec_menu[] =
                 .help       = "Choose the available shutter speed range:",
                 .help2      = "Original: default range used by Canon in selected video mode.\n"
                               "Full range: from 1/FPS to minimum exposure time allowed by hardware."
+            },
+            {
+                .name       = "Bit-depth",
+                .priv       = &bit_depth_analog,
+                .update     = bit_depth_analog_update,
+                .max        = 3,
+                .choices    = CHOICES("14-bit lossless", "12-bit lossless","11-bit lossless", "10-bit lossless"),
+                .help       = "Choose bit-depth for RAW video.",
+                .icon_type  = IT_ALWAYS_ON,
             },
             {
                 .name   = "Target YRES",
@@ -2144,6 +2278,7 @@ MODULE_INFO_END()
 MODULE_CONFIGS_START()
     MODULE_CONFIG(crop_preset_index)
     MODULE_CONFIG(shutter_range)
+    MODULE_CONFIG(bit_depth_analog)
 MODULE_CONFIGS_END()
 
 MODULE_CBRS_START()

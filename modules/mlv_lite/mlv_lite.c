@@ -75,7 +75,9 @@
 #include "ml-cbr.h"
 #include "../silent/lossless.h"
 #include "ml-cbr.h"
-#include "mlv_lite.h"
+#include "../crop_rec/crop_rec.h"
+
+#define MAX_PATH 100
 
 THREAD_ROLE(RawRecTask);            /* our raw recording task */
 THREAD_ROLE(ShootTask);             /* polling CBR */
@@ -174,6 +176,11 @@ static CONFIG_INT("raw.output_format", output_format, 3);
 #define OUTPUT_AUTO_BIT_LOSSLESS 5
 #define OUTPUT_COMPRESSION (output_format>2)
 
+int which_output_format()
+{
+    return output_format;
+}
+
 /* container BPP (variable for uncompressed, always 14 for lossless JPEG) */
 static const int bpp_container[] = { 14, 12, 10, 14, 14, 14, 14, 14, 14 };
 
@@ -257,6 +264,12 @@ static int raw_digital_gain_ok()
         {
             return 0;
         }
+    }
+    
+    /* disable digital gain when using analog gain in crop_rec.c for lower bit-depths */
+    if (analog_gain_is_acive() || crop_rec_is_enabled())
+    {
+        return 0;
     }
 
     /* no known contraindications */
@@ -1202,13 +1215,28 @@ static MENU_UPDATE_FUNC(output_format_update)
             break;
     }
 
-    if (output_format > OUTPUT_14BIT_LOSSLESS)
+    if (output_format >= OUTPUT_14BIT_LOSSLESS)
     {
-        MENU_SET_VALUE("%d-bit lossless", BPP_D);
+        if (!analog_gain_is_acive())
+        {
+            MENU_SET_VALUE("%d-bit lossless", BPP_D);
+        }
+        
+        if (analog_gain_is_acive() || crop_rec_is_enabled())
+        {
+            MENU_SET_VALUE("%d-bit lossless", analog_gain_is_acive() == 1 ? 12 :
+                                              analog_gain_is_acive() == 2 ? 11 :
+                                              analog_gain_is_acive() == 3 ? 10 : 14);
+        }
 
-        if (!raw_digital_gain_ok())
+        if (!raw_digital_gain_ok() && !analog_gain_is_acive() && !crop_rec_is_enabled())
         {
             MENU_SET_WARNING(MENU_WARN_NOT_WORKING, "Lossless 8...12-bit not working in video modes with increased resolution.");
+        }
+        
+        if (analog_gain_is_acive() || crop_rec_is_enabled())
+        {
+            MENU_SET_WARNING(MENU_WARN_NOT_WORKING, "Use 14...10-bit Lossless from crop mode submenu.");
         }
     }
 }
