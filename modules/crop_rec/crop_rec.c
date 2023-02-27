@@ -1829,35 +1829,43 @@ static void FAST engio_write_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
         return;
     }
 
-    /* cmos_vidmode_ok doesn't help;
-     * we can identify the current video mode from 0xC0F06804 */
-    for (uint32_t * buf = (uint32_t *) regs[0]; *buf != 0xFFFFFFFF; buf += 2)
+    // is engio_vidmode_ok still needed? PathDriveMode might be enough to detect video modes
+    // engio_vidmode_ok crashes 100D for some reason, let's restrict it for 5D3, is_basic for now
+    // it's only being used for 5D3 and is_basic anyway
+    
+    if (is_basic || is_5D3)
     {
-        uint32_t reg = *buf;
-        uint32_t old = *(buf+1);
-        if (reg == 0xC0F06804)
+        /* cmos_vidmode_ok doesn't help;
+        * we can identify the current video mode from 0xC0F06804 */
+        for (uint32_t * buf = (uint32_t *) regs[0]; *buf != 0xFFFFFFFF; buf += 2)
         {
-            if (is_5D3)
+            uint32_t reg = *buf;
+            uint32_t old = *(buf+1);
+            if (reg == 0xC0F06804)
             {
-                engio_vidmode_ok = (crop_preset == CROP_PRESET_CENTER_Z)
-                ? (old == 0x56601EB)                        /* x5 zoom */
-                : (old == 0x528011B || old == 0x2B6011B);   /* 1080p or 720p */
-            }
-            
-            else
-            {
-                if ((PathDriveMode->zoom > 1) && is_basic) // don't brighten up LiveView in x5/x10 modes for now for is_basic
+                if (is_5D3)
                 {
-                    engio_vidmode_ok = 0;
+                    engio_vidmode_ok = (crop_preset == CROP_PRESET_CENTER_Z)
+                    ? (old == 0x56601EB)                        /* x5 zoom */
+                    : (old == 0x528011B || old == 0x2B6011B);   /* 1080p or 720p */
                 }
-                
+            
                 else
                 {
-                    engio_vidmode_ok = 1;
+                    if ((PathDriveMode->zoom > 1) && is_basic) // don't brighten up LiveView in x5/x10 modes for now for is_basic
+                    {
+                        engio_vidmode_ok = 0;
+                    }
+                
+                    else
+                    {
+                        engio_vidmode_ok = 1;
+                    }
                 }
             }
         }
     }
+
 
     if (!is_supported_mode())
     {
@@ -2632,7 +2640,7 @@ static unsigned int crop_rec_init()
         
         ENG_DRV_OUT = 0xFF2B2148;
         
-        PathDriveMode = (void *) 0xAAEA4;   /* argument of PATH_SelectPathDriveMode, crashes the camera on startup, why? */
+        PathDriveMode = (void *) 0xAAEA4;   /* argument of PATH_SelectPathDriveMode */
         
         is_100D = 1;
         is_DIGIC_5 = 1;
