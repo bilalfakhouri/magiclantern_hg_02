@@ -197,6 +197,7 @@ static uint32_t ADTG_WRITE      = 0;
 static uint32_t MEM_ADTG_WRITE  = 0;
 static uint32_t ENGIO_WRITE     = 0;
 static uint32_t MEM_ENGIO_WRITE = 0;
+static uint32_t ENG_DRV_OUT     = 0;
 
 /* from SENSOR_TIMING_TABLE (fps-engio.c) or FPS override submenu */
 static int fps_main_clock = 0;
@@ -1910,6 +1911,46 @@ static void FAST engio_write_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     // implement me: adjust LiveView black level when using lower bit-depths with negative analog gain
 }
 
+static int change_buffer_now = 0;
+
+static void FAST EngDrvOut_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
+{
+    if (!is_supported_mode())
+    {
+        /* don't patch other video modes */
+        return;
+    }
+    
+    uint32_t data = (uint32_t) regs[0];
+    uint16_t dst = (data & 0xFFFF0000) >> 16;
+    uint16_t reg = data & 0x0000FFFF;
+    uint32_t val = (uint32_t) regs[1];
+    
+    // 0xC0F26808 is EDMAC#24 buffer address, change it to Photo mode buffer
+    if (dst == 0xC0F2)
+    {
+        if (reg == 0x6804 && val == 0x40000000)
+        {
+            change_buffer_now = 1;
+        }
+    
+        if (reg == 0x6808 && change_buffer_now == 1) // 0xC0F26808
+        {
+            if (is_650D || is_700D)
+            {
+                regs[1] = 0x1595b00; // Size 0xC0F26810  = 0x3237e
+            }
+            
+            if (is_100D)
+            {
+                regs[1] = 0x2000000; // Size 0xC0F26810  = 0x1f32da
+            }
+            
+            change_buffer_now = 0;
+        }
+    }
+}
+
 static int patch_active = 0;
 
 static void update_patch()
@@ -1928,6 +1969,10 @@ static void update_patch()
             {
                 patch_hook_function(ENGIO_WRITE, MEM_ENGIO_WRITE, engio_write_hook, "crop_rec: video timers hook");
             }
+            if (ENGIO_WRITE)
+            {
+                patch_hook_function(ENG_DRV_OUT, MEM(ENG_DRV_OUT), EngDrvOut_hook, "crop_rec: preview stuff");
+            }
             patch_active = 1;
         }
     }
@@ -1941,6 +1986,10 @@ static void update_patch()
             if (ENGIO_WRITE)
             {
                 unpatch_memory(ENGIO_WRITE);
+            }
+            if (ENG_DRV_OUT)
+            {
+                unpatch_memory(ENG_DRV_OUT);
             }
             patch_active = 0;
             crop_preset = 0;
@@ -2536,6 +2585,8 @@ static unsigned int crop_rec_init()
         ENGIO_WRITE = 0xFF2C19AC;
         MEM_ENGIO_WRITE = 0xE51FC15C;
         
+        ENG_DRV_OUT = 0xFF2C1694;
+        
         PathDriveMode = (void *) 0x24AB8;   /* argument of PATH_SelectPathDriveMode */
 
         is_EOSM = 1;
@@ -2555,6 +2606,8 @@ static unsigned int crop_rec_init()
         
         ENGIO_WRITE = is_camera("700D", "1.1.5") ? 0xFF2C2D00 : 0xFF2C0778;
         MEM_ENGIO_WRITE = 0xE51FC15C;
+        
+        ENG_DRV_OUT = is_camera("700D", "1.1.5") ? 0xFF2C29E8 : 0xFF2C0460;
         
         PathDriveMode = (void *) (is_camera("700D", "1.1.5") ? 0x6B7F4 : 0x6AEC0);   /* argument of PATH_SelectPathDriveMode */
         
@@ -2576,6 +2629,8 @@ static unsigned int crop_rec_init()
         
         ENGIO_WRITE = 0xFF2B2460;
         MEM_ENGIO_WRITE = 0xE51FC15C;
+        
+        ENG_DRV_OUT = 0xFF2B2148;
         
         PathDriveMode = (void *) 0x3C358;   /* argument of PATH_SelectPathDriveMode */
         
