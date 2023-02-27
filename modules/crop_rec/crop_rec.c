@@ -1088,39 +1088,33 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             switch (crop_preset)
             {
                 case CROP_PRESET_1X3:
-                if (!is_720p() || !is_1080p())
+                if (is_650D || is_700D || is_100D || is_EOSM)
                 {
-                    if (is_650D || is_700D || is_100D)
-                    {
-                        adtg_new[2] = (struct adtg_new) {2, 0x8000, 0x6};
-                        adtg_new[3] = (struct adtg_new) {2, 0x8183, 0x21};
-                        adtg_new[4] = (struct adtg_new) {2, 0x8184, 0x7B};
+                    adtg_new[2] = (struct adtg_new) {2, 0x8000, 0x6};
+                    adtg_new[3] = (struct adtg_new) {2, 0x8183, 0x21};
+                    adtg_new[4] = (struct adtg_new) {2, 0x8184, 0x7B};
                     
-                        if (is_100D)
-                        {
-                        /*  Artifacts without these on certain 100D bodies:
-                            https://www.magiclantern.fm/forum/index.php?topic=26511.msg239495#msg239495
-                            https://www.magiclantern.fm/forum/index.php?topic=26511.msg239557#msg239557  */
+                    if (is_100D)
+                    {
+                    /*  Artifacts without these on certain 100D bodies:
+                        https://www.magiclantern.fm/forum/index.php?topic=26511.msg239495#msg239495
+                        https://www.magiclantern.fm/forum/index.php?topic=26511.msg239557#msg239557  */
 
-                            adtg_new[5] = (struct adtg_new) {2, 0xc00d, 0x5000};
-                            adtg_new[6] = (struct adtg_new) {2, 0xc00e, 0x53};
-                            adtg_new[7] = (struct adtg_new) {2, 0xc00f, 0x52};
-                            adtg_new[8] = (struct adtg_new) {2, 0xc010, 0x52};
-                            adtg_new[9] = (struct adtg_new) {2, 0xc011, 0x52};
-                        }
+                        adtg_new[5] = (struct adtg_new) {2, 0xc00d, 0x5000};
+                        adtg_new[6] = (struct adtg_new) {2, 0xc00e, 0x53};
+                        adtg_new[7] = (struct adtg_new) {2, 0xc00f, 0x52};
+                        adtg_new[8] = (struct adtg_new) {2, 0xc010, 0x52};
+                        adtg_new[9] = (struct adtg_new) {2, 0xc011, 0x52};
                     }
                 }
             
                 case CROP_PRESET_3X3:
-                if (!is_720p() || !is_1080p())
+                if (is_650D || is_700D || is_100D || is_EOSM)
                 {
-                    if (is_650D || is_700D || is_100D)
-                    {
-                        adtg_new[2] = (struct adtg_new) {2, 0x800C, 0x2};
-                        adtg_new[3] = (struct adtg_new) {2, 0x8000, 0x6};
-                        adtg_new[4] = (struct adtg_new) {2, 0x8183, 0x21};
-                        adtg_new[5] = (struct adtg_new) {2, 0x8184, 0x7B};
-                    }
+                    adtg_new[2] = (struct adtg_new) {2, 0x800C, 0x2};
+                    adtg_new[3] = (struct adtg_new) {2, 0x8000, 0x6};
+                    adtg_new[4] = (struct adtg_new) {2, 0x8183, 0x21};
+                    adtg_new[5] = (struct adtg_new) {2, 0x8184, 0x7B};
                 }
                 break; 
             }
@@ -1705,80 +1699,175 @@ static inline uint32_t reg_override_zoom_fps(uint32_t reg, uint32_t old_val)
 }
 
 /* 650D / 700D / EOSM/M2 / 100D reg_override presets */
-static int REG_6804 = 0;
-static int TimerB = 0;
-static int TimerA = 0;
+
+static unsigned TimerB = 0;
+static unsigned TimerA = 0;
+
+static unsigned RAW_H = 0;            // RAW width    resolution          0xC0F06804
+static unsigned RAW_V = 0;            // RAW vertical resolution          0xC0F06804
+
+static unsigned Preview_Control = 0;
+
+/* used to increase processed RAW data in LiveView, also show new image on screen via stretch regs */
+static unsigned Preview_H = 0;        // How much width to process        List of registers
+static unsigned Preview_V = 0;        // How much height to process       List of registers
+static unsigned Preview_R = 0;        // Preview related                  0xC0F383D4
+static unsigned YUV_HD_S_H = 0;       // YUV (HD) horizontal stretch      0xC0F11B8C
+static unsigned YUV_HD_S_V = 0;       // YUV (HD) vertical stretch        0xC0F11BCC
+static unsigned YUV_HD_S_V_E = 0;     // YUV (HD) enable vertical stretch 0xC0F11BC8
+
+/* used to correct aspect ratio on screen */
+static unsigned YUV_LV_S_V = 0;       // YUV (LV) vertical stretch        0xC0F11ACC
+static unsigned YUV_LV_Buf = 0;       // YUV (LV) buffer size             0xC0F04210
+
+/* used to exceed preview limits */
+static unsigned EDMAC24_s = 0;        // EDMAC#24 size                    0xC0F26810
+static unsigned EDMAC24_address = 0;  // EDMAC#24 buffer address          0xC0F26808
+static unsigned Black_Bar = 0;        // Exceed black bar width limit     0xC0F3B038, 0xC0F3B088
 
 static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
 {
-    if (is_650D || is_700D)
+    if (CROP_2_5K)
     {
-        if (CROP_3K)
+        if (is_650D || is_700D || is_EOSM)
         {
-            REG_6804 = 0x5380322;
+            RAW_H         = 0x298;
+            RAW_V         = 0x454;
+            TimerB        = 0x5D3;
+            TimerA        = 0x2CB;
+        }
+        
+        if (is_100D)
+        {
+            RAW_H         = 0x2a1;
+            RAW_V         = 0x458;
+            TimerB        = 0x5B3;
+            TimerA        = 0x2DB;
+        }
+
+        Preview_H     = 2520;
+        Preview_V     = 1080;
+        Preview_R     = 0x11000C;
+        YUV_HD_S_H    = 0x25005A;
+        YUV_HD_S_V    = 0x350053;
+        YUV_HD_S_V_E  = 0;
+        Black_Bar     = 2;
+        
+        Preview_Control = 1;
+    }
+        
+    if (CROP_3K)
+    {
+        if (is_650D || is_700D || is_EOSM)
+        {
+            RAW_H    = 0x322;
+            RAW_V    = 0x538;
             TimerB   = 0x60F;
             TimerA   = 0x35B;
         }
-        if (CROP_1440p)
+        
+        if (is_100D)
         {
-            REG_6804 = 0x5BC02A2;
-            TimerB   = 0x71E;
-            TimerA   = 0x2DB;
-        }
-        if (CROP_Full_Res)
-        {
-            REG_6804 = 0xDB40538;
-            TimerB   = 0x2D06;
-            TimerA   = 0x56B;
-        }
-    }
-    
-    if (is_100D || is_EOSM)
-    {
-        if (CROP_3K)
-        {
-            REG_6804 = 0x53E032B;
+            RAW_H    = 0x32B;
+            RAW_V    = 0x53E;
             TimerB   = 0x60B;
             TimerA   = 0x35D;
         }
         
-        if (CROP_1440p)
+        Preview_Control = 0;
+    }
+    
+    if (CROP_1440p)
+    {
+        if (is_650D || is_700D || is_EOSM)
         {
-            REG_6804 = 0x5C202AB;
+            RAW_H    = 0x2A2;
+            RAW_V    = 0x5BC;
+            TimerB   = 0x71E;
+            TimerA   = 0x2DB;
+        }
+        
+        if (is_100D)
+        {
+            RAW_H    = 0x2AB;
+            RAW_V    = 0x5C2;
             TimerB   = 0x719;
             TimerA   = 0x2DD;
         }
-        if (CROP_Full_Res)
+        
+        Preview_Control = 0;
+    }
+    
+    if (CROP_Full_Res)
+    {
+        if (is_650D || is_700D || is_EOSM)
         {
-            REG_6804 = 0xDB40541;
+            RAW_H    = 0x538;
+            RAW_V    = 0xDB4;
             TimerB   = 0x2D06;
             TimerA   = 0x56B;
         }
+        
+        if (is_100D)
+        {
+            RAW_H    = 0x541;
+            RAW_V    = 0xDB4;
+            TimerB   = 0x2D06;
+            TimerA   = 0x56B;
+        }
+        
+        Preview_Control = 0;
+    }
+    
+    if (Preview_Control)
+    {
+        if (shamem_read(0xC0F11BC8) != 0)
+        {
+            EngDrvOutLV(0xC0F11BC8, YUV_HD_S_V_E); // Enable vertical stretch on YUV (HD) path
+        }
+        
+        /* fixme: override them from EngDrvOuts hook, needs to be implemented */
+        if (shamem_read(0xC0F3A0B0) != (((Preview_V + 0xa) << 16) + Preview_H + 0x8)) // not patched yet, then patch
+        {
+            EngDrvOutLV(0xC0F3A04C, ((Preview_V + 0x6) << 16) + Preview_H / 4 + 5);
+            EngDrvOutLV(0xC0F3A0A0, ((Preview_V + 0xa) << 16) + Preview_H + 0xb);
+            EngDrvOutLV(0xC0F3A0B0, ((Preview_V + 0xa) << 16) + Preview_H + 0x8);
+        }
     }
 
+    switch (reg)
+    {
+        case 0xC0F06804: return (RAW_V << 16) + RAW_H;
+
+        case 0xC0F06824:
+        case 0xC0F06828:
+        case 0xC0F0682C:
+        case 0xC0F06830:
+        {
+            return RAW_H + 0x32;
+        }
+        
+        case 0xC0F0713c: return RAW_V + 0x1;
+        case 0xC0F07150: return RAW_V - 0x3A;
     
-    if (!CROP_2_5K)
+        case 0xC0F06014: return TimerB;
+        case 0xC0F06010: return TimerA;
+        case 0xC0F06008: return TimerA + (TimerA << 16);
+        case 0xC0F0600C: return TimerA + (TimerA << 16);
+    }
+    
+    if (Preview_Control)
     {
         switch (reg)
         {
-            case 0xC0F06804: return REG_6804;
+            case 0xC0F1A00C: return (Preview_V << 16) + Preview_H - 0x1;   
+            case 0xC0F11B9C: return (Preview_V << 16) + Preview_H - 0x1;
 
-            case 0xC0F06824:
-            case 0xC0F06828:
-            case 0xC0F0682C:
-            case 0xC0F06830:
-            {
-                return (REG_6804 & 0x0000FFF) + 0x32;
-            }
-        
-            case 0xC0F0713c: return (REG_6804 >> 16) + 0x1;
-            case 0xC0F07150: return (REG_6804 >> 16) - 0x3A;
-            
-            case 0xC0F06014: return TimerB;
-       
-            case 0xC0F06010: return TimerA;
-            case 0xC0F06008: return TimerA + (TimerA << 16);
-            case 0xC0F0600C: return TimerA + (TimerA << 16);
+            case 0xC0F11B8C: return YUV_HD_S_H;
+            case 0xC0F11BCC: return YUV_HD_S_V;
+        //  case 0xC0F11BC8: return YUV_HD_S_V_E; // overriding it from here doesn't work
+        //  case 0xC0F11ACC: return YUV_LV_S_V;   // let's keep it off for now
+        //  case 0xC0F04210: return YUV_LV_Buf;   // let's keep it off for now
         }
     }
 
@@ -1933,28 +2022,88 @@ static void FAST EngDrvOut_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     uint16_t dst = (data & 0xFFFF0000) >> 16;
     uint16_t reg = data & 0x0000FFFF;
     uint32_t val = (uint32_t) regs[1];
-    
-    // 0xC0F26808 is EDMAC#24 buffer address, change it to Photo mode buffer
+
     if (dst == 0xC0F2)
     {
-        if (reg == 0x6804 && val == 0x40000000)
+        // 0xC0F26808 register sets EDMAC#24 buffer address, change it to Photo mode buffer
+        if (Preview_Control)
         {
-            change_buffer_now = 1;
-        }
+            // we need to know when to override 0xC0F26808, detect it from 0xC0F26804, it's always
+            // being set to 0x40000000 before setting 0xC0F26808 value
+            if (reg == 0x6804 && val == 0x40000000) 
+            {
+                change_buffer_now = 1;
+            }
     
-        if (reg == 0x6808 && change_buffer_now == 1) // 0xC0F26808
+            if (reg == 0x6808 && change_buffer_now == 1) // 0xC0F26808
+            {
+                if (is_650D || is_700D || is_EOSM) // not sure about EOS M and 650D, needs checking
+                {
+                    regs[1] = 0x1595b00; // Size 0xC0F26810  = 0x3237e, fixme: we need to override size too 
+                }
+            
+                if (is_100D)
+                {
+                    regs[1] = 0x2000000; // Size 0xC0F26810  = 0x1f32da, fixme: we need to override size too 
+                }
+            
+                change_buffer_now = 0;
+            }
+        }
+    }
+    
+    /* set our preview registers overrides */
+    if (dst == 0xC0F3)
+    {
+        if (Preview_Control)
         {
-            if (is_650D || is_700D)
+            switch (reg)
             {
-                regs[1] = 0x1595b00; // Size 0xC0F26810  = 0x3237e
+                case 0x8070: regs[1] = ((Preview_V + 0x9) << 16) + Preview_H / 4 + 5;       break;
+                case 0x8078: regs[1] = (((Preview_H / 4) + 6) << 16) + 1;                   break;
+                case 0x807C: regs[1] = ((Preview_H / 4) + 5) << 16;                         break;
+                case 0x8080: regs[1] = ((Preview_V + 0x7) << 16) + 2;                       break;
+                case 0x8084: regs[1] = ((Preview_H / 4) + 7) << 16;                         break;
+                case 0x8094: regs[1] = ( Preview_V + 0xa) << 16;                            break;
+                case 0x80A0: regs[1] = ((Preview_H / 4) + 7) << 16;                         break;
+                case 0x80A4: regs[1] = ((Preview_H / 4) + 7) << 16;                         break;
+                case 0x8024: 
+                if (is_700D || is_EOSM || is_650D)
+                             regs[1] = ((RAW_V - 1) << 16)  + RAW_H - 0x11;                 
+                if (is_100D) regs[1] = ((RAW_V - 5) << 16)  + RAW_H - 0x1A;                 break;
+                case 0x83D4: regs[1] =   Preview_R;                                         break;
+                case 0x83DC: regs[1] = ((Preview_V + 0x1c) << 16)  + Preview_H / 4 + 0x48;  break;
+                case 0x8934: regs[1] = ((Preview_V + 0x6) << 16)   + Preview_H / 4 + 5;     break;
+                case 0x8960: regs[1] = ( Preview_V + 0x6) << 16;                            break;
+                case 0x89A4: regs[1] = ((Preview_V + 0x6) << 16)   + Preview_H / 4 + 5;     break;
+                case 0x89B4: regs[1] = ((Preview_V + 0x7) << 16)   + Preview_H / 4 + 6;     break;
+                case 0x89D4: regs[1] = ((Preview_V + 0x6) << 16)   + Preview_H / 4 + 5;     break;
+                case 0x89E4: regs[1] = ((Preview_V + 0x7) << 16)   + Preview_H / 4 + 7;     break;
+                case 0x89EC: regs[1] = ((Preview_H / 4 + 6) << 16) + 1;                     break;
+                
+            //  case 0xA04C: regs[1] = ((Preview_V + 0x6) << 16)   + Preview_H / 4 + 5;     break; // It's being set from EngDrvOuts
+            //  case 0xA0A0: regs[1] = ((Preview_V + 0xa) << 16)   + Preview_H + 0xb;       break; // It's being set from EngDrvOuts
+            //  case 0xA0B0: regs[1] = ((Preview_V + 0xa) << 16)   + Preview_H + 0x8;       break; // It's being set from EngDrvOuts
+                case 0xB038: regs[1] =  Black_Bar;                                          break;
+                case 0xB088: regs[1] =  Black_Bar;                                          break;
+                case 0xB054: regs[1] = ((Preview_V + 0x6) << 16)   + Preview_H + 0x7;       break;
+                case 0xB070: regs[1] = ((Preview_V + 0x6) << 16)   + Preview_H + 0x57;      break;
+                case 0xB074: regs[1] = ( Preview_V        << 16)   + Preview_H + 0x57;      break;
+                case 0xB0DC: regs[1] = ( Preview_V        << 16)   + Preview_H + 0x4f;      break;
             }
-            
-            if (is_100D)
+        }
+    }
+    
+    if (dst == 0xC0F4)
+    {
+        if (Preview_Control)
+        {
+            switch (reg)
             {
-                regs[1] = 0x2000000; // Size 0xC0F26810  = 0x1f32da
+                case 0x2014: regs[1] = ((Preview_V + 0x9) << 16) + Preview_H / 4 + 5;      break;
+                case 0x204C: regs[1] = ((Preview_V + 0x9) << 16) + Preview_H / 4 + 5;      break;
+                case 0x2194: regs[1] = ( Preview_H / 4) + 5;                               break;
             }
-            
-            change_buffer_now = 0;
         }
     }
 }
@@ -1977,7 +2126,7 @@ static void update_patch()
             {
                 patch_hook_function(ENGIO_WRITE, MEM_ENGIO_WRITE, engio_write_hook, "crop_rec: video timers hook");
             }
-            if (ENGIO_WRITE)
+            if (ENG_DRV_OUT)
             {
                 patch_hook_function(ENG_DRV_OUT, MEM(ENG_DRV_OUT), EngDrvOut_hook, "crop_rec: preview stuff");
             }
@@ -2110,6 +2259,14 @@ static struct menu_entry crop_rec_menu[] =
                 .help       = "Choose the available shutter speed range:",
                 .help2      = "Original: default range used by Canon in selected video mode.\n"
                               "Full range: from 1/FPS to minimum exposure time allowed by hardware."
+            },
+            {
+                .name   = "Preview Debug",
+                .priv   = &Preview_R,
+                .max    = 0xFFFFFFF,
+                .unit   = UNIT_HEX,
+                .help   = "Preview Debug.",
+                .advanced = 1,
             },
             {
                 .name   = "Target YRES",
