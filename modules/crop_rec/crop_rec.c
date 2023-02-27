@@ -319,9 +319,13 @@ static int is_supported_mode()
     }
     
     /* 650D / 700D / EOSM/M2 / 100D prests will only work in x5 mode, don't patch x1 */
-    if (is_DIGIC_5 && PathDriveMode->zoom == 1)
+    if (PathDriveMode->zoom == 1)
     {
-        return 0;
+        // FIXME: 100D will crash if added, probably something related to engio_hook?
+        if (is_650D || is_700D || is_EOSM) 
+        {
+            return 0;
+        }
     }
 
     if (PathDriveMode->zoom == 10)
@@ -1919,8 +1923,6 @@ static void FAST engio_write_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     }
 
     // is engio_vidmode_ok still needed? PathDriveMode might be enough to detect video modes
-    // engio_vidmode_ok crashes 100D for some reason, let's restrict it for 5D3, is_basic for now
-    // it's only being used for 5D3 and is_basic anyway
     
     if (is_basic || is_5D3)
     {
