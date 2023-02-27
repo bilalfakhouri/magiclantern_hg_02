@@ -2632,7 +2632,7 @@ static unsigned int crop_rec_init()
         
         ENG_DRV_OUT = 0xFF2B2148;
         
-        PathDriveMode = (void *) 0x3C358;   /* argument of PATH_SelectPathDriveMode */
+        PathDriveMode = (void *) 0xAAEA4;   /* argument of PATH_SelectPathDriveMode, crashes the camera on startup, why? */
         
         is_100D = 1;
         is_DIGIC_5 = 1;
