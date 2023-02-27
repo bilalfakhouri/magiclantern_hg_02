@@ -2595,7 +2595,7 @@ static unsigned int crop_rec_init()
         
         ENG_DRV_OUT = 0xFF2C1694;
         
-        PathDriveMode = (void *) 0x24AB8;   /* argument of PATH_SelectPathDriveMode */
+        PathDriveMode = (void *) 0x892E8;   /* argument of PATH_SelectPathDriveMode */
 
         is_EOSM = 1;
         is_DIGIC_5 = 1;
@@ -2657,7 +2657,7 @@ static unsigned int crop_rec_init()
         ADTG_WRITE = 0x24108;
         MEM_ADTG_WRITE = 0xE92D41F0;
         
-        PathDriveMode = (void *) 0x3BD70;   /* argument of PATH_SelectPathDriveMode */
+        PathDriveMode = (void *) 0xB5D1C;   /* argument of PATH_SelectPathDriveMode */
         
         is_6D = 1;
         is_basic = 1;
