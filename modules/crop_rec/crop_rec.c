@@ -1957,7 +1957,6 @@ static void FAST engio_write_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
         }
     }
 
-
     if (!is_supported_mode())
     {
         /* don't patch other video modes */
@@ -2006,8 +2005,6 @@ static void FAST engio_write_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             }
         }
     }
-    
-    // implement me: adjust LiveView black level when using lower bit-depths with negative analog gain
 }
 
 static int change_buffer_now = 0;
@@ -2024,6 +2021,51 @@ static void FAST EngDrvOut_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     uint16_t dst = (data & 0xFFFF0000) >> 16;
     uint16_t reg = data & 0x0000FFFF;
     uint32_t val = (uint32_t) regs[1];
+    
+    // adjust LiveView black level when using lower bit-depths with negative analog gain
+    if (data == 0xC0F0819C)
+    {
+        // 100D doesn't need this
+        if (is_650D || is_700D || is_EOSM)
+        {
+            if (lens_info.iso_analog_raw == ISO_400)
+            {
+                if (OUTPUT_10BIT) regs[1] = 0xC39;
+                if (OUTPUT_11BIT) regs[1] = 0xC39;
+                if (OUTPUT_12BIT) regs[1] = 0xC39;
+            }
+            if (lens_info.iso_analog_raw == ISO_800)
+            {
+                if (OUTPUT_10BIT) regs[1] = 0xC3C;
+                if (OUTPUT_11BIT) regs[1] = 0xC3A;
+                if (OUTPUT_12BIT) regs[1] = 0xC3A;
+            }
+            if (lens_info.iso_analog_raw == ISO_1600)
+            {
+                if (OUTPUT_10BIT) regs[1] = 0xC41;
+                if (OUTPUT_11BIT) regs[1] = 0xC40;
+                if (OUTPUT_12BIT) regs[1] = 0xC40;
+            }
+            if (lens_info.iso_analog_raw == ISO_3200)
+            {
+                if (OUTPUT_10BIT) regs[1] = 0xC4A;
+                if (OUTPUT_11BIT) regs[1] = 0xC48;
+                if (OUTPUT_12BIT) regs[1] = 0xC48;
+            }
+            if (lens_info.iso_analog_raw == ISO_6400)
+            {
+                if (OUTPUT_10BIT) regs[1] = 0xC5C;
+                if (OUTPUT_11BIT) regs[1] = 0xC5B;
+                if (OUTPUT_12BIT) regs[1] = 0xC58;
+            }
+            if (lens_info.iso_analog_raw == ISO_12800)
+            {
+                if (OUTPUT_10BIT) regs[1] = 0xC5C;
+                if (OUTPUT_11BIT) regs[1] = 0xC5A;
+                if (OUTPUT_12BIT) regs[1] = 0xC58;
+            }
+        }
+    }
 
     if (dst == 0xC0F2)
     {
