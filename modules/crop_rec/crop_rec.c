@@ -198,6 +198,7 @@ static uint32_t MEM_ADTG_WRITE  = 0;
 static uint32_t ENGIO_WRITE     = 0;
 static uint32_t MEM_ENGIO_WRITE = 0;
 static uint32_t ENG_DRV_OUT     = 0;
+static uint32_t ENG_DRV_OUTS    = 0;
 
 /* from SENSOR_TIMING_TABLE (fps-engio.c) or FPS override submenu */
 static int fps_main_clock = 0;
@@ -1727,6 +1728,7 @@ static unsigned YUV_LV_Buf = 0;       // YUV (LV) buffer size             0xC0F0
 /* used to exceed preview limits */
 static unsigned EDMAC24_s = 0;        // EDMAC#24 size                    0xC0F26810
 static unsigned EDMAC24_address = 0;  // EDMAC#24 buffer address          0xC0F26808
+static unsigned EDMAC24_Redirect = 0; // EDMAC#24 re-driect buffer flag
 static unsigned Black_Bar = 0;        // Exceed black bar width limit     0xC0F3B038, 0xC0F3B088
 
 static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
@@ -1758,6 +1760,7 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         Black_Bar     = 2;
         
         Preview_Control = 1;
+        EDMAC24_Redirect = 0;
     }
         
     if (CROP_3K)
@@ -1779,6 +1782,7 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         }
         
         Preview_Control = 0;
+        EDMAC24_Redirect = 0;
     }
     
     if (CROP_1440p)
@@ -1800,6 +1804,7 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         }
         
         Preview_Control = 0;
+        EDMAC24_Redirect = 0;
     }
     
     if (CROP_Full_Res)
@@ -1821,6 +1826,7 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         }
         
         Preview_Control = 0;
+        EDMAC24_Redirect = 0;
     }
     
     if (Preview_Control)
@@ -1828,14 +1834,6 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         if (shamem_read(0xC0F11BC8) != 0)
         {
             EngDrvOutLV(0xC0F11BC8, YUV_HD_S_V_E); // Enable vertical stretch on YUV (HD) path
-        }
-        
-        /* fixme: override them from EngDrvOuts hook, needs to be implemented */
-        if (shamem_read(0xC0F3A0B0) != (((Preview_V + 0xa) << 16) + Preview_H + 0x8)) // not patched yet, then patch
-        {
-            EngDrvOutLV(0xC0F3A04C, ((Preview_V + 0x6) << 16) + Preview_H / 4 + 5);
-            EngDrvOutLV(0xC0F3A0A0, ((Preview_V + 0xa) << 16) + Preview_H + 0xb);
-            EngDrvOutLV(0xC0F3A0B0, ((Preview_V + 0xa) << 16) + Preview_H + 0x8);
         }
     }
 
@@ -2069,8 +2067,8 @@ static void FAST EngDrvOut_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
 
     if (dst == 0xC0F2)
     {
-        // 0xC0F26808 register sets EDMAC#24 buffer address, change it to Photo mode buffer
-        if (Preview_Control)
+        // 0xC0F26808 register sets EDMAC#24 buffer address, change it to Photo mode buffer address
+        if (Preview_Control && EDMAC24_Redirect)
         {
             // we need to know when to override 0xC0F26808, detect it from 0xC0F26804, it's always
             // being set to 0x40000000 before setting 0xC0F26808 value
@@ -2083,12 +2081,12 @@ static void FAST EngDrvOut_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             {
                 if (is_650D || is_700D || is_EOSM) // not sure about EOS M and 650D, needs checking
                 {
-                    regs[1] = 0x1595b00; // Size 0xC0F26810  = 0x3237e, fixme: we need to override size too 
+                    regs[1] = 0x1595b00; // Size 0xC0F26810  = 0x3237e  is being set in EngDrvOuts_hook
                 }
             
                 if (is_100D)
                 {
-                    regs[1] = 0x2000000; // Size 0xC0F26810  = 0x1f32da, fixme: we need to override size too 
+                    regs[1] = 0x2000000; // Size 0xC0F26810  = 0x1f32da is being set in EngDrvOuts_hook
                 }
             
                 change_buffer_now = 0;
@@ -2125,9 +2123,9 @@ static void FAST EngDrvOut_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                 case 0x89E4: regs[1] = ((Preview_V + 0x7) << 16)   + Preview_H / 4 + 7;     break;
                 case 0x89EC: regs[1] = ((Preview_H / 4 + 6) << 16) + 1;                     break;
                 
-            //  case 0xA04C: regs[1] = ((Preview_V + 0x6) << 16)   + Preview_H / 4 + 5;     break; // It's being set from EngDrvOuts
-            //  case 0xA0A0: regs[1] = ((Preview_V + 0xa) << 16)   + Preview_H + 0xb;       break; // It's being set from EngDrvOuts
-            //  case 0xA0B0: regs[1] = ((Preview_V + 0xa) << 16)   + Preview_H + 0x8;       break; // It's being set from EngDrvOuts
+            //  case 0xA04C: regs[1] = ((Preview_V + 0x6) << 16)   + Preview_H / 4 + 5;     break; // It's being set in EngDrvOuts_hook
+            //  case 0xA0A0: regs[1] = ((Preview_V + 0xa) << 16)   + Preview_H + 0xb;       break; // It's being set in EngDrvOuts_hook
+            //  case 0xA0B0: regs[1] = ((Preview_V + 0xa) << 16)   + Preview_H + 0x8;       break; // It's being set in EngDrvOuts_hook
                 case 0xB038: regs[1] =  Black_Bar;                                          break;
                 case 0xB088: regs[1] =  Black_Bar;                                          break;
                 case 0xB054: regs[1] = ((Preview_V + 0x6) << 16)   + Preview_H + 0x7;       break;
@@ -2148,6 +2146,59 @@ static void FAST EngDrvOut_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                 case 0x204C: regs[1] = ((Preview_V + 0x9) << 16) + Preview_H / 4 + 5;      break;
                 case 0x2194: regs[1] = ( Preview_H / 4) + 5;                               break;
             }
+        }
+    }
+}
+
+static void FAST EngDrvOuts_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
+{
+    if (!is_supported_mode())
+    {
+        /* don't patch other video modes */
+        return;
+    }
+    
+    uint32_t data = (uint32_t) regs[0];
+//  uint16_t dst = (data & 0xFFFF0000) >> 16;
+//  uint16_t reg = data & 0x0000FFFF;
+//  uint32_t * val = (uint32_t*) regs[1];
+//  uint32_t num = (uint32_t) regs[2];
+    
+    if (Preview_Control)
+    {
+        /* set our preview registers overrides */
+        if (data == 0xC0F3A048)
+        {
+            *(uint32_t*) (regs[1] + 4)    = ((Preview_V + 0x6) << 16) + Preview_H / 4 + 5; // 0xC0F3A04C
+        }
+        
+        if (data == 0xC0F3A098)
+        {
+            *(uint32_t*) (regs[1] + 8)    = ((Preview_V + 0xa) << 16) + Preview_H + 0xb;   // 0xC0F3A0A0
+            *(uint32_t*) (regs[1] + 0x18) = ((Preview_V + 0xa) << 16) + Preview_H + 0x8;   // 0xC0F3A0B0
+        }
+        
+        /* change EDMAC#24 buffer size 0xC0F26810 to photo mode buffer size */
+        if (EDMAC24_Redirect)
+        {
+            if (data == 0xC0F2680C)
+            {
+                // we need to know when to set buffer size because the channel does other things before
+                // setting the final buffer size which we want to change, let's use 0xC0F35084 as flag because
+                // it's always being set after "the other things" finish and before setting 0xC0F26810 final size
+                if (shamem_read(0xC0F35084) == 0xA1F)
+                {
+                    if (is_650D || is_700D || is_EOSM) // not sure about 650D / EOS M, need checking
+                    {
+                        *(uint32_t*) (regs[1] + 4) = 0x3237e;
+                    }
+                    
+                    if (is_100D)
+                    {
+                        *(uint32_t*) (regs[1] + 4) = 0x1f32da;
+                    }
+                }
+            }  
         }
     }
 }
@@ -2173,6 +2224,10 @@ static void update_patch()
             if (ENG_DRV_OUT)
             {
                 patch_hook_function(ENG_DRV_OUT, MEM(ENG_DRV_OUT), EngDrvOut_hook, "crop_rec: preview stuff");
+            }
+            if (ENG_DRV_OUTS)
+            {
+                patch_hook_function(ENG_DRV_OUTS, MEM(ENG_DRV_OUTS), EngDrvOuts_hook, "crop_rec: preview stuff");
             }
             patch_active = 1;
         }
@@ -2795,6 +2850,7 @@ static unsigned int crop_rec_init()
         MEM_ENGIO_WRITE = 0xE51FC15C;
         
         ENG_DRV_OUT = 0xFF2C1694;
+        ENG_DRV_OUTS = 0xFF2C17B8;
         
         PathDriveMode = (void *) 0x892E8;   /* argument of PATH_SelectPathDriveMode */
 
@@ -2817,6 +2873,7 @@ static unsigned int crop_rec_init()
         MEM_ENGIO_WRITE = 0xE51FC15C;
         
         ENG_DRV_OUT = is_camera("700D", "1.1.5") ? 0xFF2C29E8 : 0xFF2C0460;
+        ENG_DRV_OUTS = is_camera("700D", "1.1.5") ? 0xFF2C2B0C : 0xFF2C0584;
         
         PathDriveMode = (void *) (is_camera("700D", "1.1.5") ? 0x6B7F4 : 0x6AEC0);   /* argument of PATH_SelectPathDriveMode */
         
@@ -2840,6 +2897,7 @@ static unsigned int crop_rec_init()
         MEM_ENGIO_WRITE = 0xE51FC15C;
         
         ENG_DRV_OUT = 0xFF2B2148;
+        ENG_DRV_OUTS = 0xFF2B226C;
         
         PathDriveMode = (void *) 0xAAEA4;   /* argument of PATH_SelectPathDriveMode */
         
