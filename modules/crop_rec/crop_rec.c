@@ -1751,13 +1751,19 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
             TimerA        = 0x2DB;
         }
 
-        Preview_H     = 2520;
+        // Preview_H should be = active RAW width - 4? , 2520 - 4 = 2516 (active RAW width is 2520)
+        // otherwise a black bar will appear in the left part of both YUV (HD) and (LV) dumps 
+        // e.g. Preview_H = 2520 --> black bar on the left, also will loss some pixel on the right
+        Preview_H     = 2516; 
         Preview_V     = 1080;
-        Preview_R     = 0x11000C;
-        YUV_HD_S_H    = 0x25005A;
-        YUV_HD_S_V    = 0x350053;
+        Preview_R     = 0x19000D;
+        YUV_HD_S_H    = 0x105027D;
+        YUV_HD_S_V    = 0x1050195;
         YUV_HD_S_V_E  = 0;
         Black_Bar     = 2;
+        
+        YUV_LV_S_V    = 0x1050244;
+        YUV_LV_Buf    = 0x13505A0;
         
         Preview_Control = 1;
         EDMAC24_Redirect = 0;
@@ -1868,8 +1874,8 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
             case 0xC0F11B8C: return YUV_HD_S_H;
             case 0xC0F11BCC: return YUV_HD_S_V;
         //  case 0xC0F11BC8: return YUV_HD_S_V_E; // overriding it from here doesn't work
-        //  case 0xC0F11ACC: return YUV_LV_S_V;   // let's keep it off for now
-        //  case 0xC0F04210: return YUV_LV_Buf;   // let's keep it off for now
+            case 0xC0F11ACC: return YUV_LV_S_V;
+            case 0xC0F04210: return YUV_LV_Buf;
         }
     }
 
@@ -2361,7 +2367,7 @@ static struct menu_entry crop_rec_menu[] =
             },
             {
                 .name   = "Preview Debug",
-                .priv   = &Preview_R,
+                .priv   = &YUV_LV_S_V,
                 .max    = 0xFFFFFFF,
                 .unit   = UNIT_HEX,
                 .help   = "Preview Debug.",
