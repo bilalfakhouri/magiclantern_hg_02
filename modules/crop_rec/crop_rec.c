@@ -191,14 +191,15 @@ static const char crop_choices_help2_basic[] =
 
 
 /* camera-specific parameters */
-static uint32_t CMOS_WRITE      = 0;
-static uint32_t MEM_CMOS_WRITE  = 0;
-static uint32_t ADTG_WRITE      = 0;
-static uint32_t MEM_ADTG_WRITE  = 0;
-static uint32_t ENGIO_WRITE     = 0;
-static uint32_t MEM_ENGIO_WRITE = 0;
-static uint32_t ENG_DRV_OUT     = 0;
-static uint32_t ENG_DRV_OUTS    = 0;
+static uint32_t CMOS_WRITE               = 0;
+static uint32_t MEM_CMOS_WRITE           = 0;
+static uint32_t ADTG_WRITE               = 0;
+static uint32_t MEM_ADTG_WRITE           = 0;
+static uint32_t ENGIO_WRITE              = 0;
+static uint32_t MEM_ENGIO_WRITE          = 0;
+static uint32_t ENG_DRV_OUT              = 0;
+static uint32_t ENG_DRV_OUTS             = 0;
+static uint32_t PATH_SelectPathDriveMode = 0;
 
 /* from SENSOR_TIMING_TABLE (fps-engio.c) or FPS override submenu */
 static int fps_main_clock = 0;
@@ -1731,6 +1732,13 @@ static unsigned EDMAC24_address = 0;  // EDMAC#24 buffer address          0xC0F2
 static unsigned EDMAC24_Redirect = 0; // EDMAC#24 re-driect buffer flag
 static unsigned Black_Bar = 0;        // Exceed black bar width limit     0xC0F3B038, 0xC0F3B088
 
+/* used as flags to center preview and clear VRAM artifacts */
+static unsigned preview_shift = 0;
+static unsigned Center_Preview = 0;
+static unsigned Center_Preview_ON = 0;
+static unsigned Clear_Artifacts = 0;
+static unsigned Clear_Artifacts_ON = 0;
+
 static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
 {
     if (CROP_2_5K)
@@ -2209,6 +2217,100 @@ static void FAST EngDrvOuts_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     }
 }
 
+static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
+{
+    /* we need to enable preview centering and clearing artifacts here especially for Clear_Artifacts */
+    /* I don't know which function load centering preview value, but it's being loaded many times in LiveView, not just once */
+    /* Clear_Artifacts is being loaded very early before CMOS, ADTG, ENGIO, ENG_DRV_OUT, ENG_DRV_OUTS stuff */
+    /* in [VRAM] VRAM_PTH_StartTripleRamClearInALump[ff962a90] (ff962a90 + 0x8 holds value for clearing artifacts for x5 mode for LCD output on 700D) */
+    /* apparently PATH_SelectPathDriveMode sets its arguments before loading/applying any video configuration */
+    
+    /*  700D DebugLog, x5 mode:
+    
+        Evf:ff19ce1c:ad:03: PATH_Select S:8 Z:50000 R:0 DZ:0 SM:0 SV:0 DT:0       <-- we are patching it from here before loading it
+        Evf:ff19cfb0:ad:03: PathDriveMode Change: 10->2
+        Evf:ff37ad64:ad:03: GetPathDriveInfo[2]
+        Evf:ff4f2ce8:ad:03: LVx5_SelectPath LCD
+        Evf:ff4f3980:ad:01: LVx5_GetVramParam(W:720 H:480)
+        Evf:ff37cebc:ad:03: RamClear_SetPath
+        Evf:ff37d4c8:ad:03: LV_ResLockTripleRamClearPass
+        Evf:ff4ee18c:a9:03: [VRAM] VRAM_PTH_StartTripleRamClearInALump[ff962a90]  <-- clear artifacts value is being loaded here
+        Evf:ff37cf1c:ad:03: RamClear_StartPath
+        Evf:ff37d084:ad:03: RamClear_LV_RAMCLEAR_COLOR_BLACK
+        Evf:ff37cf1c:ad:03: RamClear_StartPath
+        Evf:ff37d084:ad:03: RamClear_LV_RAMCLEAR_COLOR_BLACK
+        Evf:ff37cf1c:ad:03: RamClear_StartPath
+        Evf:ff37d084:ad:03: RamClear_LV_RAMCLEAR_COLOR_BLACK
+        Evf:ff36ce48:a9:03: [VRAM]====>> PathRamClearCompleteCBR   */ 
+    
+    /* FIXME: we might be able to implement clearing artifacts directly in VRAM_PTH_StartTripleRamClearInALump
+              this way we don't to patch ROM addresses for clearing artifacts for x5 mode and for every output on every model */
+    
+    if (CROP_PRESET_1X1)
+    {
+        if (CROP_2_5K)
+        {
+            preview_shift = 0x1f4a0;
+            Center_Preview = 1;
+            Clear_Artifacts = 1;
+        }
+        
+        /* not supported presets, turn these off */
+        else
+        {
+            preview_shift = 0;
+            Center_Preview = 0;
+            Clear_Artifacts = 0;
+        }
+    }
+ 
+    /* FIXME: hardcoded addresses for 700D, for x5 mode on LCD screen */
+    if (PathDriveMode->zoom == 5)
+    {
+        /* patch supported presets if patch not active */
+        if (Center_Preview && !Center_Preview_ON)
+        {
+            patch_memory(0xff962a74, 0x0, preview_shift, "Center");
+            Center_Preview_ON = 1;
+        }
+
+        if (Clear_Artifacts && !Clear_Artifacts_ON)
+        {
+            patch_memory(0xff962a98, 0x0, 0x5a0, "Clear"); // 0x5a0 seems to clear all artifacts
+            Clear_Artifacts_ON = 1;
+        }
+        
+        /* unpatch not supported presets if patch already active */
+        if (!Center_Preview && Center_Preview_ON)
+        {
+            unpatch_memory(0xff962a74);
+            Center_Preview_ON = 0;
+        }
+        
+        if (!Clear_Artifacts && Clear_Artifacts_ON)
+        {
+            unpatch_memory(0xff962a98);
+            Clear_Artifacts_ON = 0;
+        }
+    }
+    
+    /* unpatch in all other modes if patch already active  */
+    if (PathDriveMode->zoom != 5)
+    {
+        if (Center_Preview_ON)
+        {
+            unpatch_memory(0xff962a74);
+            Center_Preview_ON = 0;
+        }
+        
+        if (Clear_Artifacts_ON)
+        {
+            unpatch_memory(0xff962a98);
+            Clear_Artifacts_ON = 0;
+        }
+    }
+}
+
 static int patch_active = 0;
 
 static void update_patch()
@@ -2229,11 +2331,15 @@ static void update_patch()
             }
             if (ENG_DRV_OUT)
             {
-                patch_hook_function(ENG_DRV_OUT, MEM(ENG_DRV_OUT), EngDrvOut_hook, "crop_rec: preview stuff");
+                patch_hook_function(ENG_DRV_OUT, MEM(ENG_DRV_OUT), EngDrvOut_hook, "crop_rec: preview stuff 1");
             }
             if (ENG_DRV_OUTS)
             {
-                patch_hook_function(ENG_DRV_OUTS, MEM(ENG_DRV_OUTS), EngDrvOuts_hook, "crop_rec: preview stuff");
+                patch_hook_function(ENG_DRV_OUTS, MEM(ENG_DRV_OUTS), EngDrvOuts_hook, "crop_rec: preview stuff 2");
+            }
+            if (PATH_SelectPathDriveMode)
+            {
+                patch_hook_function(PATH_SelectPathDriveMode, MEM(PATH_SelectPathDriveMode), PATH_SelectPathDriveMode_hook, "crop_rec: preview stuff 3");
             }
             patch_active = 1;
         }
@@ -2252,6 +2358,26 @@ static void update_patch()
             if (ENG_DRV_OUT)
             {
                 unpatch_memory(ENG_DRV_OUT);
+            }
+            if (ENG_DRV_OUTS)
+            {
+                unpatch_memory(ENG_DRV_OUTS);
+            }
+            if (PATH_SelectPathDriveMode)
+            {
+                unpatch_memory(PATH_SelectPathDriveMode);
+            }
+            
+            /* FIXME: hardcoded addressed for 700D for x5 mode on LCD screen */
+            if (Clear_Artifacts_ON)
+            {
+                unpatch_memory(0xff962a98);
+                Clear_Artifacts_ON = 0;
+            }
+            if (Center_Preview_ON)
+            {
+                unpatch_memory(0xff962a74);
+                Center_Preview_ON = 0 ;
             }
             patch_active = 0;
             crop_preset = 0;
@@ -2859,6 +2985,7 @@ static unsigned int crop_rec_init()
         ENG_DRV_OUTS = 0xFF2C17B8;
         
         PathDriveMode = (void *) 0x892E8;   /* argument of PATH_SelectPathDriveMode */
+        PATH_SelectPathDriveMode = 0xFFA7E054;
 
         is_EOSM = 1;
         is_DIGIC_5 = 1;
@@ -2882,6 +3009,7 @@ static unsigned int crop_rec_init()
         ENG_DRV_OUTS = is_camera("700D", "1.1.5") ? 0xFF2C2B0C : 0xFF2C0584;
         
         PathDriveMode = (void *) (is_camera("700D", "1.1.5") ? 0x6B7F4 : 0x6AEC0);   /* argument of PATH_SelectPathDriveMode */
+        PATH_SelectPathDriveMode = is_camera("700D", "1.1.5") ? 0xFF19CDD4 : 0xFF19B230;
         
         is_650D = 1;
         is_700D = 1;
@@ -2906,6 +3034,7 @@ static unsigned int crop_rec_init()
         ENG_DRV_OUTS = 0xFF2B226C;
         
         PathDriveMode = (void *) 0xAAEA4;   /* argument of PATH_SelectPathDriveMode */
+        PATH_SelectPathDriveMode = 0xFFAB62E8;
         
         is_100D = 1;
         is_DIGIC_5 = 1;
