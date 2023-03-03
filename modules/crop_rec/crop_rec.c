@@ -2106,7 +2106,7 @@ static void FAST EngDrvOut_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     
             if (reg == 0x6808 && change_buffer_now == 1) // 0xC0F26808
             {
-                if (is_650D || is_700D || is_EOSM) // not sure about EOS M and 650D, needs checking
+                if (is_650D || is_700D || is_EOSM)
                 {
                     regs[1] = 0x1595b00; // Size 0xC0F26810  = 0x3237e  is being set in EngDrvOuts_hook
                 }
@@ -2215,7 +2215,7 @@ static void FAST EngDrvOuts_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                 // it's always being set after "the other things" finish and before setting 0xC0F26810 final size
                 if (shamem_read(0xC0F35084) == 0xA1F)
                 {
-                    if (is_650D || is_700D || is_EOSM) // not sure about 650D / EOS M, need checking
+                    if (is_650D || is_700D || is_EOSM)
                     {
                         *(uint32_t*) (regs[1] + 4) = 0x3237e;
                     }
@@ -2998,7 +2998,7 @@ static unsigned int crop_rec_init()
         ENG_DRV_OUTS = 0xFF2C17B8;
         
         PathDriveMode = (void *) 0x892E8;   /* argument of PATH_SelectPathDriveMode */
-        PATH_SelectPathDriveMode = 0xFFA7E054;
+        PATH_SelectPathDriveMode = 0x14AC4; // it's being called from RAM
         
         Shift_x5_LCD = 0xFF96EA3C;
         Shift_x5_HDMI_480p = 0xFF96F3FC;
