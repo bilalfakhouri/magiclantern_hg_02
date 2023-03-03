@@ -2232,9 +2232,9 @@ static void FAST EngDrvOuts_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
 
 static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
 {
-    /* we need to enable and set preview shifting and clearing artifacts values here especially for preview_shift_value */
+    /* we need to enable and set preview shifting and clearing artifacts values here especially for clear artifacts value */
     /* I don't know which function load shifting preview value, but it's being loaded and applied many times in LiveView, not just once. */
-    /* preview_shift_value is being loaded very early before CMOS, ADTG, ENGIO, ENG_DRV_OUT, ENG_DRV_OUTS stuff */
+    /* clear artifacts value is being loaded very early before CMOS, ADTG, ENGIO, ENG_DRV_OUT, ENG_DRV_OUTS stuff */
     /* in [VRAM] VRAM_PTH_StartTripleRamClearInALump[ff962a90] (ff962a90 + 0x8 holds value for clearing artifacts for x5 mode for LCD output on 700D) */
     /* apparently PATH_SelectPathDriveMode sets its arguments before loading/applying any video configuration, e.g: */
     
