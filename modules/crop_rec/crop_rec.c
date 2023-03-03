@@ -1732,12 +1732,25 @@ static unsigned EDMAC24_address = 0;  // EDMAC#24 buffer address          0xC0F2
 static unsigned EDMAC24_Redirect = 0; // EDMAC#24 re-driect buffer flag
 static unsigned Black_Bar = 0;        // Exceed black bar width limit     0xC0F3B038, 0xC0F3B088
 
-/* used as flags to center preview and clear VRAM artifacts */
-static unsigned preview_shift = 0;
-static unsigned Center_Preview = 0;
+/* used to center preview and clear VRAM artifacts */
+static unsigned preview_shift_value = 0;
+static unsigned Shift_Preview = 0;
 static unsigned Center_Preview_ON = 0;
 static unsigned Clear_Artifacts = 0;
 static unsigned Clear_Artifacts_ON = 0;
+
+/* camera-specific ROM addresses */
+/* Shift_x5 holds preview shifting value for an output for x5 mode */
+static uint32_t Shift_x5_LCD = 0;
+static uint32_t Shift_x5_HDMI_480p = 0; // Called VIDEO NTSC 
+static uint32_t Shift_x5_HDMI_1080i_Full = 0;
+static uint32_t Shift_x5_HDMI_1080i_Info = 0;
+
+/* Clear_Vram_x5 holds preview clear Vram value for an output for x5 mode */
+static uint32_t Clear_Vram_x5_LCD = 0;
+static uint32_t Clear_Vram_x5_HDMI_480p = 0;
+static uint32_t Clear_Vram_x5_HDMI_1080i_Full = 0;
+static uint32_t Clear_Vram_x5_HDMI_1080i_Info = 0;
 
 static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
 {
@@ -2219,11 +2232,11 @@ static void FAST EngDrvOuts_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
 
 static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
 {
-    /* we need to enable preview centering and clearing artifacts here especially for Clear_Artifacts */
-    /* I don't know which function load centering preview value, but it's being loaded many times in LiveView, not just once */
-    /* Clear_Artifacts is being loaded very early before CMOS, ADTG, ENGIO, ENG_DRV_OUT, ENG_DRV_OUTS stuff */
+    /* we need to enable and set preview shifting and clearing artifacts values here especially for preview_shift_value */
+    /* I don't know which function load shifting preview value, but it's being loaded and applied many times in LiveView, not just once. */
+    /* preview_shift_value is being loaded very early before CMOS, ADTG, ENGIO, ENG_DRV_OUT, ENG_DRV_OUTS stuff */
     /* in [VRAM] VRAM_PTH_StartTripleRamClearInALump[ff962a90] (ff962a90 + 0x8 holds value for clearing artifacts for x5 mode for LCD output on 700D) */
-    /* apparently PATH_SelectPathDriveMode sets its arguments before loading/applying any video configuration */
+    /* apparently PATH_SelectPathDriveMode sets its arguments before loading/applying any video configuration, e.g: */
     
     /*  700D DebugLog, x5 mode:
     
@@ -2234,7 +2247,7 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
         Evf:ff4f3980:ad:01: LVx5_GetVramParam(W:720 H:480)
         Evf:ff37cebc:ad:03: RamClear_SetPath
         Evf:ff37d4c8:ad:03: LV_ResLockTripleRamClearPass
-        Evf:ff4ee18c:a9:03: [VRAM] VRAM_PTH_StartTripleRamClearInALump[ff962a90]  <-- clear artifacts value is being loaded here
+        Evf:ff4ee18c:a9:03: [VRAM] VRAM_PTH_StartTripleRamClearInALump[ff962a90]  <-- clear artifacts value is being loaded here, ff962a90 is array holding six 32 bits values
         Evf:ff37cf1c:ad:03: RamClear_StartPath
         Evf:ff37d084:ad:03: RamClear_LV_RAMCLEAR_COLOR_BLACK
         Evf:ff37cf1c:ad:03: RamClear_StartPath
@@ -2250,46 +2263,46 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
     {
         if (CROP_2_5K)
         {
-            preview_shift = 0x1f4a0;
-            Center_Preview = 1;
+            preview_shift_value = 0x1f4a0;
+            Shift_Preview = 1;
             Clear_Artifacts = 1;
         }
         
         /* not supported presets, turn these off */
         else
         {
-            preview_shift = 0;
-            Center_Preview = 0;
+            preview_shift_value = 0;
+            Shift_Preview = 0;
             Clear_Artifacts = 0;
         }
     }
  
-    /* FIXME: hardcoded addresses for 700D, for x5 mode on LCD screen */
+    /* FIXME: hardcoded addresses for x5 mode on LCD screen, implement HDMI support! */
     if (PathDriveMode->zoom == 5)
     {
         /* patch supported presets if patch not active */
-        if (Center_Preview && !Center_Preview_ON)
+        if (Shift_Preview && !Center_Preview_ON)
         {
-            patch_memory(0xff962a74, 0x0, preview_shift, "Center");
+            patch_memory(Shift_x5_LCD, 0x0, preview_shift_value, "Center");
             Center_Preview_ON = 1;
         }
 
         if (Clear_Artifacts && !Clear_Artifacts_ON)
         {
-            patch_memory(0xff962a98, 0x0, 0x5a0, "Clear"); // 0x5a0 seems to clear all artifacts
+            patch_memory(Clear_Vram_x5_LCD, 0x0, 0x5a0, "Clear"); // 0x5a0 seems to clear all artifacts
             Clear_Artifacts_ON = 1;
         }
         
         /* unpatch not supported presets if patch already active */
-        if (!Center_Preview && Center_Preview_ON)
+        if (!Shift_Preview && Center_Preview_ON)
         {
-            unpatch_memory(0xff962a74);
+            unpatch_memory(Shift_x5_LCD);
             Center_Preview_ON = 0;
         }
         
         if (!Clear_Artifacts && Clear_Artifacts_ON)
         {
-            unpatch_memory(0xff962a98);
+            unpatch_memory(Clear_Vram_x5_LCD);
             Clear_Artifacts_ON = 0;
         }
     }
@@ -2299,13 +2312,13 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
     {
         if (Center_Preview_ON)
         {
-            unpatch_memory(0xff962a74);
+            unpatch_memory(Shift_x5_LCD);
             Center_Preview_ON = 0;
         }
         
         if (Clear_Artifacts_ON)
         {
-            unpatch_memory(0xff962a98);
+            unpatch_memory(Clear_Vram_x5_LCD);
             Clear_Artifacts_ON = 0;
         }
     }
@@ -2368,15 +2381,15 @@ static void update_patch()
                 unpatch_memory(PATH_SelectPathDriveMode);
             }
             
-            /* FIXME: hardcoded addressed for 700D for x5 mode on LCD screen */
+            /* FIXME: hardcoded addresses for x5 mode on LCD screen, implement HDMI support! */
             if (Clear_Artifacts_ON)
             {
-                unpatch_memory(0xff962a98);
+                unpatch_memory(Clear_Vram_x5_LCD);
                 Clear_Artifacts_ON = 0;
             }
             if (Center_Preview_ON)
             {
-                unpatch_memory(0xff962a74);
+                unpatch_memory(Shift_x5_LCD);
                 Center_Preview_ON = 0 ;
             }
             patch_active = 0;
@@ -2986,7 +2999,17 @@ static unsigned int crop_rec_init()
         
         PathDriveMode = (void *) 0x892E8;   /* argument of PATH_SelectPathDriveMode */
         PATH_SelectPathDriveMode = 0xFFA7E054;
+        
+        Shift_x5_LCD = 0xFF96EA3C;
+        Shift_x5_HDMI_480p = 0xFF96F3FC;
+        Shift_x5_HDMI_1080i_Full = 0xFF96FF54;
+        Shift_x5_HDMI_1080i_Info = 0xFF970558;
 
+        Clear_Vram_x5_LCD = 0xFF96EA60;
+        Clear_Vram_x5_HDMI_480p = 0xFF96F420;
+        Clear_Vram_x5_HDMI_1080i_Full = 0xFF96FF78;
+        Clear_Vram_x5_HDMI_1080i_Info = 0xFF97057C;
+        
         is_EOSM = 1;
         is_DIGIC_5 = 1;
         crop_presets                = crop_presets_DIGIC_5;
@@ -3011,6 +3034,17 @@ static unsigned int crop_rec_init()
         PathDriveMode = (void *) (is_camera("700D", "1.1.5") ? 0x6B7F4 : 0x6AEC0);   /* argument of PATH_SelectPathDriveMode */
         PATH_SelectPathDriveMode = is_camera("700D", "1.1.5") ? 0xFF19CDD4 : 0xFF19B230;
         
+        /* I know these look ugly, but we want something works for now, right? , it's not that bad */
+        Shift_x5_LCD = is_camera("700D", "1.1.5") ? 0xFF962A74 : 0xFF955894;
+        Shift_x5_HDMI_480p = is_camera("700D", "1.1.5") ? 0xFF963434 : 0xFF956254;
+        Shift_x5_HDMI_1080i_Full = is_camera("700D", "1.1.5") ? 0xFF963F8C : 0xFF956DAC;
+        Shift_x5_HDMI_1080i_Info = is_camera("700D", "1.1.5") ? 0xFF964590 : 0xFF9573B0;
+
+        Clear_Vram_x5_LCD = is_camera("700D", "1.1.5") ? 0xFF962A98 : 0xFF9558B8;
+        Clear_Vram_x5_HDMI_480p = is_camera("700D", "1.1.5") ? 0xFF963458 : 0xFF956278;
+        Clear_Vram_x5_HDMI_1080i_Full = is_camera("700D", "1.1.5") ? 0xFF963FB0 : 0xFF956DD0;
+        Clear_Vram_x5_HDMI_1080i_Info = is_camera("700D", "1.1.5") ? 0xFF9645B4 : 0xFF9573D4;
+        
         is_650D = 1;
         is_700D = 1;
         is_DIGIC_5 = 1;
@@ -3034,7 +3068,17 @@ static unsigned int crop_rec_init()
         ENG_DRV_OUTS = 0xFF2B226C;
         
         PathDriveMode = (void *) 0xAAEA4;   /* argument of PATH_SelectPathDriveMode */
-        PATH_SelectPathDriveMode = 0xFFAB62E8;
+        PATH_SelectPathDriveMode = 0x19E30; // it's being called from RAM
+        
+        Shift_x5_LCD = 0xFF98F5EC;
+        Shift_x5_HDMI_480p = 0xFF98FFAC;
+        Shift_x5_HDMI_1080i_Full = 0xFF990B04;
+        Shift_x5_HDMI_1080i_Info = 0xFF991108;
+
+        Clear_Vram_x5_LCD = 0xFF98F610;
+        Clear_Vram_x5_HDMI_480p = 0xFF98FFD0;
+        Clear_Vram_x5_HDMI_1080i_Full = 0xFF990B28;
+        Clear_Vram_x5_HDMI_1080i_Info = 0xFF99112C;
         
         is_100D = 1;
         is_DIGIC_5 = 1;
