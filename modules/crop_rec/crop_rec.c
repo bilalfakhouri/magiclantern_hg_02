@@ -40,6 +40,13 @@ static CONFIG_INT("crop.bit_depth", bit_depth_analog, 0);
 #define OUTPUT_11BIT (bit_depth_analog == 2)
 #define OUTPUT_10BIT (bit_depth_analog == 3)
 
+static CONFIG_INT("crop.preset_aspect_ratio", crop_preset_ar, 0);
+#define AR_16_9        (crop_preset_ar == 0)
+#define AR_2_1         (crop_preset_ar == 1)
+#define AR_2_20_1      (crop_preset_ar == 2)
+#define AR_2_35_1      (crop_preset_ar == 3)
+#define AR_2_39_1      (crop_preset_ar == 4)
+
 static CONFIG_INT("crop.preset_1x1", crop_preset_1x1_res, 0);
 #define CROP_2_5K      (crop_preset_1x1_res == 0)
 #define CROP_3K        (crop_preset_1x1_res == 1)
@@ -47,22 +54,13 @@ static CONFIG_INT("crop.preset_1x1", crop_preset_1x1_res, 0);
 #define CROP_Full_Res  (crop_preset_1x1_res == 3)
 
 static CONFIG_INT("crop.preset_1x3", crop_preset_1x3_res, 0);
-#define Anam_16_9      (crop_preset_1x3_res == 0)
-#define Anam_2_1       (crop_preset_1x3_res == 1)
-#define Anam_2_20_1    (crop_preset_1x3_res == 2)
-#define Anam_2_35_1    (crop_preset_1x3_res == 3)
-#define Anam_2_39_1    (crop_preset_1x3_res == 4)
-#define Anam_2_50_1    (crop_preset_1x3_res == 5)
-
-static CONFIG_INT("crop.preset_1x3_type", crop_preset_1x3_type, 0);
-#define Highest_res    (crop_preset_1x3_type == 0)
-#define Medium_res     (crop_preset_1x3_type == 1)
-#define Old_res        (crop_preset_1x3_type == 2)
+#define Anam_Highest   (crop_preset_1x3_res == 0)
+#define Anam_Higher    (crop_preset_1x3_res == 1)
+#define Anam_Medium    (crop_preset_1x3_res == 2)
 
 static CONFIG_INT("crop.preset_3x3", crop_preset_3x3_res, 0);
-#define HIGH_16_9      (crop_preset_1x1_res == 0)
-#define HIGH_2_1       (crop_preset_1x1_res == 1)
-#define HIGH_2_35_1    (crop_preset_1x1_res == 2)
+#define High_FPS       (crop_preset_3x3_res == 0)
+#define mv1080         (crop_preset_3x3_res == 1)
 
 static CONFIG_INT("crop.preset_fps", crop_preset_fps, 0);
 #define Framerate_24   (crop_preset_fps == 0)
@@ -2411,6 +2409,9 @@ PROP_HANDLER(PROP_LV_DISPSIZE)
     update_patch();
 }
 
+/* forward reference */
+static struct menu_entry crop_rec_menu[];
+
 static MENU_UPDATE_FUNC(crop_update)
 {
 /*  if (is_DIGIC_5)
@@ -2420,6 +2421,14 @@ static MENU_UPDATE_FUNC(crop_update)
                                 (crop_preset_index == 2) ? crop_choices_DIGIC_5[2] : (crop_preset_index == 3) ? crop_choices_DIGIC_5[3] : 
                                  crop_choices_DIGIC_5[0]);
     }*/
+    
+    if (is_DIGIC_5)
+    {
+        /* reveal options for the current crop mode (1:1, 1x3 and 3x3) */
+        crop_rec_menu[0].children[0].shidden = (crop_preset_index != 1);  // 1 CROP_PRESET_1X1
+        crop_rec_menu[0].children[1].shidden = (crop_preset_index != 2);  // 2 CROP_PRESET_1X3
+        crop_rec_menu[0].children[2].shidden = (crop_preset_index != 3);  // 3 CROP_PRESET_3X3
+    }
  
     if (CROP_PRESET_MENU && lv)
     {
@@ -2457,6 +2466,37 @@ static MENU_UPDATE_FUNC(crop_update)
     }
 }
 
+static MENU_UPDATE_FUNC(crop_preset_1x3_res_update)
+{
+    if (AR_16_9)
+    {
+        if (Anam_Highest) MENU_SET_VALUE("4.5K");
+        if (Anam_Higher)  MENU_SET_VALUE("4.2K");
+        if (Anam_Medium)  MENU_SET_VALUE("UHD");
+    }
+    
+    if (AR_2_1)
+    {
+        if (Anam_Highest) MENU_SET_VALUE("4.8K");
+        if (Anam_Higher)  MENU_SET_VALUE("4.4K");
+        if (Anam_Medium)  MENU_SET_VALUE("4K");
+    }
+    
+    if (AR_2_20_1)
+    {
+        if (Anam_Highest) MENU_SET_VALUE("5K");
+        if (Anam_Higher)  MENU_SET_VALUE("4.6K");
+        if (Anam_Medium)  MENU_SET_VALUE("4.1K");
+    }
+    
+    if (AR_2_35_1 || AR_2_39_1)
+    {
+        if (Anam_Highest) MENU_SET_VALUE("5.2K");
+        if (Anam_Higher)  MENU_SET_VALUE("4.8K");
+        if (Anam_Medium)  MENU_SET_VALUE("4.3K");
+    }
+}
+
 static MENU_UPDATE_FUNC(target_yres_update)
 {
     MENU_SET_RINFO("from %d", max_resolutions[crop_preset][get_video_mode_index()]);
@@ -2472,6 +2512,7 @@ static MENU_UPDATE_FUNC(bit_depth_analog_update)
 
 static struct menu_entry crop_rec_menu[] =
 {
+    // FIXME: how to handle menu in cleaner way for is_DIGIC_5 models?
     {
         .name       = "Crop mode",
         .priv       = &crop_preset_index,
@@ -2479,13 +2520,49 @@ static struct menu_entry crop_rec_menu[] =
         .depends_on = DEP_LIVEVIEW,
         .children =  (struct menu_entry[]) {
             {
-                .name       = "Preset:",
+                .name       = "Preset:",   // CROP_PRESET_1X1
                 .priv       = &crop_preset_1x1_res,
                 .max        = 3,
                 .choices    = CHOICES("2.5K", "3K","1440p", "Full-Res LV"),
                 .help       = "Choose 1:1 preset.",
                 .icon_type  = IT_ALWAYS_ON,
+                .shidden    = 1,
             },
+            {
+                .name       = "Preset: ",  // CROP_PRESET_1X3
+                .priv       = &crop_preset_1x3_res,
+                .update     = crop_preset_1x3_res_update,
+                .max        = 2,
+                .choices    = CHOICES("Highest", "Higher", "Medium"),  // dummy choices, strings are being changed depending on aspect ratio and res
+                .help       = "Choose 1x3 preset.",
+                .icon_type  = IT_ALWAYS_ON,
+                .shidden    = 1,
+            },
+            {
+                .name       = "Preset:  ",  // CROP_PRESET_3X3
+                .priv       = &crop_preset_3x3_res,
+                .max        = 0,
+                .choices    = CHOICES("1736"),
+                .help       = "Choose 3x3 preset.",
+                .icon_type  = IT_ALWAYS_ON,
+                .shidden    = 1,
+            },
+            {
+                .name       = "Aspect ratio:",
+                .priv       = &crop_preset_ar,
+                .max        = 4,
+                .choices    = CHOICES("16:9", "2:1", "2.20:1", "2.35:1", "2.39:1"),
+                .help       = "Select aspect ratio for current preset.",
+                .icon_type  = IT_ALWAYS_ON,
+            },
+/*          {
+                .name       = "Framerate:",
+                .priv       = &crop_preset_fps,
+                .max        = 2,
+                .choices    = CHOICES("23.976", "25", "30"),
+                .help       = "Select framerate for current preset.",
+                .icon_type  = IT_ALWAYS_ON,
+            },*/
             {
                 .name       = "Bit-depth",
                 .priv       = &bit_depth_analog,
