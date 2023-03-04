@@ -1741,17 +1741,17 @@ static unsigned YUV_LV_S_V = 0;       // YUV (LV) vertical stretch        0xC0F1
 static unsigned YUV_LV_Buf = 0;       // YUV (LV) buffer size             0xC0F04210
 
 /* used to exceed preview limits */
-static unsigned EDMAC24_s = 0;        // EDMAC#24 size                    0xC0F26810
-static unsigned EDMAC24_address = 0;  // EDMAC#24 buffer address          0xC0F26808
-static unsigned EDMAC24_Redirect = 0; // EDMAC#24 re-driect buffer flag
-static unsigned Black_Bar = 0;        // Exceed black bar width limit     0xC0F3B038, 0xC0F3B088
+//static unsigned EDMAC_24_s = 0;       // EDMAC#24 size                    0xC0F26810
+//static unsigned EDMAC_24_address = 0; // EDMAC#24 buffer address          0xC0F26808
+static unsigned EDMAC_24_Redirect = 0;  // EDMAC#24 re-driect buffer flag
+static unsigned Black_Bar = 0;          // Exceed black bar width limit     0xC0F3B038, 0xC0F3B088
 
 // addresses (part of EDMAC#9 configuration structure) which holds vertical HIV size in x5 mode
 // on 700D the structure starts in 0x3e1b4 and ends in 0x3e234, it's being loaded in LVx5_StartPreproPath from ff4f2860
 // overriding them are needed to exceed vertical preview limit, on 700D it's RAW V - 1 = 0x453 (in x5 mode)
 
 // 0xC0F08184 = RAW V - 1 = 0x453 (in x5), which is also related somehow to EDMAC#9 vertical size and needs to be tweaked
-// also EDMAC24_Redirect is required before increasing 0xC0F08184 value, otherwise RAW data would be corrupted
+// also EDMAC_24_Redirect is required before increasing 0xC0F08184 value, otherwise RAW data would be corrupted
 
 // AFAIK EDMAC#9 is used for darkframe subtraction for LiveView, it also sets black and white level values (for LiveView)
 static uint32_t EDMAC_9_Vertical_1 = 0;         // 0x453 , it's being set in 0xC0F04910 register which control EDMAC#9 Size B
@@ -1814,7 +1814,7 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         YUV_LV_Buf    = 0x13505A0;
         
         Preview_Control = 1;
-        EDMAC24_Redirect = 0;
+        EDMAC_24_Redirect = 0;
     }
         
     if (CROP_3K)
@@ -1836,7 +1836,7 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         }
         
         Preview_Control = 0;
-        EDMAC24_Redirect = 0;
+        EDMAC_24_Redirect = 0;
     }
     
     if (CROP_1440p)
@@ -1858,7 +1858,7 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         }
         
         Preview_Control = 0;
-        EDMAC24_Redirect = 0;
+        EDMAC_24_Redirect = 0;
     }
     
     if (CROP_Full_Res)
@@ -1880,7 +1880,7 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         }
         
         Preview_Control = 0;
-        EDMAC24_Redirect = 0;
+        EDMAC_24_Redirect = 0;
     }
     
     if (Preview_Control)
@@ -1962,7 +1962,7 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             YUV_LV_S_V    = 0x8E013F;
             YUV_LV_Buf    = 0x13205A0;
             
-            EDMAC24_Redirect = 1;
+            EDMAC_24_Redirect = 1;
             EDMAC_9_Vertical_Change = 1;
         }
         
@@ -2216,7 +2216,7 @@ static void FAST EngDrvOut_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     if (dst == 0xC0F2)
     {
         // 0xC0F26808 register sets EDMAC#24 buffer address, change it to Photo mode buffer address
-        if (Preview_Control && EDMAC24_Redirect)
+        if (Preview_Control && EDMAC_24_Redirect)
         {
             // we need to know when to override 0xC0F26808, detect it from 0xC0F26804, it's always
             // being set to 0x40000000 before setting 0xC0F26808 value
@@ -2327,7 +2327,7 @@ static void FAST EngDrvOuts_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
         }
         
         /* change EDMAC#24 buffer size 0xC0F26810 to photo mode buffer size */
-        if (EDMAC24_Redirect)
+        if (EDMAC_24_Redirect)
         {
             if (data == 0xC0F2680C)
             {
