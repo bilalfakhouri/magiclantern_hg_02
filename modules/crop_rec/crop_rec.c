@@ -776,6 +776,17 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                     }
                 }
             }
+            break;
+            
+            case CROP_PRESET_1X3:
+            if (AR_2_35_1)
+            {
+                if (Anam_Highest)
+                {
+                    cmos_new[5] = 0x20;
+                    cmos_new[7] = 0x305;
+                }
+            }
             break; 
         }
     }
@@ -1112,7 +1123,8 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                         adtg_new[10] = (struct adtg_new) {2, 0xc011, 0x52};
                     }
                 }
-            
+                break;
+                
                 case CROP_PRESET_3X3:
                 if (is_650D || is_700D || is_100D || is_EOSM)
                 {
@@ -1907,6 +1919,82 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
 
 static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
 {
+    if (AR_2_35_1)
+    {
+        if (Anam_Highest)
+        {
+            if (is_650D || is_700D || is_EOSM) // not sure about EOS M
+            {
+                RAW_H         = 0x1D4;  // from mv1080 mode
+                RAW_V         = 0x8C2;
+                TimerB        = 0xA05;
+                TimerA        = 0x207;
+            }
+            
+            if (is_100D)
+            {
+                RAW_H         = 0x1DD;
+                RAW_V         = 0x8C8;
+                TimerB        = 0x9CB;
+                TimerA        = 0x213;  // can be lowered even more? need to be fine tuned
+            }
+            
+            Preview_H     = 1728;      // from mv1080 mode
+            Preview_V     = 2214;
+            Preview_R     = 0x1D000E;  // from mv1080 mode
+            YUV_HD_S_H    = 0x8500DF;
+            YUV_HD_S_V    = 0x8501A8;
+            YUV_HD_S_V_E  = 0;
+            
+            EDMAC24_Redirect = 0;
+        }
+        
+        Preview_Control = 1;
+    }
+    
+    Black_Bar = 0;
+    
+    if (Preview_Control)
+    {
+        if (shamem_read(0xC0F11BC8) != 0)
+        {
+            EngDrvOutLV(0xC0F11BC8, YUV_HD_S_V_E); // Enable vertical stretch on YUV (HD) path
+        }
+        
+        switch (reg)
+        {
+            case 0xC0F1A00C: return (Preview_V << 16) + Preview_H - 0x1;   
+            case 0xC0F11B9C: return (Preview_V << 16) + Preview_H - 0x1;
+
+            case 0xC0F11B8C: return YUV_HD_S_H;
+        //  case 0xC0F11BCC: return YUV_HD_S_V;   // let's turn it off for now
+        //  case 0xC0F11BC8: return YUV_HD_S_V_E; // overriding it from here doesn't work
+        //  case 0xC0F11ACC: return YUV_LV_S_V;   // let's turn it off for now
+        //  case 0xC0F04210: return YUV_LV_Buf;   // let's turn it off for now
+        }
+    }
+    
+    switch (reg)
+    {
+        case 0xC0F06804: return (RAW_V << 16) + RAW_H;
+
+        case 0xC0F06824:
+        case 0xC0F06828:
+        case 0xC0F0682C:
+        case 0xC0F06830:
+        {
+            return RAW_H + 0x32;
+        }
+        
+        case 0xC0F0713c: return RAW_V + 0x1;
+        case 0xC0F07150: return RAW_V - 0x3A;
+    
+        case 0xC0F06014: return TimerB;
+        case 0xC0F06010: return TimerA;
+        case 0xC0F06008: return TimerA + (TimerA << 16);
+        case 0xC0F0600C: return TimerA + (TimerA << 16);
+    }
+    
     return 0;
 }
 
