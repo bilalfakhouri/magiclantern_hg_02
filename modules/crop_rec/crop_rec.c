@@ -1746,6 +1746,19 @@ static unsigned EDMAC24_address = 0;  // EDMAC#24 buffer address          0xC0F2
 static unsigned EDMAC24_Redirect = 0; // EDMAC#24 re-driect buffer flag
 static unsigned Black_Bar = 0;        // Exceed black bar width limit     0xC0F3B038, 0xC0F3B088
 
+// addresses (part of EDMAC#9 configuration structure) which holds vertical HIV size in x5 mode
+// on 700D the structure starts in 0x3e1b4 and ends in 0x3e234, it's being loaded in LVx5_StartPreproPath from ff4f2860
+// overriding them are needed to exceed vertical preview limit, on 700D it's RAW V - 1 = 0x453 (in x5 mode)
+
+// 0xC0F08184 = RAW V - 1 = 0x453 (in x5), which is also related somehow to EDMAC#9 vertical size and needs to be tweaked
+// also EDMAC24_Redirect is required before increasing 0xC0F08184 value, otherwise RAW data would be corrupted
+
+// AFAIK EDMAC#9 is used for darkframe subtraction for LiveView, it also sets black and white level values (for LiveView)
+static uint32_t EDMAC_9_Vertical_1 = 0;         // 0x453 , it's being set in 0xC0F04910 register which control EDMAC#9 Size B
+static uint32_t EDMAC_9_Vertical_2 = 0;         // 0x453 , tweaking it has no effect? let's tweak just in case
+
+static unsigned EDMAC_9_Vertical_Change = 0;    // flag to enable/disable EDMAC#9 tweaks
+
 /* used to center preview and clear VRAM artifacts */
 static unsigned preview_shift_value = 0;
 static unsigned Shift_Preview = 0;
@@ -1946,31 +1959,49 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             YUV_HD_S_V    = 0x8501A8;
             YUV_HD_S_V_E  = 0;
             
-            EDMAC24_Redirect = 0;
+            YUV_LV_S_V    = 0x8E013F;
+            YUV_LV_Buf    = 0x13205A0;
+            
+            EDMAC24_Redirect = 1;
+            EDMAC_9_Vertical_Change = 1;
         }
         
         Preview_Control = 1;
     }
-    
+
     Black_Bar = 0;
-    
+
     if (Preview_Control)
     {
+        if (EDMAC_9_Vertical_Change)
+        {
+            if (MEM(EDMAC_9_Vertical_1) != RAW_V - 1 || MEM(EDMAC_9_Vertical_2) != RAW_V - 1)
+            {
+                MEM(EDMAC_9_Vertical_1)  = RAW_V - 1;
+                MEM(EDMAC_9_Vertical_2)  = RAW_V - 1;
+            }
+
+            switch (reg)
+            {
+                case 0xC0F08184: return RAW_V - 1; // used to exceed vertical preview limit
+            }
+        }
+        
         if (shamem_read(0xC0F11BC8) != 0)
         {
             EngDrvOutLV(0xC0F11BC8, YUV_HD_S_V_E); // Enable vertical stretch on YUV (HD) path
         }
-        
+                
         switch (reg)
         {
             case 0xC0F1A00C: return (Preview_V << 16) + Preview_H - 0x1;   
             case 0xC0F11B9C: return (Preview_V << 16) + Preview_H - 0x1;
 
             case 0xC0F11B8C: return YUV_HD_S_H;
-        //  case 0xC0F11BCC: return YUV_HD_S_V;   // let's turn it off for now
+            case 0xC0F11BCC: return YUV_HD_S_V;
         //  case 0xC0F11BC8: return YUV_HD_S_V_E; // overriding it from here doesn't work
-        //  case 0xC0F11ACC: return YUV_LV_S_V;   // let's turn it off for now
-        //  case 0xC0F04210: return YUV_LV_Buf;   // let's turn it off for now
+            case 0xC0F11ACC: return YUV_LV_S_V;
+            case 0xC0F04210: return YUV_LV_Buf;
         }
     }
     
@@ -2365,6 +2396,30 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
             Shift_Preview = 0;
             Clear_Artifacts = 0;
         }
+
+    }
+    
+    if (CROP_PRESET_1X3)
+    {
+        if (AR_2_35_1)
+        {
+            preview_shift_value = 0x1f4a0;
+        }
+        
+        Shift_Preview = 1;
+        Clear_Artifacts = 1;
+    }
+    
+    /* restore defualt EDMAC#9 vertical size */
+    if (!CROP_PRESET_1X3 || PathDriveMode->zoom != 5)
+    {
+        if (MEM(EDMAC_9_Vertical_1) != 0x453 || MEM(EDMAC_9_Vertical_2) != 0x453)
+        {
+            MEM(EDMAC_9_Vertical_1)  = 0x453;
+            MEM(EDMAC_9_Vertical_2)  = 0x453;
+        }
+        
+        EDMAC_9_Vertical_Change = 0;
     }
  
     /* FIXME: hardcoded addresses for x5 mode on LCD screen, implement HDMI support! */
@@ -3169,6 +3224,9 @@ static unsigned int crop_rec_init()
         PathDriveMode = (void *) 0x892E8;   /* argument of PATH_SelectPathDriveMode */
         PATH_SelectPathDriveMode = 0x14AC4; // it's being called from RAM
         
+        EDMAC_9_Vertical_1 = 0x5976C;
+        EDMAC_9_Vertical_2 = 0x5979C;
+        
         Shift_x5_LCD = 0xFF96EA3C;
         Shift_x5_HDMI_480p = 0xFF96F3FC;
         Shift_x5_HDMI_1080i_Full = 0xFF96FF54;
@@ -3202,6 +3260,9 @@ static unsigned int crop_rec_init()
         
         PathDriveMode = (void *) (is_camera("700D", "1.1.5") ? 0x6B7F4 : 0x6AEC0);   /* argument of PATH_SelectPathDriveMode */
         PATH_SelectPathDriveMode = is_camera("700D", "1.1.5") ? 0xFF19CDD4 : 0xFF19B230;
+        
+        EDMAC_9_Vertical_1 = is_camera("700D", "1.1.5") ? 0x3E200 : 0x3E120;
+        EDMAC_9_Vertical_2 = is_camera("700D", "1.1.5") ? 0x3E230 : 0x3E150;
         
         /* I know these look ugly, but we want something works for now, right? , it's not that bad */
         Shift_x5_LCD = is_camera("700D", "1.1.5") ? 0xFF962A74 : 0xFF955894;
@@ -3238,6 +3299,9 @@ static unsigned int crop_rec_init()
         
         PathDriveMode = (void *) 0xAAEA4;   /* argument of PATH_SelectPathDriveMode */
         PATH_SelectPathDriveMode = 0x19E30; // it's being called from RAM
+        
+        EDMAC_9_Vertical_1 = 0x77170;
+        EDMAC_9_Vertical_2 = 0x771A0;
         
         Shift_x5_LCD = 0xFF98F5EC;
         Shift_x5_HDMI_480p = 0xFF98FFAC;
