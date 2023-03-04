@@ -1227,21 +1227,24 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
 
 int analog_gain_is_acive()
 {
-    if (bit_depth_analog == 1)
+    if (CROP_PRESET_MENU) // analog gain is only active when preset is selected
     {
-        return 1;
-    }
+        if (bit_depth_analog == 1)
+        {
+            return 1;
+        }
     
-    if (bit_depth_analog == 2)
-    {
-        return 2;
-    }
+        if (bit_depth_analog == 2)
+        {
+            return 2;
+        }
     
-    if (bit_depth_analog == 3)
-    {
-        return 3;
+        if (bit_depth_analog == 3)
+        {
+            return 3;
+        }
     }
-    
+   
     return 0;
 }
 
