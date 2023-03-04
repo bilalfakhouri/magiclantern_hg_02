@@ -983,7 +983,7 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     };
     
     /* expand this as required */
-    struct adtg_new adtg_new[23] = {{0}};
+    struct adtg_new adtg_new[24] = {{0}};
 
     /* scan for shutter blanking and make both zoom and non-zoom value equal */
     /* (the values are different when using FPS override with ADTG shutter override) */
@@ -1086,7 +1086,7 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
         // 650D / 700D / EOSM/M2 / 100D presets
         // ADTG2[0x8183] and ADTG2[0x8184] enable horizontal pixel binning instead of skipping
         // in 1080p ADTG2[0x8183] = 0x21, ADTG2[0x8183] = 0x7B, in x5 both are = 0x0 
-        // ADTG2[0x800C] = 2: vertical binning/skipping factor = 3
+        // ADTG2[0x800C] = 2: vertical binning/skipping factor = 3, ADTG2[0x800C] = 0 read all vertical lines
         if (is_DIGIC_5)
         {
             switch (crop_preset)
@@ -1094,9 +1094,10 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                 case CROP_PRESET_1X3:
                 if (is_650D || is_700D || is_100D || is_EOSM)
                 {
-                    adtg_new[2] = (struct adtg_new) {2, 0x8000, 0x6};
-                    adtg_new[3] = (struct adtg_new) {2, 0x8183, 0x21};
-                    adtg_new[4] = (struct adtg_new) {2, 0x8184, 0x7B};
+                    adtg_new[2] = (struct adtg_new) {2, 0x800C, 0};
+                    adtg_new[3] = (struct adtg_new) {2, 0x8000, 0x6};
+                    adtg_new[4] = (struct adtg_new) {2, 0x8183, 0x21};
+                    adtg_new[5] = (struct adtg_new) {2, 0x8184, 0x7B};
                     
                     if (is_100D)
                     {
@@ -1104,11 +1105,11 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                         https://www.magiclantern.fm/forum/index.php?topic=26511.msg239495#msg239495
                         https://www.magiclantern.fm/forum/index.php?topic=26511.msg239557#msg239557  */
 
-                        adtg_new[5] = (struct adtg_new) {2, 0xc00d, 0x5000};
-                        adtg_new[6] = (struct adtg_new) {2, 0xc00e, 0x53};
-                        adtg_new[7] = (struct adtg_new) {2, 0xc00f, 0x52};
-                        adtg_new[8] = (struct adtg_new) {2, 0xc010, 0x52};
-                        adtg_new[9] = (struct adtg_new) {2, 0xc011, 0x52};
+                        adtg_new[6]  = (struct adtg_new) {2, 0xc00d, 0x5000};
+                        adtg_new[7]  = (struct adtg_new) {2, 0xc00e, 0x53};
+                        adtg_new[8]  = (struct adtg_new) {2, 0xc00f, 0x52};
+                        adtg_new[9]  = (struct adtg_new) {2, 0xc010, 0x52};
+                        adtg_new[10] = (struct adtg_new) {2, 0xc011, 0x52};
                     }
                 }
             
@@ -1148,20 +1149,20 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                 /* after readout is finished, we can turn off the sensor until the next frame */
                 /* we could also set these to 0; it will work, but the sensor will run a bit hotter */
                 /* to be tested to find out exactly how much */
-                adtg_new[10] = (struct adtg_new) {6, 0x8172, nrzi_encode(readout_end + 1) }; /* PowerSaveTiming ON (6D/700D) */
-                adtg_new[11] = (struct adtg_new) {6, 0x8178, nrzi_encode(readout_end + 1) }; /* PowerSaveTiming ON (5D3/6D/700D) */
-                adtg_new[12] = (struct adtg_new) {6, 0x8196, nrzi_encode(readout_end + 1) }; /* PowerSaveTiming ON (5D3) */
+                adtg_new[11] = (struct adtg_new) {6, 0x8172, nrzi_encode(readout_end + 1) }; /* PowerSaveTiming ON (6D/700D) */
+                adtg_new[12] = (struct adtg_new) {6, 0x8178, nrzi_encode(readout_end + 1) }; /* PowerSaveTiming ON (5D3/6D/700D) */
+                adtg_new[13] = (struct adtg_new) {6, 0x8196, nrzi_encode(readout_end + 1) }; /* PowerSaveTiming ON (5D3) */
 
-                adtg_new[13] = (struct adtg_new) {6, 0x8173, nrzi_encode(fps_timer_b - 1) }; /* PowerSaveTiming OFF (6D/700D) */
-                adtg_new[14] = (struct adtg_new) {6, 0x8179, nrzi_encode(fps_timer_b - 1) }; /* PowerSaveTiming OFF (5D3/6D/700D) */
-                adtg_new[15] = (struct adtg_new) {6, 0x8197, nrzi_encode(fps_timer_b - 1) }; /* PowerSaveTiming OFF (5D3) */
+                adtg_new[14] = (struct adtg_new) {6, 0x8173, nrzi_encode(fps_timer_b - 1) }; /* PowerSaveTiming OFF (6D/700D) */
+                adtg_new[15] = (struct adtg_new) {6, 0x8179, nrzi_encode(fps_timer_b - 1) }; /* PowerSaveTiming OFF (5D3/6D/700D) */
+                adtg_new[16] = (struct adtg_new) {6, 0x8197, nrzi_encode(fps_timer_b - 1) }; /* PowerSaveTiming OFF (5D3) */
 
-                adtg_new[16] = (struct adtg_new) {6, 0x82B6, nrzi_encode(readout_end - 1) }; /* PowerSaveTiming ON? (700D); 2 units below the "ON" timing from above */
+                adtg_new[17] = (struct adtg_new) {6, 0x82B6, nrzi_encode(readout_end - 1) }; /* PowerSaveTiming ON? (700D); 2 units below the "ON" timing from above */
 
                 /* ReadOutTiming registers */
                 /* these shouldn't be 0, as they affect the image */
-                adtg_new[17] = (struct adtg_new) {6, 0x82F8, nrzi_encode(readout_end + 1) }; /* ReadOutTiming */
-                adtg_new[18] = (struct adtg_new) {6, 0x82F9, nrzi_encode(fps_timer_b - 1) }; /* ReadOutTiming end? */
+                adtg_new[18] = (struct adtg_new) {6, 0x82F8, nrzi_encode(readout_end + 1) }; /* ReadOutTiming */
+                adtg_new[19] = (struct adtg_new) {6, 0x82F9, nrzi_encode(fps_timer_b - 1) }; /* ReadOutTiming end? */
                 break;
             }
         }
@@ -1172,26 +1173,26 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     {
         if (OUTPUT_12BIT)
         {
-            adtg_new[19] = (struct adtg_new) {6, 0x8882, analog_gain / 4};
-            adtg_new[20] = (struct adtg_new) {6, 0x8884, analog_gain / 4};
-            adtg_new[21] = (struct adtg_new) {6, 0x8886, analog_gain / 4};
-            adtg_new[22] = (struct adtg_new) {6, 0x8888, analog_gain / 4};
+            adtg_new[20] = (struct adtg_new) {6, 0x8882, analog_gain / 4};
+            adtg_new[21] = (struct adtg_new) {6, 0x8884, analog_gain / 4};
+            adtg_new[22] = (struct adtg_new) {6, 0x8886, analog_gain / 4};
+            adtg_new[23] = (struct adtg_new) {6, 0x8888, analog_gain / 4};
         }
     
         if (OUTPUT_11BIT)
         {
-            adtg_new[19] = (struct adtg_new) {6, 0x8882, analog_gain / 8};
-            adtg_new[20] = (struct adtg_new) {6, 0x8884, analog_gain / 8};
-            adtg_new[21] = (struct adtg_new) {6, 0x8886, analog_gain / 8};
-            adtg_new[22] = (struct adtg_new) {6, 0x8888, analog_gain / 8};
+            adtg_new[20] = (struct adtg_new) {6, 0x8882, analog_gain / 8};
+            adtg_new[21] = (struct adtg_new) {6, 0x8884, analog_gain / 8};
+            adtg_new[22] = (struct adtg_new) {6, 0x8886, analog_gain / 8};
+            adtg_new[23] = (struct adtg_new) {6, 0x8888, analog_gain / 8};
         }
 
         if (OUTPUT_10BIT)
         {
-            adtg_new[19] = (struct adtg_new) {6, 0x8882, analog_gain / 16};
-            adtg_new[20] = (struct adtg_new) {6, 0x8884, analog_gain / 16};
-            adtg_new[21] = (struct adtg_new) {6, 0x8886, analog_gain / 16};
-            adtg_new[22] = (struct adtg_new) {6, 0x8888, analog_gain / 16};
+            adtg_new[20] = (struct adtg_new) {6, 0x8882, analog_gain / 16};
+            adtg_new[21] = (struct adtg_new) {6, 0x8884, analog_gain / 16};
+            adtg_new[22] = (struct adtg_new) {6, 0x8886, analog_gain / 16};
+            adtg_new[23] = (struct adtg_new) {6, 0x8888, analog_gain / 16};
         } 
     }
 
