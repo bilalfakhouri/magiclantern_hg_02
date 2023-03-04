@@ -3267,6 +3267,8 @@ MODULE_CONFIGS_START()
     MODULE_CONFIG(crop_preset_1x1_res)
     MODULE_CONFIG(crop_preset_1x3_res)
     MODULE_CONFIG(crop_preset_3x3_res)
+    MODULE_CONFIG(crop_preset_ar)
+    MODULE_CONFIG(crop_preset_fps)
 MODULE_CONFIGS_END()
 
 MODULE_CBRS_START()
