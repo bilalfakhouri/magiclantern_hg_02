@@ -1790,7 +1790,7 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
             TimerB        = 0x5D3;
             TimerA        = 0x2CB;
         }
-        
+
         if (is_100D)
         {
             RAW_H         = 0x2a1;
@@ -1809,14 +1809,14 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         YUV_HD_S_V    = 0x1050195;
         YUV_HD_S_V_E  = 0;
         Black_Bar     = 2;
-        
+
         YUV_LV_S_V    = 0x1050244;
         YUV_LV_Buf    = 0x13505A0;
-        
+
         Preview_Control = 1;
         EDMAC_24_Redirect = 0;
     }
-        
+
     if (CROP_3K)
     {
         if (is_650D || is_700D || is_EOSM)
@@ -1826,7 +1826,7 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
             TimerB   = 0x60F;
             TimerA   = 0x35B;
         }
-        
+
         if (is_100D)
         {
             RAW_H    = 0x32B;
@@ -1834,11 +1834,11 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
             TimerB   = 0x60B;
             TimerA   = 0x35D;
         }
-        
+
         Preview_Control = 0;
         EDMAC_24_Redirect = 0;
     }
-    
+
     if (CROP_1440p)
     {
         if (is_650D || is_700D || is_EOSM)
@@ -1848,7 +1848,7 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
             TimerB   = 0x71E;
             TimerA   = 0x2DB;
         }
-        
+
         if (is_100D)
         {
             RAW_H    = 0x2AB;
@@ -1856,11 +1856,11 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
             TimerB   = 0x719;
             TimerA   = 0x2DD;
         }
-        
+
         Preview_Control = 0;
         EDMAC_24_Redirect = 0;
     }
-    
+
     if (CROP_Full_Res)
     {
         if (is_650D || is_700D || is_EOSM)
@@ -1870,7 +1870,7 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
             TimerB   = 0x2D06;
             TimerA   = 0x56B;
         }
-        
+
         if (is_100D)
         {
             RAW_H    = 0x541;
@@ -1878,16 +1878,28 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
             TimerB   = 0x2D06;
             TimerA   = 0x56B;
         }
-        
+
         Preview_Control = 0;
         EDMAC_24_Redirect = 0;
     }
-    
+
     if (Preview_Control)
     {
         if (shamem_read(0xC0F11BC8) != 0)
         {
             EngDrvOutLV(0xC0F11BC8, YUV_HD_S_V_E); // Enable vertical stretch on YUV (HD) path
+        }
+
+        switch (reg)
+        {
+            case 0xC0F1A00C: return (Preview_V << 16) + Preview_H - 0x1;   
+            case 0xC0F11B9C: return (Preview_V << 16) + Preview_H - 0x1;
+
+            case 0xC0F11B8C: return YUV_HD_S_H;
+            case 0xC0F11BCC: return YUV_HD_S_V;
+        //  case 0xC0F11BC8: return YUV_HD_S_V_E; // overriding it from here doesn't work
+            case 0xC0F11ACC: return YUV_LV_S_V;
+            case 0xC0F04210: return YUV_LV_Buf;
         }
     }
 
@@ -1902,29 +1914,14 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         {
             return RAW_H + 0x32;
         }
-        
+
         case 0xC0F0713c: return RAW_V + 0x1;
         case 0xC0F07150: return RAW_V - 0x3A;
-    
+
         case 0xC0F06014: return TimerB;
         case 0xC0F06010: return TimerA;
         case 0xC0F06008: return TimerA + (TimerA << 16);
         case 0xC0F0600C: return TimerA + (TimerA << 16);
-    }
-    
-    if (Preview_Control)
-    {
-        switch (reg)
-        {
-            case 0xC0F1A00C: return (Preview_V << 16) + Preview_H - 0x1;   
-            case 0xC0F11B9C: return (Preview_V << 16) + Preview_H - 0x1;
-
-            case 0xC0F11B8C: return YUV_HD_S_H;
-            case 0xC0F11BCC: return YUV_HD_S_V;
-        //  case 0xC0F11BC8: return YUV_HD_S_V_E; // overriding it from here doesn't work
-            case 0xC0F11ACC: return YUV_LV_S_V;
-            case 0xC0F04210: return YUV_LV_Buf;
-        }
     }
 
     return 0;
@@ -1943,7 +1940,7 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 TimerB        = 0xA05;
                 TimerA        = 0x207;
             }
-            
+
             if (is_100D)
             {
                 RAW_H         = 0x1DD;
@@ -1951,17 +1948,17 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 TimerB        = 0x9CB;
                 TimerA        = 0x213;  // can be lowered even more? need to be fine tuned
             }
-            
+
             Preview_H     = 1728;      // from mv1080 mode
             Preview_V     = 2214;
             Preview_R     = 0x1D000E;  // from mv1080 mode
             YUV_HD_S_H    = 0x8500DF;
             YUV_HD_S_V    = 0x8501A8;
             YUV_HD_S_V_E  = 0;
-            
+
             YUV_LV_S_V    = 0x8E013F;
             YUV_LV_Buf    = 0x13205A0;
-            
+
             EDMAC_24_Redirect = 1;
             EDMAC_9_Vertical_Change = 1;
         }
@@ -1975,7 +1972,7 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
     {
         if (EDMAC_9_Vertical_Change)
         {
-            if (MEM(EDMAC_9_Vertical_1) != RAW_V - 1 || MEM(EDMAC_9_Vertical_2) != RAW_V - 1)
+            if (MEM(EDMAC_9_Vertical_1) != RAW_V - 1 || MEM(EDMAC_9_Vertical_2) != RAW_V - 1) // set our new value if not set yet
             {
                 MEM(EDMAC_9_Vertical_1)  = RAW_V - 1;
                 MEM(EDMAC_9_Vertical_2)  = RAW_V - 1;
@@ -1986,12 +1983,12 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 case 0xC0F08184: return RAW_V - 1; // used to exceed vertical preview limit
             }
         }
-        
+
         if (shamem_read(0xC0F11BC8) != 0)
         {
             EngDrvOutLV(0xC0F11BC8, YUV_HD_S_V_E); // Enable vertical stretch on YUV (HD) path
         }
-                
+
         switch (reg)
         {
             case 0xC0F1A00C: return (Preview_V << 16) + Preview_H - 0x1;   
@@ -2004,7 +2001,7 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             case 0xC0F04210: return YUV_LV_Buf;
         }
     }
-    
+
     switch (reg)
     {
         case 0xC0F06804: return (RAW_V << 16) + RAW_H;
@@ -2016,16 +2013,16 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
         {
             return RAW_H + 0x32;
         }
-        
+
         case 0xC0F0713c: return RAW_V + 0x1;
         case 0xC0F07150: return RAW_V - 0x3A;
-    
+
         case 0xC0F06014: return TimerB;
         case 0xC0F06010: return TimerA;
         case 0xC0F06008: return TimerA + (TimerA << 16);
         case 0xC0F0600C: return TimerA + (TimerA << 16);
     }
-    
+
     return 0;
 }
 
@@ -2167,7 +2164,7 @@ static void FAST EngDrvOut_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     uint16_t dst = (data & 0xFFFF0000) >> 16;
     uint16_t reg = data & 0x0000FFFF;
     uint32_t val = (uint32_t) regs[1];
-    
+
     // adjust LiveView black level when using lower bit-depths with negative analog gain
     if (data == 0xC0F0819C)
     {
@@ -2241,7 +2238,7 @@ static void FAST EngDrvOut_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             }
         }
     }
-    
+
     /* set our preview registers overrides */
     if (dst == 0xC0F3)
     {
@@ -2283,7 +2280,7 @@ static void FAST EngDrvOut_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             }
         }
     }
-    
+
     if (dst == 0xC0F4)
     {
         if (Preview_Control)
@@ -2305,13 +2302,13 @@ static void FAST EngDrvOuts_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
         /* don't patch other video modes */
         return;
     }
-    
+
     uint32_t data = (uint32_t) regs[0];
 //  uint16_t dst = (data & 0xFFFF0000) >> 16;
 //  uint16_t reg = data & 0x0000FFFF;
 //  uint32_t * val = (uint32_t*) regs[1];
 //  uint32_t num = (uint32_t) regs[2];
-    
+
     if (Preview_Control)
     {
         /* set our preview registers overrides */
@@ -2325,7 +2322,7 @@ static void FAST EngDrvOuts_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             *(uint32_t*) (regs[1] + 8)    = ((Preview_V + 0xa) << 16) + Preview_H + 0xb;   // 0xC0F3A0A0
             *(uint32_t*) (regs[1] + 0x18) = ((Preview_V + 0xa) << 16) + Preview_H + 0x8;   // 0xC0F3A0B0
         }
-        
+
         /* change EDMAC#24 buffer size 0xC0F26810 to photo mode buffer size */
         if (EDMAC_24_Redirect)
         {
@@ -2340,7 +2337,7 @@ static void FAST EngDrvOuts_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                     {
                         *(uint32_t*) (regs[1] + 4) = 0x3237e;
                     }
-                    
+
                     if (is_100D)
                     {
                         *(uint32_t*) (regs[1] + 4) = 0x1f32da;
@@ -2358,7 +2355,7 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
     /* clear artifacts value is being loaded very early before CMOS, ADTG, ENGIO, ENG_DRV_OUT, ENG_DRV_OUTS stuff */
     /* in [VRAM] VRAM_PTH_StartTripleRamClearInALump[ff962a90] (ff962a90 + 0x8 holds value for clearing artifacts for x5 mode for LCD output on 700D) */
     /* apparently PATH_SelectPathDriveMode sets its arguments before loading/applying any video configuration, e.g: */
-    
+
     /*  700D DebugLog, x5 mode:
     
         Evf:ff19ce1c:ad:03: PATH_Select S:8 Z:50000 R:0 DZ:0 SM:0 SV:0 DT:0       <-- we are patching it from here before loading it
@@ -2376,10 +2373,10 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
         Evf:ff37cf1c:ad:03: RamClear_StartPath
         Evf:ff37d084:ad:03: RamClear_LV_RAMCLEAR_COLOR_BLACK
         Evf:ff36ce48:a9:03: [VRAM]====>> PathRamClearCompleteCBR   */ 
-    
+
     /* FIXME: we might be able to implement clearing artifacts directly in VRAM_PTH_StartTripleRamClearInALump
               this way we don't to patch ROM addresses for clearing artifacts for x5 mode and for every output on every model */
-    
+
     if (CROP_PRESET_1X1)
     {
         if (CROP_2_5K)
@@ -2388,7 +2385,7 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
             Shift_Preview = 1;
             Clear_Artifacts = 1;
         }
-        
+
         /* not supported presets, turn these off */
         else
         {
@@ -2396,20 +2393,19 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
             Shift_Preview = 0;
             Clear_Artifacts = 0;
         }
-
     }
-    
+
     if (CROP_PRESET_1X3)
     {
         if (AR_2_35_1)
         {
             preview_shift_value = 0x1f4a0;
         }
-        
+
         Shift_Preview = 1;
         Clear_Artifacts = 1;
     }
-    
+
     /* restore defualt EDMAC#9 vertical size */
     if (!CROP_PRESET_1X3 || PathDriveMode->zoom != 5)
     {
@@ -2421,7 +2417,7 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
         
         EDMAC_9_Vertical_Change = 0;
     }
- 
+
     /* FIXME: hardcoded addresses for x5 mode on LCD screen, implement HDMI support! */
     if (PathDriveMode->zoom == 5)
     {
@@ -2437,21 +2433,21 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
             patch_memory(Clear_Vram_x5_LCD, 0x0, 0x5a0, "Clear"); // 0x5a0 seems to clear all artifacts
             Clear_Artifacts_ON = 1;
         }
-        
+
         /* unpatch not supported presets if patch already active */
         if (!Shift_Preview && Center_Preview_ON)
         {
             unpatch_memory(Shift_x5_LCD);
             Center_Preview_ON = 0;
         }
-        
+
         if (!Clear_Artifacts && Clear_Artifacts_ON)
         {
             unpatch_memory(Clear_Vram_x5_LCD);
             Clear_Artifacts_ON = 0;
         }
     }
-    
+
     /* unpatch in all other modes if patch already active  */
     if (PathDriveMode->zoom != 5)
     {
@@ -2460,7 +2456,7 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
             unpatch_memory(Shift_x5_LCD);
             Center_Preview_ON = 0;
         }
-        
+
         if (Clear_Artifacts_ON)
         {
             unpatch_memory(Clear_Vram_x5_LCD);
@@ -2525,7 +2521,7 @@ static void update_patch()
             {
                 unpatch_memory(PATH_SelectPathDriveMode);
             }
-            
+
             /* FIXME: hardcoded addresses for x5 mode on LCD screen, implement HDMI support! */
             if (Clear_Artifacts_ON)
             {
@@ -2568,7 +2564,7 @@ static MENU_UPDATE_FUNC(crop_update)
                                 (crop_preset_index == 2) ? crop_choices_DIGIC_5[2] : (crop_preset_index == 3) ? crop_choices_DIGIC_5[3] : 
                                  crop_choices_DIGIC_5[0]);
     }*/
-    
+
     if (is_DIGIC_5)
     {
         /* reveal options for the current crop mode (1:1, 1x3 and 3x3) */
@@ -2576,7 +2572,7 @@ static MENU_UPDATE_FUNC(crop_update)
         crop_rec_menu[0].children[1].shidden = (crop_preset_index != 2);  // 2 CROP_PRESET_1X3
         crop_rec_menu[0].children[2].shidden = (crop_preset_index != 3);  // 3 CROP_PRESET_3X3
     }
- 
+
     if (CROP_PRESET_MENU && lv)
     {
         if (CROP_PRESET_MENU == CROP_PRESET_CENTER_Z || is_DIGIC_5)
@@ -2621,21 +2617,21 @@ static MENU_UPDATE_FUNC(crop_preset_1x3_res_update)
         if (Anam_Higher)  MENU_SET_VALUE("4.2K");
         if (Anam_Medium)  MENU_SET_VALUE("UHD");
     }
-    
+
     if (AR_2_1)
     {
         if (Anam_Highest) MENU_SET_VALUE("4.8K");
         if (Anam_Higher)  MENU_SET_VALUE("4.4K");
         if (Anam_Medium)  MENU_SET_VALUE("4K");
     }
-    
+
     if (AR_2_20_1)
     {
         if (Anam_Highest) MENU_SET_VALUE("5K");
         if (Anam_Higher)  MENU_SET_VALUE("4.6K");
         if (Anam_Medium)  MENU_SET_VALUE("4.1K");
     }
-    
+
     if (AR_2_35_1 || AR_2_39_1)
     {
         if (Anam_Highest) MENU_SET_VALUE("5.2K");
@@ -3112,10 +3108,13 @@ static unsigned int raw_info_update_cbr(unsigned int unused)
         /* not implemented yet */
         raw_capture_info.offset_x = raw_capture_info.offset_y   = SHRT_MIN;
 
-        if (lv_dispsize > 1)
+        if (!is_DIGIC_5) // needed for 700D and similair models
         {
-            /* raw backend gets it right */
-            return 0;
+            if (lv_dispsize > 1)
+            {
+                /* raw backend gets it right */
+                return 0;
+            }
         }
 
         /* update horizontal pixel binning parameters */
