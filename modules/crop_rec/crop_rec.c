@@ -742,38 +742,26 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             {
                 if (CROP_2_5K)
                 {
-                    if (is_650D || is_700D || is_100D)
-                    {
-                        cmos_new[5] = 0x2C0;
-                        cmos_new[7] = 0xA6A;
-                    }
+                    cmos_new[5] = 0x2C0;
+                    cmos_new[7] = 0xA6A;
                 }
                 
                 if (CROP_1440p)
                 {
-                    if (is_650D || is_700D || is_100D)
-                    {
-                        cmos_new[5] = 0x2C0;
-                        cmos_new[7] = 0xAA9;
-                    }
+                    cmos_new[5] = 0x2C0;
+                    cmos_new[7] = 0xAA9;
                 }
                 
                 if (CROP_3K)
                 {
-                    if (is_650D || is_700D || is_100D)
-                    {
-                        cmos_new[5] = 0x240;
-                        cmos_new[7] = 0xAA9;
-                    }
+                    cmos_new[5] = 0x240;
+                    cmos_new[7] = 0xAA9;
                 }
                 
                 if (CROP_Full_Res)
                 {
-                    if (is_650D || is_700D || is_100D)
-                    {
-                        cmos_new[5] = 0x0;
-                        cmos_new[7] = 0x3A0;
-                    }
+                    cmos_new[5] = 0x0;
+                    cmos_new[7] = 0x3A0;
                 }
             }
             break;
