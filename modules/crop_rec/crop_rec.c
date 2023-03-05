@@ -1720,6 +1720,8 @@ static inline uint32_t reg_override_zoom_fps(uint32_t reg, uint32_t old_val)
 
 /* 650D / 700D / EOSM/M2 / 100D reg_override presets */
 
+int preview_debug = 0;
+
 static unsigned TimerB = 0;
 static unsigned TimerA = 0;
 
@@ -1857,8 +1859,19 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
             TimerA   = 0x2DD;
         }
 
-        Preview_Control = 0;
-        EDMAC_24_Redirect = 0;
+        Preview_H     = 2552;  // 2556 causes preview artifacts
+        Preview_V     = 1440;
+        Preview_R     = 0x19000E;
+        YUV_HD_S_H    = 0x1050286;
+        YUV_HD_S_V    = 0x1050215;
+        
+        YUV_LV_S_V    = 0x10501BA;
+        YUV_LV_Buf    = 0x19505A0;
+        
+        Black_Bar     = 2;
+        Preview_Control = 1;
+        EDMAC_24_Redirect = 1;
+        EDMAC_9_Vertical_Change = 1;
     }
 
     if (CROP_Full_Res)
@@ -1885,6 +1898,20 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
 
     if (Preview_Control)
     {
+        if (EDMAC_9_Vertical_Change)
+        {
+            if (MEM(EDMAC_9_Vertical_1) != RAW_V - 1 || MEM(EDMAC_9_Vertical_2) != RAW_V - 1) // set our new value if not set yet
+            {
+                MEM(EDMAC_9_Vertical_1)  = RAW_V - 1;
+                MEM(EDMAC_9_Vertical_2)  = RAW_V - 1;
+            }
+
+            switch (reg)
+            {
+                case 0xC0F08184: return RAW_V - 1; // used to exceed vertical preview limit
+            }
+        }
+        
         if (shamem_read(0xC0F11BC8) != 0)
         {
             EngDrvOutLV(0xC0F11BC8, YUV_HD_S_V_E); // Enable vertical stretch on YUV (HD) path
@@ -2377,13 +2404,22 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
     /* FIXME: we might be able to implement clearing artifacts directly in VRAM_PTH_StartTripleRamClearInALump
               this way we don't to patch ROM addresses for clearing artifacts for x5 mode and for every output on every model */
 
-    if (CROP_PRESET_1X1)
+    if (CROP_PRESET_MENU == CROP_PRESET_1X1)
     {
-        if (CROP_2_5K)
+        if (crop_preset_1x1_res == 0)       // CROP_2_5K
         {
-            preview_shift_value = 0x1f4a0;
+            preview_shift_value = 0x1F4A0;
             Shift_Preview = 1;
             Clear_Artifacts = 1;
+            EDMAC_9_Vertical_Change = 0;
+        }
+
+        else if (crop_preset_1x1_res == 2)  // CROP_1440p
+        {
+            preview_shift_value = 0xD5C0;
+            Shift_Preview = 1;
+            Clear_Artifacts = 1;
+            EDMAC_9_Vertical_Change = 1;
         }
 
         /* not supported presets, turn these off */
@@ -2395,7 +2431,7 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
         }
     }
 
-    if (CROP_PRESET_1X3)
+    if (CROP_PRESET_MENU == CROP_PRESET_1X3)
     {
         if (AR_2_35_1)
         {
@@ -2404,10 +2440,11 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
 
         Shift_Preview = 1;
         Clear_Artifacts = 1;
+        EDMAC_9_Vertical_Change = 1;
     }
 
     /* restore defualt EDMAC#9 vertical size */
-    if (!CROP_PRESET_1X3 || PathDriveMode->zoom != 5)
+    if (EDMAC_9_Vertical_Change == 0 || PathDriveMode->zoom != 5)
     {
         if (MEM(EDMAC_9_Vertical_1) != 0x453 || MEM(EDMAC_9_Vertical_2) != 0x453)
         {
@@ -2726,7 +2763,7 @@ static struct menu_entry crop_rec_menu[] =
             },
             {
                 .name   = "Preview Debug",
-                .priv   = &YUV_LV_S_V,
+                .priv   = &preview_debug,
                 .max    = 0xFFFFFFF,
                 .unit   = UNIT_HEX,
                 .help   = "Preview Debug.",
