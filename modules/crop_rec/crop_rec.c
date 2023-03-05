@@ -2919,7 +2919,25 @@ static void set_zoom(int zoom)
 }
 
 /* variables for 650D / 700D / EOSM/M2 / 100D help to detect if settings changed */
-static int old_preset;
+static int old_ar_preset;
+static int old_fps_preset;
+static int old_1x1_preset;
+static int old_1x3_preset;
+static int old_3x3_preset;
+
+int check_if_settings_changed()
+{
+    if (old_ar_preset  != crop_preset_ar       ||
+        old_fps_preset != crop_preset_fps      ||
+        old_1x1_preset != crop_preset_1x1_res  ||
+        old_1x3_preset != crop_preset_1x3_res  ||
+        old_3x3_preset != crop_preset_3x3_res)
+    {
+        return 1;
+    }
+
+    return 0;
+}
 
 /* when closing ML menu, check whether we need to refresh the LiveView */
 static unsigned int crop_rec_polling_cbr(unsigned int unused)
@@ -2944,7 +2962,7 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
     
     /* check if any of our settings are changed */
     /* for 650D / 700D / EOSM/M2 / 100D */
-    if (old_preset != crop_preset_1x1_res)
+    if (check_if_settings_changed())
     {
         lv_dirty = 1;
         settings_changed = 1;
@@ -2987,12 +3005,16 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
         {
             set_zoom(5);
         }
-    }
-    
-    if (!menu_shown)
-    {   
-        // check crop_rec configurations while outside ML menu
-        old_preset = crop_preset_1x1_res;
+        
+        if (!menu_shown)
+        {   
+            // check crop_rec configurations while outside ML menu
+            old_ar_preset  = crop_preset_ar;
+            old_fps_preset = crop_preset_fps;
+            old_1x1_preset = crop_preset_1x1_res;
+            old_1x3_preset = crop_preset_1x3_res;
+            old_3x3_preset = crop_preset_3x3_res;
+        }
     }
 
     return CBR_RET_CONTINUE;
