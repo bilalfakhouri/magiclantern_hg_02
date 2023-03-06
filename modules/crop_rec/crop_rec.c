@@ -566,6 +566,9 @@ static int FAST check_cmos_vidmode(uint16_t* data_buf)
     return -1;
 }
 
+int CMOS_5_Debug = 0;
+int CMOS_7_Debug = 0;
+
 /* pack two 6-bit values into a 12-bit one */
 #define PACK12(lo,hi) ((((lo) & 0x3F) | ((hi) << 6)) & 0xFFF)
 
@@ -767,6 +770,24 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             break;
             
             case CROP_PRESET_1X3:
+            if (AR_16_9)
+            {
+                if (Anam_Highest)
+                {
+                    cmos_new[5] = 0xE0;
+                    cmos_new[7] = 0xB44;
+                }
+                if (Anam_Higher)
+                {
+                    cmos_new[5] = 0x120;
+                    cmos_new[7] = 0xB25;
+                }
+                if (Anam_Medium)
+                {
+                    cmos_new[5] = 0x1A0;
+                    cmos_new[7] = 0xB46;
+                }
+            }
             if (AR_2_35_1)
             {
                 if (Anam_Highest)
@@ -1942,13 +1963,78 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
     return 0;
 }
 
+int RAW_H_Debug  = 0;
+int RAW_V_Debug  = 0;
+int TimerA_Debug = 0;
+int TimerB_Debug = 0;
+
 static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
 {
+    if (AR_16_9)
+    {
+        if (Anam_Highest)
+        {
+            if (is_650D || is_700D || is_EOSM)
+            {
+                RAW_H         = 0x19A;  /* 1504x2566 */
+                RAW_V         = 0xA06;
+                TimerB        = 0xB47;
+                TimerA        = 0x1CD;  // EOS M might have 0x1FF limit same as 100D
+            }
+
+            if (is_100D)
+            {
+                RAW_H         = 0x1A3;
+                RAW_V         = 0xA0C;
+                TimerB        = 0xB07;  // we might be able to lower TimerB a little more
+                TimerA        = 0x1FF;  // lowering TimerA under 0x1FF --> black image (RAW data), anyway to exceed minimal Timer A limit?
+            }
+        }
+        
+        if (Anam_Higher)
+        {
+            if (is_650D || is_700D || is_EOSM)
+            {
+                RAW_H         = 0x17E;  /* 1392x2350 */
+                RAW_V         = 0x94A;
+                TimerB        = 0xBCA;
+                TimerA        = 0x1B9;  // EOS M might have 0x1FF limit same as 100D. 700D can't go lower than 0x1B9 --> corrupted image
+            }
+
+            if (is_100D)
+            {
+                RAW_H         = 0x183;  /* 1376x2322 to achieve 23.976 FPS */
+                RAW_V         = 0x934;
+                TimerB        = 0xA2E;
+                TimerA        = 0x1FF;
+            }
+        }
+        
+        if (Anam_Medium)
+        {
+            if (is_650D || is_700D || is_EOSM)
+            {
+                RAW_H         = 0x162;  /* 1280x2160 */
+                RAW_V         = 0x88C;
+                TimerB        = 0xBCA;
+                TimerA        = 0x1B9;  // EOS M might have 0x1FF limit same as 100D.
+            }
+
+            if (is_100D)
+            {
+                RAW_H         = 0x16B;
+                RAW_V         = 0x892;
+                TimerB        = 0xA2E;
+                TimerA        = 0x1FF;
+            }
+        }
+    }
+    
     if (AR_2_35_1)
     {
         if (Anam_Highest)
         {
-            if (is_650D || is_700D || is_EOSM) // not sure about EOS M
+            if (is_650D || is_700D || is_EOSM)
             {
                 RAW_H         = 0x1D4;  // from mv1080 mode
                 RAW_V         = 0x8C2;
@@ -1973,15 +2059,23 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
 
             YUV_LV_S_V    = 0x8E013F;
             YUV_LV_Buf    = 0x13205A0;
-
-            EDMAC_24_Redirect = 1;
-            EDMAC_9_Vertical_Change = 1;
         }
-        
-        Preview_Control = 1;
+    }
+
+    if (Anam_Highest || Anam_Higher)
+    {
+        EDMAC_24_Redirect = 1;
+        EDMAC_9_Vertical_Change = 1;
+    }
+    
+    if (Anam_Medium)
+    {
+        EDMAC_24_Redirect = 0;
+        EDMAC_9_Vertical_Change = 0;
     }
 
     Black_Bar = 0;
+    Preview_Control = 1;
 
     if (Preview_Control)
     {
@@ -2755,6 +2849,54 @@ static struct menu_entry crop_rec_menu[] =
                 .max    = 0xFFFFFFF,
                 .unit   = UNIT_HEX,
                 .help   = "Preview Debug.",
+                .advanced = 1,
+            },
+            {
+                .name   = "CMOS 5 Debug",
+                .priv   = &CMOS_5_Debug,
+                .max    = 0xFFF,
+                .unit   = UNIT_HEX,
+                .help   = "CMOS 5 Debug.",
+                .advanced = 1,
+            },
+            {
+                .name   = "CMOS 7 Debug",
+                .priv   = &CMOS_7_Debug,
+                .max    = 0xFFF,
+                .unit   = UNIT_HEX,
+                .help   = "CMOS 7 Debug.",
+                .advanced = 1,
+            },
+            {
+                .name   = "TimerA Debug",
+                .priv   = &TimerA_Debug,
+                .max    = 0xFFF,
+                .unit   = UNIT_HEX,
+                .help   = "TimerA Debug.",
+                .advanced = 1,
+            },
+            {
+                .name   = "TimerB Debug",
+                .priv   = &TimerB_Debug,
+                .max    = 0xFFF,
+                .unit   = UNIT_HEX,
+                .help   = "TimerB Debug.",
+                .advanced = 1,
+            },
+            {
+                .name   = "RAW H Debug",
+                .priv   = &RAW_H_Debug,
+                .max    = 0xFFF,
+                .unit   = UNIT_HEX,
+                .help   = "RAW H Debug.",
+                .advanced = 1,
+            },
+            {
+                .name   = "RAW V Debug",
+                .priv   = &RAW_V_Debug,
+                .max    = 0xFFF,
+                .unit   = UNIT_HEX,
+                .help   = "RAW V Debug.",
                 .advanced = 1,
             },
             {
