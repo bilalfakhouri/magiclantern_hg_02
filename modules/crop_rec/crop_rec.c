@@ -1933,14 +1933,14 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         Preview_H     = 2552;  // 2556 causes preview artifacts
         Preview_V     = 1440;
         Preview_R     = 0x19000E;
+        Preview_V_Recover = 22;
+        
         YUV_HD_S_H    = 0x1050286;
-        YUV_HD_S_V    = 0x1050215;
+        YUV_HD_S_V    = 0x105021E;
         
         YUV_LV_S_V    = 0x10501BA;
         YUV_LV_Buf    = 0x19505A0;
-        
-        Preview_V_Recover = 0;
-        
+
         Black_Bar     = 2;
         Preview_Control = 1;
         EDMAC_24_Redirect = 1;
