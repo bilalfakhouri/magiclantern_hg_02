@@ -49,9 +49,10 @@ static CONFIG_INT("crop.preset_aspect_ratio", crop_preset_ar, 0);
 
 static CONFIG_INT("crop.preset_1x1", crop_preset_1x1_res, 0);
 #define CROP_2_5K      (crop_preset_1x1_res == 0)
-#define CROP_3K        (crop_preset_1x1_res == 1)
-#define CROP_1440p     (crop_preset_1x1_res == 2)
-#define CROP_Full_Res  (crop_preset_1x1_res == 3)
+#define CROP_2_8K      (crop_preset_1x1_res == 1)
+#define CROP_3K        (crop_preset_1x1_res == 2)
+#define CROP_1440p     (crop_preset_1x1_res == 3)
+#define CROP_Full_Res  (crop_preset_1x1_res == 4)
 
 static CONFIG_INT("crop.preset_1x3", crop_preset_1x3_res, 0);
 #define Anam_Highest   (crop_preset_1x3_res == 0)
@@ -752,6 +753,12 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                 if (CROP_1440p)
                 {
                     cmos_new[5] = 0x2C0;
+                    cmos_new[7] = 0xAA9;
+                }
+                
+                if (CROP_2_8K)
+                {
+                    cmos_new[5] = 0x280;
                     cmos_new[7] = 0xAA9;
                 }
                 
@@ -1729,7 +1736,10 @@ static inline uint32_t reg_override_zoom_fps(uint32_t reg, uint32_t old_val)
 
 /* 650D / 700D / EOSM/M2 / 100D reg_override presets */
 
-int preview_debug = 0;
+int preview_debug_1 = 0;
+int preview_debug_2 = 0;
+int preview_debug_3 = 0;
+int preview_debug_4 = 0;
 
 static unsigned TimerB = 0;
 static unsigned TimerA = 0;
@@ -1769,6 +1779,9 @@ static uint32_t EDMAC_9_Vertical_1 = 0;         // 0x453 , it's being set in 0xC
 static uint32_t EDMAC_9_Vertical_2 = 0;         // 0x453 , tweaking it has no effect? let's tweak just in case
 
 static unsigned EDMAC_9_Vertical_Change = 0;    // flag to enable/disable EDMAC#9 tweaks
+
+/* used to recover preview height eaten by C0F38024 after increasing C0F38024 horizontal value */
+static unsigned Preview_V_Recover = 0;
 
 /* used to center preview and clear VRAM artifacts */
 static unsigned preview_shift_value = 0;
@@ -1826,7 +1839,56 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
 
         Preview_Control = 1;
         EDMAC_24_Redirect = 0;
+        Preview_V_Recover = 0;
     }
+    
+/*  initially I wanted to make 2880x1226 preset, RAW data works there, the issue is I could only get 1073 height (from 1226) in preview (width was 2868)
+    more likely somehow when increasing width preview in C0F38024, it casues a limit in height, it'a act like give me width pixels in cost 
+    of vertical pixels, EDMAC_24_Redirect and EDMAC_9_Vertical_Change doesn't help to get more height in this case, something else is causing a limit?
+    BTW: C0F38024 can fix broken preview which casued of increasing RAW horizontal resolution in C0F06804, e.g. on 700D it's:
+    
+    in x5 mode C0F06804 = 0x4540298 while C0F38024 = 0x453x287. in C0F06804 let's say RAW_V = 454 and RAW_H = 298:
+    C0F38024 = ((RAW_V - 1) << 16)  + RAW_H - 0x11*/
+    
+    /* at this moment I was making 2800x1192 preset instead because it would be more manageable in terms of preview, but . . */
+    /* huh, never mind! figuerd it out, we can just increase EDMAC_9_Vertical and C0F08184 *more than actual RAW_V* to recover preview height  */
+    
+    if (CROP_2_8K)
+    {
+        if (is_650D || is_700D || is_EOSM)
+        {
+            RAW_H         = 0x2F2;
+            RAW_V         = 0x4E6;
+            TimerB        = 0x676;
+            TimerA        = 0x325;
+        }
+
+        if (is_100D)
+        {
+            RAW_H         = 0x2FB;
+            RAW_V         = 0x4EC;
+            TimerB        = 0x673;
+            TimerA        = 0x327;
+        }
+
+        Preview_H         = 2868;  // black bar above 2868
+        Preview_V         = 1226;
+        Preview_V_Recover = 171;   // trial and error
+        
+        Preview_R     = 0x19000F;
+
+        YUV_HD_S_H    = 0x10502D6;
+        YUV_HD_S_V    = 0x10501CC;
+        YUV_HD_S_V_E  = 0;
+        Black_Bar     = 2;
+        
+        YUV_LV_S_V    = 0x1050248;
+        YUV_LV_Buf    = 0x13305A0;
+
+        Preview_Control = 1;
+        EDMAC_24_Redirect = 1;
+        EDMAC_9_Vertical_Change = 1;
+    } 
 
     if (CROP_3K)
     {
@@ -1877,6 +1939,8 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         YUV_LV_S_V    = 0x10501BA;
         YUV_LV_Buf    = 0x19505A0;
         
+        Preview_V_Recover = 0;
+        
         Black_Bar     = 2;
         Preview_Control = 1;
         EDMAC_24_Redirect = 1;
@@ -1911,13 +1975,13 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         {
             if (MEM(EDMAC_9_Vertical_1) != RAW_V - 1 || MEM(EDMAC_9_Vertical_2) != RAW_V - 1) // set our new value if not set yet
             {
-                MEM(EDMAC_9_Vertical_1)  = RAW_V - 1;
-                MEM(EDMAC_9_Vertical_2)  = RAW_V - 1;
+                MEM(EDMAC_9_Vertical_1)  = (RAW_V - 1) + Preview_V_Recover ;
+                MEM(EDMAC_9_Vertical_2)  = (RAW_V - 1) + Preview_V_Recover;
             }
 
             switch (reg)
             {
-                case 0xC0F08184: return RAW_V - 1; // used to exceed vertical preview limit
+                case 0xC0F08184: return (RAW_V - 1) + Preview_V_Recover; // used to exceed vertical preview limit
             }
         }
         
@@ -2495,8 +2559,16 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
             Clear_Artifacts = 1;
             EDMAC_9_Vertical_Change = 0;
         }
+        
+        else if (crop_preset_1x1_res == 1)  // CROP_2_8K
+        {
+            preview_shift_value = 0x1F4A0;
+            Shift_Preview = 1;
+            Clear_Artifacts = 1;
+            EDMAC_9_Vertical_Change = 1;
+        }
 
-        else if (crop_preset_1x1_res == 2)  // CROP_1440p
+        else if (crop_preset_1x1_res == 3)  // CROP_1440p
         {
             preview_shift_value = 0xD5C0;
             Shift_Preview = 1;
@@ -2784,8 +2856,8 @@ static struct menu_entry crop_rec_menu[] =
             {
                 .name       = "Preset:",   // CROP_PRESET_1X1
                 .priv       = &crop_preset_1x1_res,
-                .max        = 3,
-                .choices    = CHOICES("2.5K", "3K","1440p", "Full-Res LV"),
+                .max        = 4,
+                .choices    = CHOICES("2.5K", "2.8K", "3K", "1440p", "Full-Res LV"),
                 .help       = "Choose 1:1 preset.",
                 .icon_type  = IT_ALWAYS_ON,
                 .shidden    = 1,
@@ -2844,10 +2916,34 @@ static struct menu_entry crop_rec_menu[] =
                               "Full range: from 1/FPS to minimum exposure time allowed by hardware."
             },
             {
-                .name   = "Preview Debug",
-                .priv   = &preview_debug,
+                .name   = "Preview Debug 1",
+                .priv   = &preview_debug_1,
                 .max    = 0xFFFFFFF,
                 .unit   = UNIT_HEX,
+                .help   = "Preview Debug.",
+                .advanced = 1,
+            },
+            {
+                .name   = "Preview Debug 2",
+                .priv   = &preview_debug_2,
+                .max    = 0xFFFFFFF,
+                .unit   = UNIT_HEX,
+                .help   = "Preview Debug.",
+                .advanced = 1,
+            },
+            {
+                .name   = "Preview Debug 4",
+                .priv   = &preview_debug_4,
+                .max    = 5208,
+                .unit   = UNIT_DEC,
+                .help   = "Preview Debug.",
+                .advanced = 1,
+            },
+            {
+                .name   = "Preview Debug 3",
+                .priv   = &preview_debug_3,
+                .max    = 3478,
+                .unit   = UNIT_DEC,
                 .help   = "Preview Debug.",
                 .advanced = 1,
             },
