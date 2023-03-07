@@ -1973,7 +1973,8 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
     {
         if (EDMAC_9_Vertical_Change)
         {
-            if (MEM(EDMAC_9_Vertical_1) != RAW_V - 1 || MEM(EDMAC_9_Vertical_2) != RAW_V - 1) // set our new value if not set yet
+            if (MEM(EDMAC_9_Vertical_1) != (RAW_V - 1) + Preview_V_Recover ||
+                MEM(EDMAC_9_Vertical_2) != (RAW_V - 1) + Preview_V_Recover) // set our new value if not set yet
             {
                 MEM(EDMAC_9_Vertical_1)  = (RAW_V - 1) + Preview_V_Recover ;
                 MEM(EDMAC_9_Vertical_2)  = (RAW_V - 1) + Preview_V_Recover;
