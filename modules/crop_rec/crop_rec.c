@@ -2050,7 +2050,7 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
         {
             if (is_650D || is_700D || is_EOSM)
             {
-                RAW_H         = 0x19A;  /* 1504x2566 */
+                RAW_H         = 0x19A;  /* 1504x2538 */
                 RAW_V         = 0xA06;
                 TimerB        = 0xB47;
                 TimerA        = 0x1CD;  // EOS M might have 0x1FF limit same as 100D
@@ -2063,6 +2063,15 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 TimerB        = 0xB07;  // we might be able to lower TimerB a little more
                 TimerA        = 0x1FF;  // lowering TimerA under 0x1FF --> black image (RAW data), anyway to exceed minimal Timer A limit?
             }
+            
+            Preview_H     = 1500;
+            Preview_V     = 2538;
+            Preview_R     = 0x1D000D;
+            YUV_HD_S_H    = 0x105017B;
+            YUV_HD_S_V    = 0x10503BE;
+
+            YUV_LV_S_V    = 0x10501BA;
+            YUV_LV_Buf    = 0x19505A0;
         }
         
         if (Anam_Higher)
@@ -2129,7 +2138,6 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             Preview_R     = 0x1D000E;  // from mv1080 mode
             YUV_HD_S_H    = 0x8500DF;
             YUV_HD_S_V    = 0x8501A8;
-            YUV_HD_S_V_E  = 0;
 
             YUV_LV_S_V    = 0x8E013F;
             YUV_LV_Buf    = 0x13205A0;
@@ -2149,6 +2157,7 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
     }
 
     Black_Bar = 0;
+    YUV_HD_S_V_E  = 0;
     Preview_Control = 1;
 
     if (Preview_Control)
@@ -2753,6 +2762,8 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
     /* FIXME: we might be able to implement clearing artifacts directly in VRAM_PTH_StartTripleRamClearInALump
               this way we don't to patch ROM addresses for clearing artifacts for x5 mode and for every output on every model */
 
+    /* FIXME: duplicated code regarding preview_shift_value */
+
     if (CROP_PRESET_MENU == CROP_PRESET_1X1)
     {
         if (crop_preset_1x1_res == 0)       // CROP_2_5K
@@ -2790,9 +2801,29 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
 
     if (CROP_PRESET_MENU == CROP_PRESET_1X3)
     {
-        if (AR_2_35_1)
+        if (crop_preset_ar == 0)  // 16:9
+        {
+            preview_shift_value = 0xD5C0;
+        }
+        
+        if (crop_preset_ar == 1)  // 2:1
+        {
+            preview_shift_value = 0x15720;
+        }
+        
+        if (crop_preset_ar == 2)  // 2.20:1
+        {
+            preview_shift_value = 0x1B6C0;
+        }
+        
+        if (crop_preset_ar == 3)  // 2.35:1
         {
             preview_shift_value = 0x1F4A0;
+        }
+        
+        if (crop_preset_ar == 4)  // 2.39:1
+        {
+            preview_shift_value = 0x1F4A0; // dummy value, needs tweaking
         }
 
         Shift_Preview = 1;
