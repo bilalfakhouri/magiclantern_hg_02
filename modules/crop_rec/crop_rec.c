@@ -1745,7 +1745,7 @@ static inline uint32_t reg_override_zoom_fps(uint32_t reg, uint32_t old_val)
 
 /* 650D / 700D / EOSM/M2 / 100D reg_override presets */
 
-int preview_debug_1 = 0;
+int preview_debug_1 = 0x105036E;
 int preview_debug_2 = 0;
 int preview_debug_3 = 0;
 int preview_debug_4 = 0;
@@ -2073,7 +2073,7 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             YUV_LV_S_V    = 0x10501BA;
             YUV_LV_Buf    = 0x19505A0;
         }
-        
+
         if (Anam_Higher)
         {
             if (is_650D || is_700D || is_EOSM)
@@ -2082,6 +2082,12 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 RAW_V         = 0x94A;
                 TimerB        = 0xBCA;
                 TimerA        = 0x1B9;  // EOS M might have 0x1FF limit same as 100D. 700D can't go lower than 0x1B9 --> corrupted image
+
+                Preview_H     = 1388;
+                Preview_V     = 2350;
+                Preview_R     = 0x1D000D;
+                YUV_HD_S_H    = 0x105015F;
+                YUV_HD_S_V    = 0x1050377;
             }
 
             if (is_100D)
@@ -2090,9 +2096,18 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 RAW_V         = 0x934;
                 TimerB        = 0xA2E;
                 TimerA        = 0x1FF;
+
+                Preview_H     = 1372;
+                Preview_V     = 2322;
+                Preview_R     = 0x1D000D;
+                YUV_HD_S_H    = 0x105015B;
+                YUV_HD_S_V    = 0x105036E;
             }
+
+            YUV_LV_S_V    = 0x10501BA;
+            YUV_LV_Buf    = 0x19505A0;
         }
-        
+
         if (Anam_Medium)
         {
             if (is_650D || is_700D || is_EOSM)
@@ -2112,7 +2127,7 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             }
         }
     }
-    
+
     if (AR_2_35_1)
     {
         if (Anam_Highest)
@@ -2805,22 +2820,22 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
         {
             preview_shift_value = 0xD5C0;
         }
-        
+
         if (crop_preset_ar == 1)  // 2:1
         {
             preview_shift_value = 0x15720;
         }
-        
+
         if (crop_preset_ar == 2)  // 2.20:1
         {
             preview_shift_value = 0x1B6C0;
         }
-        
+
         if (crop_preset_ar == 3)  // 2.35:1
         {
             preview_shift_value = 0x1F4A0;
         }
-        
+
         if (crop_preset_ar == 4)  // 2.39:1
         {
             preview_shift_value = 0x1F4A0; // dummy value, needs tweaking
