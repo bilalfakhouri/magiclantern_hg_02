@@ -13,6 +13,7 @@
 #include <shoot.h>
 #include <lens.h>
 #include "../mlv_lite/mlv_lite.h"
+#include <gui-common.h>
 
 #undef CROP_DEBUG
 
@@ -568,7 +569,7 @@ static int FAST check_cmos_vidmode(uint16_t* data_buf)
 }
 
 int CMOS_5_Debug = 0;
-int CMOS_7_Debug = 0;
+int CMOS_7_Debug = 0x802;
 
 /* pack two 6-bit values into a 12-bit one */
 #define PACK12(lo,hi) ((((lo) & 0x3F) | ((hi) << 6)) & 0xFFF)
@@ -803,7 +804,16 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                     cmos_new[7] = 0x305;
                 }
             }
-            break; 
+            break;
+            
+            case CROP_PRESET_3X3:
+                if (AR_16_9)   cmos_new[7] = 0x802;
+                if (AR_2_1    || 
+                    AR_2_20_1) cmos_new[7] = 0x804;
+                if (AR_2_35_1 ||
+                    AR_2_39_1) cmos_new[7] = 0x806; // AR_2_39_1 is actually 2.50:1 preset
+                cmos_new[5] = 0x20;
+            break;
         }
     }
 
@@ -2200,8 +2210,201 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
     return 0;
 }
 
+/* these presets have some preview quirks mainly because we lowered RAW resolution lower than default
+   RAW resolution in x5 mode, some tasks expect a minimal amount of RAW resolution, otherwise some issues
+   start to appear. in our case it's a frozen preview on YUV (LV) path.
+   on 700D, for 1736x976, 1736x868 and 1736x790 presets and in order to make preview work, the focus
+   box should be centered on screen + lower it one step by using arrow down button. when lowering focus box,
+   some functions are being called and set some new values, I don't know which exact function we are looking for.
+   in 1736x738 preset preview will be always frozen, changing focus box position doesn't help, but a workaround
+   which make preview work with mentioned presets is suspending aewb task, the issue seems related to aewb task 
+   in 1736x694 suspending aewb task doesn't help, preview is still frozen, pretty sure it can be solved by lowering
+   some preview registers related to RAW resolution (not the ones in crop_rec.c), currently I don't know how to do it,
+   or where to look exactly, for 1736x694 it could from YUV (HD) path resolution too */
 static inline uint32_t reg_override_3X3(uint32_t reg, uint32_t old_val)
 {
+    if (AR_16_9)
+    {
+        if (is_650D || is_700D || is_EOSM) // 1736x976 @ 46.800 FPS
+        {
+            RAW_H         = 0x1D4;
+            RAW_V         = 0x3EC;
+            TimerB        = 0x50E;
+            TimerA        = 0x20F;  // can go lower down to 0x207
+        }
+
+        if (is_100D) // 1736x976 @ 46.300 FPS
+        {
+            RAW_H         = 0x1DD;
+            RAW_V         = 0x3F1;
+            TimerB        = 0x51C;
+            TimerA        = 0x20F;
+        }
+
+        Preview_H     = 1728;      // from mv1080 mode
+        Preview_V     = 976;
+        Preview_R     = 0x1D000E;  // from mv1080 mode
+        YUV_HD_S_V    = 0x105016C;
+        
+        YUV_LV_S_V    = 0x10501BA;
+        YUV_LV_Buf    = 0x19505A0;
+    }
+
+    if (AR_2_1)
+    {
+        if (is_650D || is_700D || is_EOSM) // 1736x868 @ 50 FPS
+        {
+            RAW_H         = 0x1D4;
+            RAW_V         = 0x380;
+            TimerB        = 0x4CD;
+            TimerA        = 0x207;
+        }
+
+        if (is_100D)
+        {
+            RAW_H         = 0x1DD;
+            RAW_V         = 0x385;
+            TimerB        = 0x4BB;
+            TimerA        = 0x20F;
+        }
+        
+        Preview_H     = 1728;
+        Preview_V     = 868;
+        Preview_R     = 0x1D000E;
+        YUV_HD_S_V    = 0x1050143;
+        
+        YUV_LV_S_V    = 0x10501F2;
+        YUV_LV_Buf    = 0x16805A0;
+    }
+    
+    if (AR_2_20_1)
+    {
+        if (is_650D || is_700D || is_EOSM) // 1736x790 @ 54 FPS
+        {
+            RAW_H         = 0x1D4;
+            RAW_V         = 0x332;
+            TimerB        = 0x472; // we might be able to lower it even more
+            TimerA        = 0x207;
+        }
+
+        if (is_100D)
+        {
+            RAW_H         = 0x1DD;
+            RAW_V         = 0x337;
+            TimerB        = 0x461;
+            TimerA        = 0x20F;
+        }
+        
+        Preview_H     = 1728;
+        Preview_V     = 790;
+        Preview_R     = 0x1D000E;
+        YUV_HD_S_V    = 0x1050125;
+
+        YUV_LV_S_V    = 0x1050222;
+        YUV_LV_Buf    = 0x14805A0;
+    }
+
+    if (AR_2_35_1)
+    {
+        if (is_650D || is_700D || is_EOSM) // 1736x738 @ 57 FPS
+        {
+            RAW_H         = 0x1D4;
+            RAW_V         = 0x2FE;
+            TimerB        = 0x436;  // it can go lower but with risk of corrupted frames
+            TimerA        = 0x207;
+        }
+
+        if (is_100D) // 1736x738 @ 55.6 FPS
+        {
+            RAW_H         = 0x1DD;
+            RAW_V         = 0x303;
+            TimerB        = 0x441;
+            TimerA        = 0x20F;
+        }
+        
+        Preview_H     = 1728;
+        Preview_V     = 738;
+        Preview_R     = 0x1D000E;
+        YUV_HD_S_V    = 0x1050112;
+        
+        YUV_LV_S_V    = 0x1050249;
+        YUV_LV_Buf    = 0x13205A0;
+    }
+
+    if (AR_2_39_1)  // 2.39:1 doesn't make sense, very similair to 2.35:1, let's make it 2.50:1
+    {
+        if (is_650D || is_700D || is_EOSM) // 1736x694 @ 60 FPS
+        {
+            RAW_H         = 0x1D4;
+            RAW_V         = 0x2D2;
+            TimerB        = 0x401;
+            TimerA        = 0x207;
+        }
+
+        if (is_100D) // 1736x694 @ 58 FPS
+        {
+            RAW_H         = 0x1DD;
+            RAW_V         = 0x2D7;
+            TimerB        = 0x413;
+            TimerA        = 0x20F;
+        }
+        
+        Preview_H     = 1728;
+        Preview_V     = 694;
+        Preview_R     = 0x1D000E;
+        YUV_HD_S_V    = 0;  // solve frozen preview first!
+        
+        YUV_LV_S_V    = 0;  // solve frozen preview first!
+        YUV_LV_Buf    = 0;  // solve frozen preview first!
+    }
+
+    YUV_HD_S_H    = 0x10501B5;
+
+    Black_Bar = 0;
+    YUV_HD_S_V_E  = 0;
+    Preview_Control = 1;
+
+    if (Preview_Control)
+    {
+        if (shamem_read(0xC0F11BC8) != 0)
+        {
+            EngDrvOutLV(0xC0F11BC8, YUV_HD_S_V_E); // Enable vertical stretch on YUV (HD) path
+        }
+
+        switch (reg)
+        {
+            case 0xC0F1A00C: return (Preview_V << 16) + Preview_H - 0x1;   
+            case 0xC0F11B9C: return (Preview_V << 16) + Preview_H - 0x1;
+
+            case 0xC0F11B8C: return YUV_HD_S_H;
+            case 0xC0F11BCC: return YUV_HD_S_V;
+        //  case 0xC0F11BC8: return YUV_HD_S_V_E; // overriding it from here doesn't work
+            case 0xC0F11ACC: return YUV_LV_S_V;
+            case 0xC0F04210: return YUV_LV_Buf;
+        }
+    }
+
+    switch (reg)
+    {
+        case 0xC0F06804: return (RAW_V << 16) + RAW_H;
+
+        case 0xC0F06824:
+        case 0xC0F06828:
+        case 0xC0F0682C:
+        case 0xC0F06830:
+        {
+            return RAW_H + 0x32;
+        }
+
+        case 0xC0F0713c: return RAW_V + 0x1;
+        case 0xC0F07150: return RAW_V - 0x3A;
+
+        case 0xC0F06014: return TimerB;
+        case 0xC0F06010: return TimerA;
+        case 0xC0F06008: return TimerA + (TimerA << 16);
+        case 0xC0F0600C: return TimerA + (TimerA << 16);
+    }
+
     return 0;
 }
 
@@ -2590,12 +2793,44 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
     {
         if (AR_2_35_1)
         {
-            preview_shift_value = 0x1f4a0;
+            preview_shift_value = 0x1F4A0;
         }
 
         Shift_Preview = 1;
         Clear_Artifacts = 1;
         EDMAC_9_Vertical_Change = 1;
+    }
+    
+    if (CROP_PRESET_MENU == CROP_PRESET_3X3)
+    {
+        if (crop_preset_ar == 0)  // 16:9
+        {
+            preview_shift_value = 0xD5C0;
+        }
+        
+        if (crop_preset_ar == 1)  // 2:1
+        {
+            preview_shift_value = 0x15720;
+        }
+        
+        if (crop_preset_ar == 2)  // 2.20:1
+        {
+            preview_shift_value = 0x1B6C0;
+        }
+        
+        if (crop_preset_ar == 3)  // 2.35:1
+        {
+            preview_shift_value = 0x1F4A0;
+        }
+        
+        if (crop_preset_ar == 4)  // 2.39:1 but actually 2.50:1
+        {
+            preview_shift_value = 0x1F4A0; // dummy value, needs tweaking
+        }
+
+        Shift_Preview = 1;
+        Clear_Artifacts = 1;
+        EDMAC_9_Vertical_Change = 0;
     }
 
     /* restore defualt EDMAC#9 vertical size */
@@ -2832,6 +3067,23 @@ static MENU_UPDATE_FUNC(crop_preset_1x3_res_update)
     }
 }
 
+static MENU_UPDATE_FUNC(crop_preset_3x3_res_update)
+{
+    if (AR_16_9)   MENU_SET_VALUE("1736x976");
+    if (AR_2_1)    MENU_SET_VALUE("1736x868");
+    if (AR_2_20_1) MENU_SET_VALUE("1736x790");
+    if (AR_2_35_1) MENU_SET_VALUE("1736x738");
+    if (AR_2_39_1) MENU_SET_VALUE("1736x694");   // actually 2.50:1 aspect ratio
+}
+
+static MENU_UPDATE_FUNC(crop_preset_ar_update)
+{
+    if (CROP_PRESET_MENU == CROP_PRESET_3X3)
+    {
+        if (AR_2_39_1) MENU_SET_VALUE("2.50:1"); // we are using AR_2_39_1 as 2.50:1 in this case
+    }
+}
+
 static MENU_UPDATE_FUNC(target_yres_update)
 {
     MENU_SET_RINFO("from %d", max_resolutions[crop_preset][get_video_mode_index()]);
@@ -2876,6 +3128,7 @@ static struct menu_entry crop_rec_menu[] =
             {
                 .name       = "Preset:  ",  // CROP_PRESET_3X3
                 .priv       = &crop_preset_3x3_res,
+                .update     = crop_preset_3x3_res_update,
                 .max        = 0,
                 .choices    = CHOICES("1736"),
                 .help       = "Choose 3x3 preset.",
@@ -2885,6 +3138,7 @@ static struct menu_entry crop_rec_menu[] =
             {
                 .name       = "Aspect ratio:",
                 .priv       = &crop_preset_ar,
+                .update     = &crop_preset_ar_update,
                 .max        = 4,
                 .choices    = CHOICES("16:9", "2:1", "2.20:1", "2.35:1", "2.39:1"),
                 .help       = "Select aspect ratio for current preset.",
@@ -3422,6 +3676,7 @@ static unsigned int raw_info_update_cbr(unsigned int unused)
             case CROP_PRESET_3x3_1X_48p:
             case CROP_PRESET_1x3:
             case CROP_PRESET_1X3:
+            case CROP_PRESET_3X3:
                 raw_capture_info.binning_x = 3; raw_capture_info.skipping_x = 0;
                 break;
         }
