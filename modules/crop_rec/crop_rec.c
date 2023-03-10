@@ -2063,15 +2063,12 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 TimerB        = 0xB07;  // we might be able to lower TimerB a little more
                 TimerA        = 0x1FF;  // lowering TimerA under 0x1FF --> black image (RAW data), anyway to exceed minimal Timer A limit?
             }
-            
+
             Preview_H     = 1500;
             Preview_V     = 2538;
             Preview_R     = 0x1D000D;
             YUV_HD_S_H    = 0x105017B;
             YUV_HD_S_V    = 0x10503BE;
-
-            YUV_LV_S_V    = 0x10501BA;
-            YUV_LV_Buf    = 0x19505A0;
         }
 
         if (Anam_Higher)
@@ -2103,9 +2100,6 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 YUV_HD_S_H    = 0x105015B;
                 YUV_HD_S_V    = 0x105036E;
             }
-
-            YUV_LV_S_V    = 0x10501BA;
-            YUV_LV_Buf    = 0x19505A0;
         }
 
         if (Anam_Medium)
@@ -2125,16 +2119,16 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 TimerB        = 0xA2E;
                 TimerA        = 0x1FF;
             }
-            
+
             Preview_H     = 1276;
             Preview_V     = 2160;
             Preview_R     = 0x1D000D;
             YUV_HD_S_H    = 0x1050142;
             YUV_HD_S_V    = 0x105032F;
-
-            YUV_LV_S_V    = 0x10501BA;
-            YUV_LV_Buf    = 0x19505A0;
         }
+
+        YUV_LV_S_V    = 0x10501BA;
+        YUV_LV_Buf    = 0x19505A0;
     }
 
     if (AR_2_35_1)
