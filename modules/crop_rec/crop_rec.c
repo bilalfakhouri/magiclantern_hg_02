@@ -13,7 +13,6 @@
 #include <shoot.h>
 #include <lens.h>
 #include "../mlv_lite/mlv_lite.h"
-#include <gui-common.h>
 
 #undef CROP_DEBUG
 
@@ -569,7 +568,7 @@ static int FAST check_cmos_vidmode(uint16_t* data_buf)
 }
 
 int CMOS_5_Debug = 0;
-int CMOS_7_Debug = 0x802;
+int CMOS_7_Debug = 0;
 
 /* pack two 6-bit values into a 12-bit one */
 #define PACK12(lo,hi) ((((lo) & 0x3F) | ((hi) << 6)) & 0xFFF)
