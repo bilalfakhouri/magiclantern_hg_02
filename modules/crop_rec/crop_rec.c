@@ -1745,7 +1745,7 @@ static inline uint32_t reg_override_zoom_fps(uint32_t reg, uint32_t old_val)
 
 /* 650D / 700D / EOSM/M2 / 100D reg_override presets */
 
-int preview_debug_1 = 0x105036E;
+int preview_debug_1 = 0;
 int preview_debug_2 = 0;
 int preview_debug_3 = 0;
 int preview_debug_4 = 0;
@@ -2125,6 +2125,15 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 TimerB        = 0xA2E;
                 TimerA        = 0x1FF;
             }
+            
+            Preview_H     = 1276;
+            Preview_V     = 2160;
+            Preview_R     = 0x1D000D;
+            YUV_HD_S_H    = 0x1050142;
+            YUV_HD_S_V    = 0x105032F;
+
+            YUV_LV_S_V    = 0x10501BA;
+            YUV_LV_Buf    = 0x19505A0;
         }
     }
 
@@ -2159,21 +2168,11 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
         }
     }
 
-    if (Anam_Highest || Anam_Higher)
-    {
-        EDMAC_24_Redirect = 1;
-        EDMAC_9_Vertical_Change = 1;
-    }
-    
-    if (Anam_Medium)
-    {
-        EDMAC_24_Redirect = 0;
-        EDMAC_9_Vertical_Change = 0;
-    }
-
     Black_Bar = 0;
     YUV_HD_S_V_E  = 0;
     Preview_Control = 1;
+    EDMAC_24_Redirect = 1;
+    EDMAC_9_Vertical_Change = 1;
 
     if (Preview_Control)
     {
