@@ -795,6 +795,24 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                     cmos_new[7] = 0xB46;
                 }
             }
+            if (AR_2_1)
+            {
+                if (Anam_Highest)
+                {
+                    cmos_new[5] = 0xA0;
+                    cmos_new[7] = 0xB44;
+                }
+                if (Anam_Higher)
+                {
+                    cmos_new[5] = 0x120;
+                    cmos_new[7] = 0xB25;
+                }
+                if (Anam_Medium)
+                {
+                    cmos_new[5] = 0x160;
+                    cmos_new[7] = 0xB46;
+                }
+            }
             if (AR_2_35_1)
             {
                 if (Anam_Highest)
@@ -2129,6 +2147,66 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
 
         YUV_LV_S_V    = 0x10501BA;
         YUV_LV_Buf    = 0x19505A0;
+    }
+    
+    if (AR_2_1)
+    {
+        if (Anam_Highest)
+        {
+            if (is_650D || is_700D || is_EOSM)
+            {
+                RAW_H         = 0x1B2;  /* 1600x2400 */
+                RAW_V         = 0x97C;
+                TimerB        = 0xAB9;
+                TimerA        = 0x1E5;  // EOS M might have 0x1FF limit same as 100D.
+            }
+            
+           if (is_100D)
+            {
+                RAW_H         = 0x1BB;
+                RAW_V         = 0x982;
+                TimerB        = 0xA79;
+                TimerA        = 0x1FF;
+            }
+        }
+        
+        if (Anam_Higher)
+        {
+            if (is_650D || is_700D || is_EOSM)
+            {
+                RAW_H         = 0x192;  /* 1472x2208 */
+                RAW_V         = 0x8BC;
+                TimerB        = 0xB7A;
+                TimerA        = 0x1C5;
+            }
+            
+           if (is_100D)
+            {
+                RAW_H         = 0x19B;
+                RAW_V         = 0x8C2;
+                TimerB        = 0xA2D;
+                TimerA        = 0x1FF;
+            }
+        }
+        
+        if (Anam_Medium)
+        {
+            if (is_650D || is_700D || is_EOSM)
+            {
+                RAW_H         = 0x176;  /* 1360x2040 */
+                RAW_V         = 0x814;
+                TimerB        = 0xBCA;
+                TimerA        = 0x1B9;
+            }
+            
+           if (is_100D)
+            {
+                RAW_H         = 0x17F;
+                RAW_V         = 0x819;
+                TimerB        = 0xA2D;
+                TimerA        = 0x1FF;
+            }
+        }
     }
 
     if (AR_2_35_1)
