@@ -2064,19 +2064,27 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
 {
     if (AR_16_9)
     {
-        if (Anam_Highest)
+        if (Anam_Highest) /* 1504x2538 */
         {
-            if (is_650D || is_700D || is_EOSM)
+            if (is_650D || is_700D)
             {
-                RAW_H         = 0x19A;  /* 1504x2538 */
+                RAW_H         = 0x19A;  /*  @ 23.976 FPS */
                 RAW_V         = 0xA06;
                 TimerB        = 0xB47;
-                TimerA        = 0x1CD;  // EOS M might have 0x1FF limit same as 100D
+                TimerA        = 0x1CD;
+            }
+
+            if (is_EOSM)
+            {
+                RAW_H         = 0x19A; /*  @ 22.250 FPS */
+                RAW_V         = 0xA06;
+                TimerB        = 0xAF7;
+                TimerA        = 0x1FF;  // Danne confirmed that EOS M has 0x1FF limit. it seems same as 100D
             }
 
             if (is_100D)
             {
-                RAW_H         = 0x1A3;
+                RAW_H         = 0x1A3; /*  @ 22.250 FPS */
                 RAW_V         = 0xA0C;
                 TimerB        = 0xB07;  // we might be able to lower TimerB a little more
                 TimerA        = 0x1FF;  // lowering TimerA under 0x1FF --> black image (RAW data), anyway to exceed minimal Timer A limit?
@@ -2091,18 +2099,32 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
 
         if (Anam_Higher)
         {
-            if (is_650D || is_700D || is_EOSM)
+            if (is_650D || is_700D)
             {
-                RAW_H         = 0x17E;  /* 1392x2350 */
+                RAW_H         = 0x17E;  /* 1392x2350 @ 23.976 FPS */
                 RAW_V         = 0x94A;
                 TimerB        = 0xBCA;
-                TimerA        = 0x1B9;  // EOS M might have 0x1FF limit same as 100D. 700D can't go lower than 0x1B9 --> corrupted image
+                TimerA        = 0x1B9;
 
                 Preview_H     = 1388;
                 Preview_V     = 2350;
                 Preview_R     = 0x1D000D;
                 YUV_HD_S_H    = 0x105015F;
                 YUV_HD_S_V    = 0x1050377;
+            }
+
+            if (is_EOSM)
+            {
+                RAW_H         = 0x17A;  /* 1376x2322 to achieve 23.976 FPS */
+                RAW_V         = 0x92F;
+                TimerB        = 0xA2E;
+                TimerA        = 0x1FF;
+
+                Preview_H     = 1372;
+                Preview_V     = 2322;
+                Preview_R     = 0x1D000D;
+                YUV_HD_S_H    = 0x105015B;
+                YUV_HD_S_V    = 0x105036E;
             }
 
             if (is_100D)
@@ -2120,14 +2142,22 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             }
         }
 
-        if (Anam_Medium)
+        if (Anam_Medium) /* 1280x2160 */
         {
-            if (is_650D || is_700D || is_EOSM)
+            if (is_650D || is_700D)
             {
-                RAW_H         = 0x162;  /* 1280x2160 */
+                RAW_H         = 0x162;  
                 RAW_V         = 0x88C;
                 TimerB        = 0xBCA;
-                TimerA        = 0x1B9;  // EOS M might have 0x1FF limit same as 100D.
+                TimerA        = 0x1B9;
+            }
+
+            if (is_EOSM)
+            {
+                RAW_H         = 0x162;
+                RAW_V         = 0x88C;
+                TimerB        = 0xA2E;
+                TimerA        = 0x1FF;
             }
 
             if (is_100D)
@@ -2151,35 +2181,51 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
     
     if (AR_2_1)
     {
-        if (Anam_Highest)
+        if (Anam_Highest) /* 1600x2400 */
         {
-            if (is_650D || is_700D || is_EOSM)
+            if (is_650D || is_700D)
             {
-                RAW_H         = 0x1B2;  /* 1600x2400 */
+                RAW_H         = 0x1B2;  /* C */
                 RAW_V         = 0x97C;
                 TimerB        = 0xAB9;
-                TimerA        = 0x1E5;  // EOS M might have 0x1FF limit same as 100D.
+                TimerA        = 0x1E5;
             }
-            
+
+            if (is_EOSM)
+            {
+                RAW_H         = 0x1B2; /* @ 23.300 FPS */
+                RAW_V         = 0x97C;
+                TimerB        = 0xA79;
+                TimerA        = 0x1FF;
+            }
+
            if (is_100D)
             {
-                RAW_H         = 0x1BB;
+                RAW_H         = 0x1BB; /* @ 23.300 FPS */
                 RAW_V         = 0x982;
                 TimerB        = 0xA79;
                 TimerA        = 0x1FF;
             }
         }
         
-        if (Anam_Higher)
+        if (Anam_Higher) /* 1472x2208 @ 23.976 */
         {
-            if (is_650D || is_700D || is_EOSM)
+            if (is_650D || is_700D)
             {
-                RAW_H         = 0x192;  /* 1472x2208 */
+                RAW_H         = 0x192;  
                 RAW_V         = 0x8BC;
                 TimerB        = 0xB7A;
                 TimerA        = 0x1C5;
             }
-            
+
+            if (is_EOSM)
+            {
+                RAW_H         = 0x192;
+                RAW_V         = 0x8BC;
+                TimerB        = 0xA2D;
+                TimerA        = 0x1FF;
+            }
+
            if (is_100D)
             {
                 RAW_H         = 0x19B;
@@ -2189,17 +2235,25 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             }
         }
         
-        if (Anam_Medium)
+        if (Anam_Medium) /* 1360x2040 @ 23.976 */
         {
-            if (is_650D || is_700D || is_EOSM)
+            if (is_650D || is_700D)
             {
-                RAW_H         = 0x176;  /* 1360x2040 */
+                RAW_H         = 0x176;  
                 RAW_V         = 0x814;
                 TimerB        = 0xBCA;
                 TimerA        = 0x1B9;
             }
+
+            if (is_EOSM)
+            {
+                RAW_H         = 0x176;
+                RAW_V         = 0x814;
+                TimerB        = 0xA2D;
+                TimerA        = 0x1FF;
+            }
             
-           if (is_100D)
+            if (is_100D)
             {
                 RAW_H         = 0x17F;
                 RAW_V         = 0x819;
@@ -2211,7 +2265,7 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
 
     if (AR_2_35_1)
     {
-        if (Anam_Highest)
+        if (Anam_Highest) /* 1736x2214 @ 23.976 FPS */
         {
             if (is_650D || is_700D || is_EOSM)
             {
