@@ -2185,7 +2185,7 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
         {
             if (is_650D || is_700D)
             {
-                RAW_H         = 0x1B2;  /* C */
+                RAW_H         = 0x1B2;  /* @ 23.976 FPS */
                 RAW_V         = 0x97C;
                 TimerB        = 0xAB9;
                 TimerA        = 0x1E5;
