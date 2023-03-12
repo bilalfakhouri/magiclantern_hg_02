@@ -2178,7 +2178,7 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
         YUV_LV_S_V    = 0x10501BA;
         YUV_LV_Buf    = 0x19505A0;
     }
-    
+
     if (AR_2_1)
     {
         if (Anam_Highest) /* 1600x2400 */
@@ -2199,15 +2199,21 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 TimerA        = 0x1FF;
             }
 
-           if (is_100D)
+            if (is_100D)
             {
                 RAW_H         = 0x1BB; /* @ 23.300 FPS */
                 RAW_V         = 0x982;
                 TimerB        = 0xA79;
                 TimerA        = 0x1FF;
             }
+
+            Preview_H     = 1596;
+            Preview_V     = 2400;
+            Preview_R     = 0x1D000D;
+            YUV_HD_S_H    = 0x1050193;
+            YUV_HD_S_V    = 0x1050389;
         }
-        
+
         if (Anam_Higher) /* 1472x2208 @ 23.976 */
         {
             if (is_650D || is_700D)
@@ -2226,15 +2232,21 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 TimerA        = 0x1FF;
             }
 
-           if (is_100D)
+            if (is_100D)
             {
                 RAW_H         = 0x19B;
                 RAW_V         = 0x8C2;
                 TimerB        = 0xA2D;
                 TimerA        = 0x1FF;
             }
+
+            Preview_H     = 1468;
+            Preview_V     = 2208;
+            Preview_R     = 0x1D000D;
+            YUV_HD_S_H    = 0x1050173;
+            YUV_HD_S_V    = 0x1050341;
         }
-        
+
         if (Anam_Medium) /* 1360x2040 @ 23.976 */
         {
             if (is_650D || is_700D)
@@ -2252,7 +2264,7 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 TimerB        = 0xA2D;
                 TimerA        = 0x1FF;
             }
-            
+
             if (is_100D)
             {
                 RAW_H         = 0x17F;
@@ -2260,7 +2272,16 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 TimerB        = 0xA2D;
                 TimerA        = 0x1FF;
             }
+
+            Preview_H     = 1356;
+            Preview_V     = 2040;
+            Preview_R     = 0x1D000D;
+            YUV_HD_S_H    = 0x1050157;
+            YUV_HD_S_V    = 0x1050301;
         }
+
+        YUV_LV_S_V    = 0x10501F2;
+        YUV_LV_Buf    = 0x16805A0;
     }
 
     if (AR_2_35_1)
