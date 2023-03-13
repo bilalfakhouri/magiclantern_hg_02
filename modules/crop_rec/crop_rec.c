@@ -4016,8 +4016,8 @@ static LVINFO_UPDATE_FUNC(crop_info)
         {
             STR_APPEND(buffer, "%s%dx%d",
                 buffer[0] ? " " : "",
-                raw_capture_info.binning_x + raw_capture_info.skipping_x,
-                raw_capture_info.binning_y + raw_capture_info.skipping_y
+                raw_capture_info.binning_y + raw_capture_info.skipping_y,
+                raw_capture_info.binning_x + raw_capture_info.skipping_x
             );
         }
     }
