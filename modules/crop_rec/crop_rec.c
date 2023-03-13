@@ -838,9 +838,19 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                     cmos_new[5] = 0x20;
                     cmos_new[7] = 0x305;
                 }
+                if (Anam_Higher)
+                {
+                    cmos_new[5] = 0xA0;
+                    cmos_new[7] = 0x326;
+                }
+                if (Anam_Medium)
+                {
+                    cmos_new[5] = 0xE0;
+                    cmos_new[7] = 0x327;
+                }
             }
             break;
-            
+
             case CROP_PRESET_3X3:
                 if (AR_16_9)   cmos_new[7] = 0x802;
                 if (AR_2_1    || 
@@ -2448,6 +2458,60 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             YUV_LV_S_V    = 0x1050249;
             YUV_LV_Buf    = 0x13205A0;
         }
+
+        if (Anam_Higher) /* 1600x2040 @ 23.976 FPS */
+        {
+            if (is_650D || is_700D)
+            {
+                RAW_H         = 0x1B2;
+                RAW_V         = 0x814;
+                TimerB        = 0xAB9;
+                TimerA        = 0x1E5;
+            }
+
+            if (is_EOSM)
+            {
+                RAW_H         = 0x1B2;
+                RAW_V         = 0x814;
+                TimerB        = 0xA2D;
+                TimerA        = 0x1FF;
+            }
+
+            if (is_100D)
+            {
+                RAW_H         = 0x1BB;
+                RAW_V         = 0x819;
+                TimerB        = 0xA2D;
+                TimerA        = 0x1FF;
+            }
+        }
+
+        if (Anam_Medium) /* 1472x1878 @ 23.976 FPS */
+        {
+            if (is_650D || is_700D || is_EOSM)
+            {
+                RAW_H         = 0x192;
+                RAW_V         = 0x772;
+                TimerB        = 0xB7A;
+                TimerA        = 0x1C5;
+            }
+
+            if (is_EOSM)
+            {
+                RAW_H         = 0x192;
+                RAW_V         = 0x772;
+                TimerB        = 0xA2D;
+                TimerA        = 0x1FF;
+            }
+
+            if (is_100D)
+            {
+                RAW_H         = 0x19B;
+                RAW_V         = 0x777;
+                TimerB        = 0xA2D;
+                TimerA        = 0x1FF;
+            }
+        }
     }
 
     Black_Bar = 0;
@@ -3389,7 +3453,7 @@ static MENU_UPDATE_FUNC(crop_preset_1x3_res_update)
     {
         if (Anam_Highest) MENU_SET_VALUE("5.2K");
         if (Anam_Higher)  MENU_SET_VALUE("4.8K");
-        if (Anam_Medium)  MENU_SET_VALUE("4.3K");
+        if (Anam_Medium)  MENU_SET_VALUE("4.4K");
     }
 }
 
