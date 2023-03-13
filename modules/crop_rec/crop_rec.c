@@ -2491,7 +2491,7 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
 
         if (Anam_Medium) /* 1472x1878 @ 23.976 FPS */
         {
-            if (is_650D || is_700D || is_EOSM)
+            if (is_650D || is_700D)
             {
                 RAW_H         = 0x192;
                 RAW_V         = 0x772;
