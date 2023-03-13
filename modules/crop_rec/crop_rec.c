@@ -2409,10 +2409,10 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             Preview_H     = 1728;      // from mv1080 mode
             Preview_V     = 2214;
             Preview_R     = 0x1D000E;  // from mv1080 mode
-            YUV_HD_S_H    = 0x8500DF;
-            YUV_HD_S_V    = 0x8501A8;
+            YUV_HD_S_H    = 0x10501B5;
+            YUV_HD_S_V    = 0x1050341;
 
-            YUV_LV_S_V    = 0x8E013F;
+            YUV_LV_S_V    = 0x1050249;
             YUV_LV_Buf    = 0x13205A0;
         }
     }
