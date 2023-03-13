@@ -813,6 +813,24 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                     cmos_new[7] = 0xB46;
                 }
             }
+            if (AR_2_20_1)
+            {
+                if (Anam_Highest)
+                {
+                    cmos_new[5] = 0x60;
+                    cmos_new[7] = 0x325;
+                }
+                if (Anam_Higher)
+                {
+                    cmos_new[5] = 0xA0;
+                    cmos_new[7] = 0x326;
+                }
+                if (Anam_Medium)
+                {
+                    cmos_new[5] = 0x120;
+                    cmos_new[7] = 0x326;
+                }
+            }
             if (AR_2_35_1)
             {
                 if (Anam_Highest)
@@ -2284,6 +2302,90 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
         YUV_LV_Buf    = 0x16805A0;
     }
 
+    if (AR_2_20_1)
+    {
+        if (Anam_Highest)
+        {
+            if (is_650D || is_700D) /* 1680x2290 @ 23.976 FPS */
+            {
+                RAW_H         = 0x1C6;
+                RAW_V         = 0x90E;
+                TimerB        = 0xA4C;
+                TimerA        = 0x1F9;
+            }
+
+            if (is_EOSM) /* 1664x2268 @ 23.976 FPS */
+            {
+                RAW_H         = 0x1C2;
+                RAW_V         = 0x8F8;
+                TimerB        = 0xA2D;
+                TimerA        = 0x1FF;
+            }
+
+            if (is_100D) /* 1664x2268 @ 23.976 FPS */
+            {
+                RAW_H         = 0x1CB;
+                RAW_V         = 0x8FD;
+                TimerB        = 0xA2D;
+                TimerA        = 0x1FF;
+            }
+        }
+
+        if (Anam_Higher) /* 1552x2216 @ 23.976 FPS */
+        {
+            if (is_650D || is_700D)
+            {
+                RAW_H         = 0x1A6;
+                RAW_V         = 0x860;
+                TimerB        = 0xAFE;
+                TimerA        = 0x1D9;
+            }
+
+            if (is_EOSM)
+            {
+                RAW_H         = 0x1A6;
+                RAW_V         = 0x860;
+                TimerB        = 0xA2E;
+                TimerA        = 0x1FF;
+            }
+
+            if (is_100D)
+            {
+                RAW_H         = 0x1AF;
+                RAW_V         = 0x865;
+                TimerB        = 0xA2E;
+                TimerA        = 0x1FF;
+            }
+        }
+
+        if (Anam_Medium) /* 1424x1942 @ 23.976 FPS */
+        {
+            if (is_650D || is_700D)
+            {
+                RAW_H         = 0x186;
+                RAW_V         = 0x7B2;
+                TimerB        = 0xBCA;
+                TimerA        = 0x1B9;
+            }
+
+            if (is_EOSM)
+            {
+                RAW_H         = 0x186;
+                RAW_V         = 0x7B2;
+                TimerB        = 0xA2E;
+                TimerA        = 0x1FF;
+            }
+
+            if (is_100D)
+            {
+                RAW_H         = 0x18F;
+                RAW_V         = 0x7B7;
+                TimerB        = 0xA2E;
+                TimerA        = 0x1FF;
+            }
+        }
+    }
+
     if (AR_2_35_1)
     {
         if (Anam_Highest) /* 1736x2214 @ 23.976 FPS */
@@ -3247,7 +3349,7 @@ static MENU_UPDATE_FUNC(crop_preset_1x3_res_update)
     {
         if (Anam_Highest) MENU_SET_VALUE("5K");
         if (Anam_Higher)  MENU_SET_VALUE("4.6K");
-        if (Anam_Medium)  MENU_SET_VALUE("4.1K");
+        if (Anam_Medium)  MENU_SET_VALUE("4.2K");
     }
 
     if (AR_2_35_1 || AR_2_39_1)
