@@ -2002,12 +2002,12 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         EDMAC_9_Vertical_Change = 1;
     }
 
-    if (CROP_Full_Res)
+    if (CROP_Full_Res) /* 5208x3478 @ 2 FPS */
     {
         if (is_650D || is_700D || is_EOSM)
         {
             RAW_H    = 0x538;
-            RAW_V    = 0xDB4;
+            RAW_V    = 0xDB2;
             TimerB   = 0x2D06;
             TimerA   = 0x56B;
         }
@@ -2015,9 +2015,9 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         if (is_100D)
         {
             RAW_H    = 0x541;
-            RAW_V    = 0xDB4;
-            TimerB   = 0x2D06;
-            TimerA   = 0x56B;
+            RAW_V    = 0xDB8;
+            TimerB   = 0x2CC0;
+            TimerA   = 0x573;
         }
 
         Preview_Control = 0;
