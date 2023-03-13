@@ -40,30 +40,35 @@ static CONFIG_INT("crop.bit_depth", bit_depth_analog, 0);
 #define OUTPUT_11BIT (bit_depth_analog == 2)
 #define OUTPUT_10BIT (bit_depth_analog == 3)
 
-static CONFIG_INT("crop.preset_aspect_ratio", crop_preset_ar, 0);
+static CONFIG_INT("crop.preset_aspect_ratio", crop_preset_ar_menu, 0);
+static int crop_preset_ar = 0;
 #define AR_16_9        (crop_preset_ar == 0)
 #define AR_2_1         (crop_preset_ar == 1)
 #define AR_2_20_1      (crop_preset_ar == 2)
 #define AR_2_35_1      (crop_preset_ar == 3)
 #define AR_2_39_1      (crop_preset_ar == 4)
 
-static CONFIG_INT("crop.preset_1x1", crop_preset_1x1_res, 0);
+static CONFIG_INT("crop.preset_1x1", crop_preset_1x1_res_menu, 0);
+static int crop_preset_1x1_res = 0;
 #define CROP_2_5K      (crop_preset_1x1_res == 0)
 #define CROP_2_8K      (crop_preset_1x1_res == 1)
 #define CROP_3K        (crop_preset_1x1_res == 2)
 #define CROP_1440p     (crop_preset_1x1_res == 3)
 #define CROP_Full_Res  (crop_preset_1x1_res == 4)
 
-static CONFIG_INT("crop.preset_1x3", crop_preset_1x3_res, 0);
+static CONFIG_INT("crop.preset_1x3", crop_preset_1x3_res_menu, 0);
+static int crop_preset_1x3_res = 0;
 #define Anam_Highest   (crop_preset_1x3_res == 0)
 #define Anam_Higher    (crop_preset_1x3_res == 1)
 #define Anam_Medium    (crop_preset_1x3_res == 2)
 
-static CONFIG_INT("crop.preset_3x3", crop_preset_3x3_res, 0);
+static CONFIG_INT("crop.preset_3x3", crop_preset_3x3_res_menu, 0);
+static int crop_preset_3x3_res = 0;
 #define High_FPS       (crop_preset_3x3_res == 0)
 #define mv1080         (crop_preset_3x3_res == 1)
 
-static CONFIG_INT("crop.preset_fps", crop_preset_fps, 0);
+static CONFIG_INT("crop.preset_fps", crop_preset_fps_menu, 0);
+static int crop_preset_fps = 0;
 #define Framerate_24   (crop_preset_fps == 0)
 #define Framerate_25   (crop_preset_fps == 1)
 #define Framerate_30   (crop_preset_fps == 2)
@@ -3326,6 +3331,12 @@ static void update_patch()
     {
         /* update preset */
         crop_preset = CROP_PRESET_MENU;
+        
+        crop_preset_ar      = crop_preset_ar_menu;
+        crop_preset_fps     = crop_preset_fps_menu;
+        crop_preset_1x1_res = crop_preset_1x1_res_menu;
+        crop_preset_1x3_res = crop_preset_1x3_res_menu;
+        crop_preset_3x3_res = crop_preset_3x3_res_menu;
 
         /* install our hooks, if we haven't already do so */
         if (!patch_active)
@@ -3464,49 +3475,49 @@ static MENU_UPDATE_FUNC(crop_update)
 
 static MENU_UPDATE_FUNC(crop_preset_1x3_res_update)
 {
-    if (AR_16_9)
+    if (crop_preset_ar_menu == 0) // AR_16_9
     {
-        if (Anam_Highest) MENU_SET_VALUE("4.5K");
-        if (Anam_Higher)  MENU_SET_VALUE("4.2K");
-        if (Anam_Medium)  MENU_SET_VALUE("UHD");
+        if (crop_preset_1x3_res_menu == 0) MENU_SET_VALUE("4.5K"); // Anam_Highest
+        if (crop_preset_1x3_res_menu == 1) MENU_SET_VALUE("4.2K"); // Anam_Higher
+        if (crop_preset_1x3_res_menu == 2) MENU_SET_VALUE("UHD");  // Anam_Medium
     }
 
-    if (AR_2_1)
+    if (crop_preset_ar_menu == 1) // AR_2_1
     {
-        if (Anam_Highest) MENU_SET_VALUE("4.8K");
-        if (Anam_Higher)  MENU_SET_VALUE("4.4K");
-        if (Anam_Medium)  MENU_SET_VALUE("4K");
+        if (crop_preset_1x3_res_menu == 0) MENU_SET_VALUE("4.8K"); // Anam_Highest
+        if (crop_preset_1x3_res_menu == 1) MENU_SET_VALUE("4.4K"); // Anam_Higher
+        if (crop_preset_1x3_res_menu == 2) MENU_SET_VALUE("4K");   // Anam_Medium
     }
 
-    if (AR_2_20_1)
+    if (crop_preset_ar_menu == 2) // AR_2_20_1
     {
-        if (Anam_Highest) MENU_SET_VALUE("5K");
-        if (Anam_Higher)  MENU_SET_VALUE("4.6K");
-        if (Anam_Medium)  MENU_SET_VALUE("4.2K");
+        if (crop_preset_1x3_res_menu == 0) MENU_SET_VALUE("5K");   // Anam_Highest
+        if (crop_preset_1x3_res_menu == 1) MENU_SET_VALUE("4.6K"); // Anam_Higher
+        if (crop_preset_1x3_res_menu == 2) MENU_SET_VALUE("4.2K"); // Anam_Medium
     }
 
-    if (AR_2_35_1 || AR_2_39_1)
+    if (crop_preset_ar_menu > 2)  // AR_2_35_1, AR_2_39_1
     {
-        if (Anam_Highest) MENU_SET_VALUE("5.2K");
-        if (Anam_Higher)  MENU_SET_VALUE("4.8K");
-        if (Anam_Medium)  MENU_SET_VALUE("4.4K");
+        if (crop_preset_1x3_res_menu == 0) MENU_SET_VALUE("5.2K"); // Anam_Highest
+        if (crop_preset_1x3_res_menu == 1) MENU_SET_VALUE("4.8K"); // Anam_Higher
+        if (crop_preset_1x3_res_menu == 2) MENU_SET_VALUE("4.4K"); // Anam_Medium
     }
 }
 
 static MENU_UPDATE_FUNC(crop_preset_3x3_res_update)
 {
-    if (AR_16_9)   MENU_SET_VALUE("1736x976");
-    if (AR_2_1)    MENU_SET_VALUE("1736x868");
-    if (AR_2_20_1) MENU_SET_VALUE("1736x790");
-    if (AR_2_35_1) MENU_SET_VALUE("1736x738");
-    if (AR_2_39_1) MENU_SET_VALUE("1736x694");   // actually 2.50:1 aspect ratio
+    if (crop_preset_ar_menu == 0) MENU_SET_VALUE("1736x976"); // AR_16_9
+    if (crop_preset_ar_menu == 1) MENU_SET_VALUE("1736x868"); // AR_2_1
+    if (crop_preset_ar_menu == 2) MENU_SET_VALUE("1736x790"); // AR_2_20_1
+    if (crop_preset_ar_menu == 3) MENU_SET_VALUE("1736x738"); // AR_2_35_1
+    if (crop_preset_ar_menu == 4) MENU_SET_VALUE("1736x694"); // AR_2_39_1  // actually 2.50:1 aspect ratio
 }
 
 static MENU_UPDATE_FUNC(crop_preset_ar_update)
 {
     if (CROP_PRESET_MENU == CROP_PRESET_3X3)
     {
-        if (AR_2_39_1) MENU_SET_VALUE("2.50:1"); // we are using AR_2_39_1 as 2.50:1 in this case
+        if (crop_preset_ar_menu == 4) MENU_SET_VALUE("2.50:1"); // AR_2_39_1 // we are using AR_2_39_1 as 2.50:1 in this case
     }
 }
 
@@ -3534,7 +3545,7 @@ static struct menu_entry crop_rec_menu[] =
         .children =  (struct menu_entry[]) {
             {
                 .name       = "Preset:",   // CROP_PRESET_1X1
-                .priv       = &crop_preset_1x1_res,
+                .priv       = &crop_preset_1x1_res_menu,
                 .max        = 4,
                 .choices    = CHOICES("2.5K", "2.8K", "3K", "1440p", "Full-Res LV"),
                 .help       = "Choose 1:1 preset.",
@@ -3543,7 +3554,7 @@ static struct menu_entry crop_rec_menu[] =
             },
             {
                 .name       = "Preset: ",  // CROP_PRESET_1X3
-                .priv       = &crop_preset_1x3_res,
+                .priv       = &crop_preset_1x3_res_menu,
                 .update     = crop_preset_1x3_res_update,
                 .max        = 2,
                 .choices    = CHOICES("Highest", "Higher", "Medium"),  // dummy choices, strings are being changed depending on aspect ratio and res
@@ -3553,7 +3564,7 @@ static struct menu_entry crop_rec_menu[] =
             },
             {
                 .name       = "Preset:  ",  // CROP_PRESET_3X3
-                .priv       = &crop_preset_3x3_res,
+                .priv       = &crop_preset_3x3_res_menu,
                 .update     = crop_preset_3x3_res_update,
                 .max        = 0,
                 .choices    = CHOICES("1736"),
@@ -3563,7 +3574,7 @@ static struct menu_entry crop_rec_menu[] =
             },
             {
                 .name       = "Aspect ratio:",
-                .priv       = &crop_preset_ar,
+                .priv       = &crop_preset_ar_menu,
                 .update     = &crop_preset_ar_update,
                 .max        = 4,
                 .choices    = CHOICES("16:9", "2:1", "2.20:1", "2.35:1", "2.39:1"),
@@ -3572,7 +3583,7 @@ static struct menu_entry crop_rec_menu[] =
             },
 /*          {
                 .name       = "Framerate:",
-                .priv       = &crop_preset_fps,
+                .priv       = &crop_preset_fps_menu,
                 .max        = 2,
                 .choices    = CHOICES("23.976", "25", "30"),
                 .help       = "Select framerate for current preset.",
@@ -3871,11 +3882,11 @@ static int old_3x3_preset;
 
 int check_if_settings_changed()
 {
-    if (old_ar_preset  != crop_preset_ar       ||
-        old_fps_preset != crop_preset_fps      ||
-        old_1x1_preset != crop_preset_1x1_res  ||
-        old_1x3_preset != crop_preset_1x3_res  ||
-        old_3x3_preset != crop_preset_3x3_res)
+    if (old_ar_preset  != crop_preset_ar_menu       ||
+        old_fps_preset != crop_preset_fps_menu      ||
+        old_1x1_preset != crop_preset_1x1_res_menu  ||
+        old_1x3_preset != crop_preset_1x3_res_menu  ||
+        old_3x3_preset != crop_preset_3x3_res_menu)
     {
         return 1;
     }
@@ -3953,11 +3964,11 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
         if (!menu_shown)
         {   
             // check crop_rec configurations while outside ML menu
-            old_ar_preset  = crop_preset_ar;
-            old_fps_preset = crop_preset_fps;
-            old_1x1_preset = crop_preset_1x1_res;
-            old_1x3_preset = crop_preset_1x3_res;
-            old_3x3_preset = crop_preset_3x3_res;
+            old_ar_preset  = crop_preset_ar_menu;
+            old_fps_preset = crop_preset_fps_menu;
+            old_1x1_preset = crop_preset_1x1_res_menu;
+            old_1x3_preset = crop_preset_1x3_res_menu;
+            old_3x3_preset = crop_preset_3x3_res_menu;
         }
     }
 
@@ -4388,11 +4399,11 @@ MODULE_CONFIGS_START()
     MODULE_CONFIG(crop_preset_index)
     MODULE_CONFIG(shutter_range)
     MODULE_CONFIG(bit_depth_analog)
-    MODULE_CONFIG(crop_preset_1x1_res)
-    MODULE_CONFIG(crop_preset_1x3_res)
-    MODULE_CONFIG(crop_preset_3x3_res)
-    MODULE_CONFIG(crop_preset_ar)
-    MODULE_CONFIG(crop_preset_fps)
+    MODULE_CONFIG(crop_preset_1x1_res_menu)
+    MODULE_CONFIG(crop_preset_1x3_res_menu)
+    MODULE_CONFIG(crop_preset_3x3_res_menu)
+    MODULE_CONFIG(crop_preset_ar_menu)
+    MODULE_CONFIG(crop_preset_fps_menu)
 MODULE_CONFIGS_END()
 
 MODULE_CBRS_START()
