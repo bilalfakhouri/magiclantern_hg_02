@@ -2454,9 +2454,6 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             Preview_R     = 0x1D000E;  // from mv1080 mode
             YUV_HD_S_H    = 0x10501B5;
             YUV_HD_S_V    = 0x1050341;
-
-            YUV_LV_S_V    = 0x1050249;
-            YUV_LV_Buf    = 0x13205A0;
         }
 
         if (Anam_Higher) /* 1600x2040 @ 23.976 FPS */
@@ -2484,6 +2481,12 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 TimerB        = 0xA2D;
                 TimerA        = 0x1FF;
             }
+            
+            Preview_H     = 1596;
+            Preview_V     = 2040;
+            Preview_R     = 0x1D000D;
+            YUV_HD_S_H    = 0x1050193;
+            YUV_HD_S_V    = 0x1050301;
         }
 
         if (Anam_Medium) /* 1472x1878 @ 23.976 FPS */
@@ -2511,7 +2514,16 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 TimerB        = 0xA2D;
                 TimerA        = 0x1FF;
             }
+
+            Preview_H     = 1468;
+            Preview_V     = 1878;
+            Preview_R     = 0x1D000D;
+            YUV_HD_S_H    = 0x1050173;
+            YUV_HD_S_V    = 0x10502C4;
         }
+
+        YUV_LV_S_V    = 0x1050249;
+        YUV_LV_Buf    = 0x13205A0;
     }
 
     Black_Bar = 0;
