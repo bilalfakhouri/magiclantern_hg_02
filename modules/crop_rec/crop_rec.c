@@ -1832,7 +1832,14 @@ static unsigned TimerA = 0;
 static unsigned RAW_H = 0;            // RAW width    resolution          0xC0F06804
 static unsigned RAW_V = 0;            // RAW vertical resolution          0xC0F06804
 
-static unsigned Preview_Control = 0;
+static unsigned Preview_Control = 0;        // Flag tells we want full real-time preview
+static unsigned Preview_Control_Basic = 0;  // Flag tells we want basic preview (cropped preview)
+
+/* used to center preview on RAW buffer in presets which have basic preview (cropped preview) */
+static unsigned Preview_x1 = 0;
+static unsigned Preview_x2 = 0;
+static unsigned Preview_y1 = 0;
+static unsigned Preview_y2 = 0;
 
 /* used to increase processed RAW data in LiveView, also show new image on screen via stretch regs */
 static unsigned Preview_H = 0;        // How much width to process        List of registers
@@ -1866,7 +1873,7 @@ static uint32_t EDMAC_9_Vertical_2 = 0;         // 0x453 , tweaking it has no ef
 static unsigned EDMAC_9_Vertical_Change = 0;    // flag to enable/disable EDMAC#9 tweaks
 
 /* used to recover preview height eaten by C0F38024 after increasing C0F38024 horizontal value */
-static unsigned Preview_V_Recover = 0;
+static int Preview_V_Recover = 0;
 
 /* used to center preview and clear VRAM artifacts */
 static unsigned preview_shift_value = 0;
@@ -1925,6 +1932,7 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         Preview_Control = 1;
         EDMAC_24_Redirect = 0;
         Preview_V_Recover = 0;
+        Preview_Control_Basic = 0;
     }
     
 /*  initially I wanted to make 2880x1226 preset, RAW data works there, the issue is I could only get 1073 height (from 1226) in preview (width was 2868)
@@ -1973,6 +1981,7 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         Preview_Control = 1;
         EDMAC_24_Redirect = 1;
         EDMAC_9_Vertical_Change = 1;
+        Preview_Control_Basic = 0;
     } 
 
     if (CROP_3K)
@@ -1993,8 +2002,16 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
             TimerA   = 0x35D;
         }
 
+        Preview_x1 = 0x10A;
+        Preview_x2 = 0x212;
+        Preview_y1 = 0x153;
+        Preview_y2 = 0x40F;
+
         Preview_Control = 0;
-        EDMAC_24_Redirect = 0;
+        EDMAC_24_Redirect = 1;
+        Preview_V_Recover = 0;
+        Preview_Control_Basic = 1;
+        EDMAC_9_Vertical_Change = 1;
     }
 
     if (CROP_1440p)
@@ -2030,6 +2047,7 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         Preview_Control = 1;
         EDMAC_24_Redirect = 1;
         EDMAC_9_Vertical_Change = 1;
+        Preview_Control_Basic = 0;
     }
 
     if (CROP_Full_Res) /* 5208x3478 @ 2 FPS */
@@ -2050,8 +2068,16 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
             TimerA   = 0x573;
         }
 
+        Preview_x1 = 0x217;
+        Preview_x2 = 0x31F;
+        Preview_y1 = 0x593;
+        Preview_y2 = 0x84C;
+
         Preview_Control = 0;
-        EDMAC_24_Redirect = 0;
+        EDMAC_24_Redirect = 1;
+        Preview_V_Recover = 820;  // is this dangrous? this exceeds vertical EDMAC#9 size in photo mode which is 3529 (to 4326)  
+        Preview_Control_Basic = 1;
+        EDMAC_9_Vertical_Change = 1;
     }
 
     if (Preview_Control)
@@ -2086,6 +2112,24 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         //  case 0xC0F11BC8: return YUV_HD_S_V_E; // overriding it from here doesn't work
             case 0xC0F11ACC: return YUV_LV_S_V;
             case 0xC0F04210: return YUV_LV_Buf;
+        }
+    }
+
+    if (Preview_Control_Basic)
+    {
+        if (EDMAC_9_Vertical_Change)
+        {
+            if (MEM(EDMAC_9_Vertical_1) != (RAW_V - 1) + Preview_V_Recover ||
+                MEM(EDMAC_9_Vertical_2) != (RAW_V - 1) + Preview_V_Recover) // set our new value if not set yet
+            {
+                MEM(EDMAC_9_Vertical_1)  = (RAW_V - 1) + Preview_V_Recover ;
+                MEM(EDMAC_9_Vertical_2)  = (RAW_V - 1) + Preview_V_Recover;
+            }
+
+            switch (reg)
+            {
+               case 0xC0F08184: return (RAW_V - 1) + Preview_V_Recover; // used to exceed vertical preview limit
+            }
         }
     }
 
@@ -2658,6 +2702,7 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
     Preview_Control = 1;
     EDMAC_24_Redirect = 1;
     EDMAC_9_Vertical_Change = 1;
+    Preview_Control_Basic = 0;
 
     if (Preview_Control)
     {
@@ -2870,6 +2915,7 @@ static inline uint32_t reg_override_3X3(uint32_t reg, uint32_t old_val)
     Black_Bar = 0;
     YUV_HD_S_V_E  = 0;
     Preview_Control = 1;
+    Preview_Control_Basic = 0;
 
     if (Preview_Control)
     {
@@ -3097,7 +3143,7 @@ static void FAST EngDrvOut_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     if (dst == 0xC0F2)
     {
         // 0xC0F26808 register sets EDMAC#24 buffer address, change it to Photo mode buffer address
-        if (Preview_Control && EDMAC_24_Redirect)
+        if (EDMAC_24_Redirect)
         {
             // we need to know when to override 0xC0F26808, detect it from 0xC0F26804, it's always
             // being set to 0x40000000 before setting 0xC0F26808 value
@@ -3163,6 +3209,22 @@ static void FAST EngDrvOut_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                 case 0xB0DC: regs[1] = ( Preview_V        << 16)   + Preview_H + 0x4f;      break;
             }
         }
+
+        // basic preview: fix broken preview casued by increasing width RAW resolution, also center the preview
+        if (Preview_Control_Basic)
+        {
+            switch (reg)
+            {
+                case 0x8024: 
+                if (is_700D || is_EOSM || is_650D)
+                             regs[1] = ((RAW_V - 1) << 16)  + RAW_H - 0x11;                 
+                if (is_100D) regs[1] = ((RAW_V - 5) << 16)  + RAW_H - 0x1A;                 break;
+                
+                /* used here to center Canon cropped preview on RAW buffer */
+                case 0x83D4: regs[1] =  (Preview_y1 << 16) + Preview_x1;                    break;
+                case 0x83DC: regs[1] =  (Preview_y2 << 16) + Preview_x2;                    break;
+            }
+        }
     }
 
     if (dst == 0xC0F4)
@@ -3206,29 +3268,29 @@ static void FAST EngDrvOuts_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             *(uint32_t*) (regs[1] + 8)    = ((Preview_V + 0xa) << 16) + Preview_H + 0xb;   // 0xC0F3A0A0
             *(uint32_t*) (regs[1] + 0x18) = ((Preview_V + 0xa) << 16) + Preview_H + 0x8;   // 0xC0F3A0B0
         }
+    }
 
-        /* change EDMAC#24 buffer size 0xC0F26810 to photo mode buffer size */
-        if (EDMAC_24_Redirect)
+    /* change EDMAC#24 buffer size 0xC0F26810 to photo mode buffer size */
+    if (EDMAC_24_Redirect)
+    {
+        if (data == 0xC0F2680C)
         {
-            if (data == 0xC0F2680C)
+            // we need to know when to set buffer size because the channel does other things before
+            // setting the final buffer size which we want to change, let's use 0xC0F35084 as flag because
+            // it's always being set after "the other things" finish and before setting 0xC0F26810 final size
+            if (shamem_read(0xC0F35084) == 0xA1F)
             {
-                // we need to know when to set buffer size because the channel does other things before
-                // setting the final buffer size which we want to change, let's use 0xC0F35084 as flag because
-                // it's always being set after "the other things" finish and before setting 0xC0F26810 final size
-                if (shamem_read(0xC0F35084) == 0xA1F)
+                if (is_650D || is_700D || is_EOSM)
                 {
-                    if (is_650D || is_700D || is_EOSM)
-                    {
-                        *(uint32_t*) (regs[1] + 4) = 0x3237e;
-                    }
-
-                    if (is_100D)
-                    {
-                        *(uint32_t*) (regs[1] + 4) = 0x1f32da;
-                    }
+                    *(uint32_t*) (regs[1] + 4) = 0x3237e;
                 }
-            }  
-        }
+
+                if (is_100D)
+                {
+                    *(uint32_t*) (regs[1] + 4) = 0x1f32da;
+                }
+            }
+        }  
     }
 }
 
@@ -3265,15 +3327,15 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
 
     if (CROP_PRESET_MENU == CROP_PRESET_1X1)
     {
-        if (crop_preset_1x1_res == 0)       // CROP_2_5K
+        if (crop_preset_1x1_res == 0)  // CROP_2_5K
         {
             preview_shift_value = 0x1F4A0;
             Shift_Preview = 1;
             Clear_Artifacts = 1;
             EDMAC_9_Vertical_Change = 0;
         }
-        
-        else if (crop_preset_1x1_res == 1)  // CROP_2_8K
+
+        if (crop_preset_1x1_res == 1)  // CROP_2_8K
         {
             preview_shift_value = 0x1F4A0;
             Shift_Preview = 1;
@@ -3281,7 +3343,7 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
             EDMAC_9_Vertical_Change = 1;
         }
 
-        else if (crop_preset_1x1_res == 3)  // CROP_1440p
+        if (crop_preset_1x1_res == 3)  // CROP_1440p
         {
             preview_shift_value = 0xD5C0;
             Shift_Preview = 1;
@@ -3289,12 +3351,13 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
             EDMAC_9_Vertical_Change = 1;
         }
 
-        /* not supported presets, turn these off */
-        else
+        if (crop_preset_1x1_res == 2 ||  // CROP_3K
+            crop_preset_1x1_res == 4  )  // CROP_Full_Res
         {
             preview_shift_value = 0;
             Shift_Preview = 0;
             Clear_Artifacts = 0;
+            EDMAC_9_Vertical_Change = 1;
         }
     }
 
