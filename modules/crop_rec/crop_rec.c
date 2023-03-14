@@ -1903,7 +1903,7 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         if (is_100D)
         {
             RAW_H         = 0x2a1;
-            RAW_V         = 0x458;
+            RAW_V         = 0x459;
             TimerB        = 0x5B3;
             TimerA        = 0x2DB;
         }
@@ -1951,7 +1951,7 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         if (is_100D)
         {
             RAW_H         = 0x2FB;
-            RAW_V         = 0x4EC;
+            RAW_V         = 0x4EB;
             TimerB        = 0x673;
             TimerA        = 0x327;
         }
@@ -1988,7 +1988,7 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         if (is_100D)
         {
             RAW_H    = 0x32B;
-            RAW_V    = 0x53E;
+            RAW_V    = 0x53D;
             TimerB   = 0x60B;
             TimerA   = 0x35D;
         }
@@ -2010,7 +2010,7 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         if (is_100D)
         {
             RAW_H    = 0x2AB;
-            RAW_V    = 0x5C2;
+            RAW_V    = 0x5C1;
             TimerB   = 0x719;
             TimerA   = 0x2DD;
         }
@@ -2045,7 +2045,7 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         if (is_100D)
         {
             RAW_H    = 0x541;
-            RAW_V    = 0xDB8;
+            RAW_V    = 0xDB7;
             TimerB   = 0x2CC0;
             TimerA   = 0x573;
         }
@@ -2143,7 +2143,7 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             if (is_100D)
             {
                 RAW_H         = 0x1A3; /*  @ 22.250 FPS */
-                RAW_V         = 0xA0C;
+                RAW_V         = 0xA0B;
                 TimerB        = 0xB07;  // we might be able to lower TimerB a little more
                 TimerA        = 0x1FF;  // lowering TimerA under 0x1FF --> black image (RAW data), anyway to exceed minimal Timer A limit?
             }
@@ -2188,7 +2188,7 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             if (is_100D)
             {
                 RAW_H         = 0x183;  /* 1376x2322 to achieve 23.976 FPS */
-                RAW_V         = 0x934;
+                RAW_V         = 0x933;
                 TimerB        = 0xA2E;
                 TimerA        = 0x1FF;
 
@@ -2221,7 +2221,7 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             if (is_100D)
             {
                 RAW_H         = 0x16B;
-                RAW_V         = 0x892;
+                RAW_V         = 0x891;
                 TimerB        = 0xA2E;
                 TimerA        = 0x1FF;
             }
@@ -2260,7 +2260,7 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             if (is_100D)
             {
                 RAW_H         = 0x1BB; /* @ 23.300 FPS */
-                RAW_V         = 0x982;
+                RAW_V         = 0x981;
                 TimerB        = 0xA79;
                 TimerA        = 0x1FF;
             }
@@ -2293,7 +2293,7 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             if (is_100D)
             {
                 RAW_H         = 0x19B;
-                RAW_V         = 0x8C2;
+                RAW_V         = 0x8C1;
                 TimerB        = 0xA2D;
                 TimerA        = 0x1FF;
             }
@@ -2474,7 +2474,7 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             if (is_100D)
             {
                 RAW_H         = 0x1DD;
-                RAW_V         = 0x8C8;
+                RAW_V         = 0x8C7;
                 TimerB        = 0x9CB;
                 TimerA        = 0x213;  // can be lowered even more? need to be fine tuned
             }
