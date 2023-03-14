@@ -1952,8 +1952,8 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         {
             RAW_H         = 0x2FB;
             RAW_V         = 0x4EB;
-            TimerB        = 0x673;
-            TimerA        = 0x327;
+            TimerB        = 0x666;
+            TimerA        = 0x32D;
         }
 
         Preview_H         = 2868;  // black bar above 2868
