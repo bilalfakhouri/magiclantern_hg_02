@@ -3634,6 +3634,30 @@ static MENU_UPDATE_FUNC(crop_update)
     }
 }
 
+static MENU_UPDATE_FUNC(crop_preset_1x1_res_update)
+{
+    if (crop_preset_1x1_res_menu == 0)
+    {
+        MENU_SET_HELP("2520x1080 @ 23.976, 25 and 30 FPS");
+    }
+    if (crop_preset_1x1_res_menu == 1)
+    {
+        MENU_SET_HELP("2880x1226 @ 23.976 and 25 FPS");
+    }
+    if (crop_preset_1x1_res_menu == 2)
+    {
+        MENU_SET_HELP("3072x1308 @ 23.976 FPS. Has cropped centered real-time preview.");
+    }
+    if (crop_preset_1x1_res_menu == 3)
+    {
+        MENU_SET_HELP("2560x1440 @ 23.976 and 25 FPS");
+    }
+    if (crop_preset_1x1_res_menu == 4)
+    {
+        MENU_SET_HELP("5208x3478 @ 2 FPS. Has cropped centered real-time preview.");
+    }
+}
+
 static MENU_UPDATE_FUNC(crop_preset_1x3_res_update)
 {
     if (crop_preset_ar_menu == 0) // AR_16_9
@@ -3680,6 +3704,16 @@ static MENU_UPDATE_FUNC(crop_preset_ar_update)
     {
         if (crop_preset_ar_menu == 4) MENU_SET_VALUE("2.50:1"); // AR_2_39_1 // we are using AR_2_39_1 as 2.50:1 in this case
     }
+
+    if (CROP_PRESET_MENU == CROP_PRESET_1X1)
+    {
+        if (crop_preset_1x1_res_menu == 0) MENU_SET_VALUE("2.33:1");  // CROP_2_5K
+        if (crop_preset_1x1_res_menu == 1) MENU_SET_VALUE("2.35:1");  // CROP_2_8K
+        if (crop_preset_1x1_res_menu == 2) MENU_SET_VALUE("2.35:1");  // CROP_3K
+        if (crop_preset_1x1_res_menu == 3) MENU_SET_VALUE("16:9");    // CROP_1440p
+        if (crop_preset_1x1_res_menu == 4) MENU_SET_VALUE("3:2");     // CROP_Full_Res
+        MENU_SET_WARNING(MENU_WARN_ADVICE, "This option doesn't work in 1:1 crop.");
+    }
 }
 
 static MENU_UPDATE_FUNC(target_yres_update)
@@ -3707,6 +3741,7 @@ static struct menu_entry crop_rec_menu[] =
             {
                 .name       = "Preset:",   // CROP_PRESET_1X1
                 .priv       = &crop_preset_1x1_res_menu,
+                .update     = crop_preset_1x1_res_update,
                 .max        = 4,
                 .choices    = CHOICES("2.5K", "2.8K", "3K", "1440p", "Full-Res LV"),
                 .help       = "Choose 1:1 preset.",
