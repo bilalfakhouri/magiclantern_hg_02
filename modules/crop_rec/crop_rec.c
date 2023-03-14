@@ -12,6 +12,7 @@
 #include <fps.h>
 #include <shoot.h>
 #include <lens.h>
+#include <focus.h>
 #include "../mlv_lite/mlv_lite.h"
 
 #undef CROP_DEBUG
@@ -3873,6 +3874,15 @@ static void set_zoom(int zoom)
     prop_request_change_wait(PROP_LV_DISPSIZE, &zoom, 4, 1000);
 }
 
+/* faster version than the one from ML core */
+static void set_lv_af_mode(int lv_af_mode)
+{
+    if (!lv) return;
+    if (RECORDING) return;
+    if (lv_af_mode > 3 && lv_af_mode != 0) lv_af_mode = 1;
+    prop_request_change(PROP_LIVE_VIEW_AF_SYSTEM, &lv_af_mode, 4);
+}
+
 /* variables for 650D / 700D / EOSM/M2 / 100D help to detect if settings changed */
 static int old_ar_preset;
 static int old_fps_preset;
@@ -3951,16 +3961,38 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
     {
         center_canon_preview();
     }
-    
+
     /* 650D / 700D / EOSM/M2 / 100D preferences */
     if (is_DIGIC_5)
     {
         // all of our presets work in x5 mode because of preview, even none-cropped ones
-        if (lv_dispsize == 1 && CROP_PRESET_MENU) 
+        if (lv_dispsize == 1 && CROP_PRESET_MENU && !RECORDING) 
         {
-            set_zoom(5);
+            if (is_manual_focus())
+            {
+                set_zoom(5);
+            }
+
+            // our presets works only in x5 mode (when lv_af_mode set to "Tracking", we can't enter x5 mode anymore)
+            // "Multi" uses x1 mode while focusing and it does work, but won't work with 100D due to crash mentioned in 
+            // is_supported_mode(), "Single" appears to be the best in our case beside we can use it in x10 for focusing.
+            // well, "Single" can also do focusing in x5 mode, but since we are modifying preview, autofocus in x5 mode
+            // won't give accurate results, it seems modifying preiew break AF data
+            // FlexiZone - Single = 1, Tracking = 2, FlexiZone - Multi = 3
+            if (!is_manual_focus() && lv_af_mode != 1) // AF mode not set to FlexiZone - Single
+            {
+                gui_uilock(UILOCK_EVERYTHING);
+                set_lv_af_mode(1); // Set it to FlexiZone - Single
+                gui_uilock(UILOCK_NONE);
+                NotifyBox(2500,"AF mode was set to FlexiZone Single");
+            }
+
+            if (!is_manual_focus() && lv_af_mode == 1)
+            {
+                set_zoom(5);
+            }
         }
-        
+
         if (!menu_shown)
         {   
             // check crop_rec configurations while outside ML menu
