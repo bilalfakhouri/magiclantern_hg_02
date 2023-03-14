@@ -861,7 +861,7 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                     cmos_new[7] = 0x326;
                 }
             }
-            if (AR_2_35_1)
+            if (AR_2_35_1 || AR_2_39_1)
             {
                 if (Anam_Highest)
                 {
@@ -2556,6 +2556,103 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
         YUV_LV_Buf    = 0x13205A0;
     }
 
+    if (AR_2_39_1)
+    {
+        if (Anam_Highest) /* 1736x2178 @ 23.976 FPS */
+        {
+            if (is_650D || is_700D || is_EOSM)
+            {
+                RAW_H         = 0x1D4;  // from mv1080 mode
+                RAW_V         = 0x89E;
+                TimerB        = 0xA05;
+                TimerA        = 0x207;
+            }
+
+            if (is_100D)
+            {
+                RAW_H         = 0x1DD;
+                RAW_V         = 0x8A3;
+                TimerB        = 0x9CB;
+                TimerA        = 0x213;  // can be lowered even more? need to be fine tuned
+            }
+
+            Preview_H     = 1728;      // from mv1080 mode
+            Preview_V     = 2178;
+            Preview_R     = 0x1D000E;  // from mv1080 mode
+            YUV_HD_S_H    = 0x10501B5;
+            YUV_HD_S_V    = 0x1050336;
+        }
+
+        if (Anam_Higher) /* 1600x2008 @ 23.976 FPS */
+        {
+            if (is_650D || is_700D)
+            {
+                RAW_H         = 0x1B2;
+                RAW_V         = 0x7F4;
+                TimerB        = 0xAB9;
+                TimerA        = 0x1E5;
+            }
+
+            if (is_EOSM)
+            {
+                RAW_H         = 0x1B2;
+                RAW_V         = 0x7F4;
+                TimerB        = 0xA2D;
+                TimerA        = 0x1FF;
+            }
+
+            if (is_100D)
+            {
+                RAW_H         = 0x1BB;
+                RAW_V         = 0x7F9;
+                TimerB        = 0xA2D;
+                TimerA        = 0x1FF;
+            }
+
+            Preview_H     = 1596;
+            Preview_V     = 2008;
+            Preview_R     = 0x1D000D;
+            YUV_HD_S_H    = 0x1050193;
+            YUV_HD_S_V    = 0x10502F4;
+        }
+
+        if (Anam_Medium) /* 1472x1846 @ 23.976 FPS */
+        {
+            if (is_650D || is_700D)
+            {
+                RAW_H         = 0x192;
+                RAW_V         = 0x752;
+                TimerB        = 0xB7A;
+                TimerA        = 0x1C5;
+            }
+
+            if (is_EOSM)
+            {
+                RAW_H         = 0x192;
+                RAW_V         = 0x752;
+                TimerB        = 0xA2D;
+                TimerA        = 0x1FF;
+            }
+
+            if (is_100D)
+            {
+                RAW_H         = 0x19B;
+                RAW_V         = 0x757;
+                TimerB        = 0xA2D;
+                TimerA        = 0x1FF;
+            }
+
+            Preview_H     = 1468;
+            Preview_V     = 1846;
+            Preview_R     = 0x1D000D;
+            YUV_HD_S_H    = 0x1050173;
+            YUV_HD_S_V    = 0x10502B6;
+        }
+
+        YUV_LV_S_V    = 0x1050253;
+        YUV_LV_Buf    = 0x12D05A0;
+    }
+
     Black_Bar = 0;
     YUV_HD_S_V_E  = 0;
     Preview_Control = 1;
@@ -3225,7 +3322,7 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
 
         if (crop_preset_ar == 4)  // 2.39:1
         {
-            preview_shift_value = 0x1F4A0; // dummy value, needs tweaking
+            preview_shift_value = 0x1F4A0;
         }
 
         Shift_Preview = 1;
