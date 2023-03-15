@@ -1903,16 +1903,20 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         {
             RAW_H         = 0x298;
             RAW_V         = 0x454;
-            TimerB        = 0x5D3;
             TimerA        = 0x2CB;
+            if (Framerate_24) TimerB = 0x747;
+            if (Framerate_25) TimerB = 0x6FA;
+            if (Framerate_30) TimerB = 0x5D3;
         }
 
         if (is_100D)
         {
             RAW_H         = 0x2a1;
             RAW_V         = 0x459;
-            TimerB        = 0x5B3;
             TimerA        = 0x2DB;
+            if (Framerate_24) TimerB = 0x737;
+            if (Framerate_25) TimerB = 0x6EA;
+            if (Framerate_30) TimerB = 0x5B3;
         }
 
         // Preview_H should be = active RAW width - 4? , 2520 - 4 = 2516 (active RAW width is 2520)
@@ -1952,8 +1956,10 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         {
             RAW_H         = 0x2F2;
             RAW_V         = 0x4E6;
-            TimerB        = 0x676;
             TimerA        = 0x325;
+            if (Framerate_24) TimerB = 0x676;
+            if (Framerate_25) TimerB = 0x633;
+            if (Framerate_30) TimerB = 0x633;  // 30 Doesn't work, make it 25
         }
 
         if (is_100D)
@@ -1962,6 +1968,9 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
             RAW_V         = 0x4EB;
             TimerB        = 0x666;
             TimerA        = 0x32D;
+            if (Framerate_24) TimerB = 0x666;
+            if (Framerate_25) TimerB = 0x623;
+            if (Framerate_30) TimerB = 0x623;  // 30 Doesn't work, make it 25
         }
 
         Preview_H         = 2868;  // black bar above 2868
@@ -2020,16 +2029,20 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         {
             RAW_H    = 0x2A2;
             RAW_V    = 0x5BC;
-            TimerB   = 0x71E;
             TimerA   = 0x2DB;
+            if (Framerate_24) TimerB = 0x71E;
+            if (Framerate_25) TimerB = 0x6D3;
+            if (Framerate_30) TimerB = 0x6D3;  // 30 Doesn't work, make it 25
         }
 
         if (is_100D)
         {
             RAW_H    = 0x2AB;
             RAW_V    = 0x5C1;
-            TimerB   = 0x719;
             TimerA   = 0x2DD;
+            if (Framerate_24) TimerB = 0x719;
+            if (Framerate_25) TimerB = 0x6CE;
+            if (Framerate_30) TimerB = 0x6CE;  // 30 Doesn't work, make it 25
         }
 
         Preview_H     = 2552;  // 2556 causes preview artifacts
@@ -2203,10 +2216,12 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
         {
             if (is_650D || is_700D)
             {
-                RAW_H         = 0x17E;  /* 1392x2350 @ 23.976 FPS */
+                RAW_H         = 0x17E;  /* 1392x2350 @ 23.976 and 25 FPS */
                 RAW_V         = 0x94A;
-                TimerB        = 0xBCA;
                 TimerA        = 0x1B9;
+                if (Framerate_24) TimerB = 0xBCA;
+                if (Framerate_25) TimerB = 0xB4E;
+                if (Framerate_30) TimerB = 0xB4E; // 30 Doesn't work, make it 25
 
                 Preview_H     = 1388;
                 Preview_V     = 2350;
@@ -2244,30 +2259,36 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             }
         }
 
-        if (Anam_Medium) /* 1280x2160 */
+        if (Anam_Medium) /* 1280x2160 @ 23.976 and 25 FPS */
         {
             if (is_650D || is_700D)
             {
                 RAW_H         = 0x162;  
                 RAW_V         = 0x88C;
-                TimerB        = 0xBCA;
                 TimerA        = 0x1B9;
+                if (Framerate_24) TimerB = 0xBCA;
+                if (Framerate_25) TimerB = 0xB4E;
+                if (Framerate_30) TimerB = 0xB4E; // 30 Doesn't work, make it 25
             }
 
             if (is_EOSM)
             {
                 RAW_H         = 0x162;
                 RAW_V         = 0x88C;
-                TimerB        = 0xA2E;
                 TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2E;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
             }
 
             if (is_100D)
             {
                 RAW_H         = 0x16B;
                 RAW_V         = 0x891;
-                TimerB        = 0xA2E;
                 TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2E;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
             }
 
             Preview_H     = 1276;
@@ -2316,30 +2337,36 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             YUV_HD_S_V    = 0x1050389;
         }
 
-        if (Anam_Higher) /* 1472x2208 @ 23.976 */
+        if (Anam_Higher) /* 1472x2208 @ 23.976 and 25 FPS */
         {
             if (is_650D || is_700D)
             {
                 RAW_H         = 0x192;  
                 RAW_V         = 0x8BC;
-                TimerB        = 0xB7A;
                 TimerA        = 0x1C5;
+                if (Framerate_24) TimerB = 0xB7A;
+                if (Framerate_25) TimerB = 0xB02;
+                if (Framerate_30) TimerB = 0xB02; // 30 Doesn't work, make it 25
             }
 
             if (is_EOSM)
             {
                 RAW_H         = 0x192;
                 RAW_V         = 0x8BC;
-                TimerB        = 0xA2D;
                 TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2D;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
             }
 
             if (is_100D)
             {
                 RAW_H         = 0x19B;
                 RAW_V         = 0x8C1;
-                TimerB        = 0xA2D;
                 TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2D;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
             }
 
             Preview_H     = 1468;
@@ -2349,30 +2376,36 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             YUV_HD_S_V    = 0x1050341;
         }
 
-        if (Anam_Medium) /* 1360x2040 @ 23.976 */
+        if (Anam_Medium) /* 1360x2040 @ 23.976 and 25 FPS */
         {
             if (is_650D || is_700D)
             {
                 RAW_H         = 0x176;  
                 RAW_V         = 0x814;
-                TimerB        = 0xBCA;
                 TimerA        = 0x1B9;
+                if (Framerate_24) TimerB = 0xBCA;
+                if (Framerate_25) TimerB = 0xB4E;
+                if (Framerate_30) TimerB = 0xB4E; // 30 Doesn't work, make it 25
             }
 
             if (is_EOSM)
             {
                 RAW_H         = 0x176;
                 RAW_V         = 0x814;
-                TimerB        = 0xA2D;
                 TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2D;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
             }
 
             if (is_100D)
             {
                 RAW_H         = 0x17F;
                 RAW_V         = 0x819;
-                TimerB        = 0xA2D;
                 TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2D;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
             }
 
             Preview_H     = 1356;
@@ -2439,24 +2472,30 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             {
                 RAW_H         = 0x1A6;
                 RAW_V         = 0x860;
-                TimerB        = 0xAFE;
                 TimerA        = 0x1D9;
+                if (Framerate_24) TimerB = 0xAFE;
+                if (Framerate_25) TimerB = 0xA8B;
+                if (Framerate_30) TimerB = 0xA8B; // 30 Doesn't work, make it 25
             }
 
             if (is_EOSM)
             {
                 RAW_H         = 0x1A6;
                 RAW_V         = 0x860;
-                TimerB        = 0xA2E;
                 TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2E;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
             }
 
             if (is_100D)
             {
                 RAW_H         = 0x1AF;
                 RAW_V         = 0x865;
-                TimerB        = 0xA2E;
                 TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2E;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
             }
 
             Preview_H     = 1548;
@@ -2472,24 +2511,30 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             {
                 RAW_H         = 0x186;
                 RAW_V         = 0x7B2;
-                TimerB        = 0xBCA;
                 TimerA        = 0x1B9;
+                if (Framerate_24) TimerB = 0xBCA;
+                if (Framerate_25) TimerB = 0xB4E;
+                if (Framerate_30) TimerB = 0xB4E; // 30 Doesn't work, make it 25
             }
 
             if (is_EOSM)
             {
                 RAW_H         = 0x186;
                 RAW_V         = 0x7B2;
-                TimerB        = 0xA2E;
                 TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2E;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
             }
 
             if (is_100D)
             {
                 RAW_H         = 0x18F;
                 RAW_V         = 0x7B7;
-                TimerB        = 0xA2E;
                 TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2E;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
             }
 
             Preview_H     = 1420;
@@ -2536,24 +2581,30 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             {
                 RAW_H         = 0x1B2;
                 RAW_V         = 0x814;
-                TimerB        = 0xAB9;
                 TimerA        = 0x1E5;
+                if (Framerate_24) TimerB = 0xAB9;
+                if (Framerate_25) TimerB = 0xA48;
+                if (Framerate_30) TimerB = 0xA48; // 30 Doesn't work, make it 25
             }
 
             if (is_EOSM)
             {
                 RAW_H         = 0x1B2;
                 RAW_V         = 0x814;
-                TimerB        = 0xA2D;
                 TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2D;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
             }
 
             if (is_100D)
             {
                 RAW_H         = 0x1BB;
                 RAW_V         = 0x819;
-                TimerB        = 0xA2D;
                 TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2D;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
             }
             
             Preview_H     = 1596;
@@ -2569,24 +2620,30 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             {
                 RAW_H         = 0x192;
                 RAW_V         = 0x772;
-                TimerB        = 0xB7A;
                 TimerA        = 0x1C5;
+                if (Framerate_24) TimerB = 0xB7A;
+                if (Framerate_25) TimerB = 0xB02;
+                if (Framerate_30) TimerB = 0xB02; // 30 Doesn't work, make it 25
             }
 
             if (is_EOSM)
             {
                 RAW_H         = 0x192;
                 RAW_V         = 0x772;
-                TimerB        = 0xA2D;
                 TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2D;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
             }
 
             if (is_100D)
             {
                 RAW_H         = 0x19B;
                 RAW_V         = 0x777;
-                TimerB        = 0xA2D;
                 TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2D;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
             }
 
             Preview_H     = 1468;
@@ -2633,24 +2690,30 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             {
                 RAW_H         = 0x1B2;
                 RAW_V         = 0x7F4;
-                TimerB        = 0xAB9;
                 TimerA        = 0x1E5;
+                if (Framerate_24) TimerB = 0xAB9;
+                if (Framerate_25) TimerB = 0xA48;
+                if (Framerate_30) TimerB = 0xA48; // 30 Doesn't work, make it 25
             }
 
             if (is_EOSM)
             {
                 RAW_H         = 0x1B2;
                 RAW_V         = 0x7F4;
-                TimerB        = 0xA2D;
                 TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2D;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
             }
 
             if (is_100D)
             {
                 RAW_H         = 0x1BB;
                 RAW_V         = 0x7F9;
-                TimerB        = 0xA2D;
                 TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2D;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
             }
 
             Preview_H     = 1596;
@@ -2666,24 +2729,30 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             {
                 RAW_H         = 0x192;
                 RAW_V         = 0x752;
-                TimerB        = 0xB7A;
                 TimerA        = 0x1C5;
+                if (Framerate_24) TimerB = 0xB7A;
+                if (Framerate_25) TimerB = 0xB02;
+                if (Framerate_30) TimerB = 0xB02; // 30 Doesn't work, make it 25
             }
 
             if (is_EOSM)
             {
                 RAW_H         = 0x192;
                 RAW_V         = 0x752;
-                TimerB        = 0xA2D;
                 TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2D;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
             }
 
             if (is_100D)
             {
                 RAW_H         = 0x19B;
                 RAW_V         = 0x757;
-                TimerB        = 0xA2D;
                 TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2D;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
             }
 
             Preview_H     = 1468;
@@ -3716,6 +3785,54 @@ static MENU_UPDATE_FUNC(crop_preset_ar_update)
     }
 }
 
+static MENU_UPDATE_FUNC(crop_preset_fps_update)
+{
+    if (CROP_PRESET_MENU == CROP_PRESET_1X1)
+    {
+        if ((crop_preset_1x1_res_menu == 1 || 
+             crop_preset_1x1_res_menu == 3) && crop_preset_fps_menu == 2) // CROP_2_8K, CROP_1440p and 30 FPS
+        {
+            MENU_SET_VALUE("25 FPS");
+            MENU_SET_WARNING(MENU_WARN_ADVICE, "30 FPS doesn't work in current preset.");
+        }
+
+        if (crop_preset_1x1_res_menu == 2 && crop_preset_fps_menu > 0) // CROP_3K and 25, 30 FPS
+        {
+            MENU_SET_VALUE("23.976 FPS");
+            MENU_SET_WARNING(MENU_WARN_ADVICE, "25 and 30 FPS doesn't work in current preset.");
+        }
+
+        if (crop_preset_1x1_res_menu == 4) // CROP_Full_Res
+        {
+            MENU_SET_VALUE("2 FPS");
+            MENU_SET_WARNING(MENU_WARN_ADVICE, "This option doesn't work with Full-Res LV.");
+        }
+    }
+
+    if (CROP_PRESET_MENU == CROP_PRESET_3X3)
+    {
+        if (is_650D || is_700D || is_EOSM)
+        {
+            if (crop_preset_ar_menu == 0) MENU_SET_VALUE("46.800 FPS"); // AR_16_9
+            if (crop_preset_ar_menu == 1) MENU_SET_VALUE("50 FPS");     // AR_2_1
+            if (crop_preset_ar_menu == 2) MENU_SET_VALUE("54 FPS");     // AR_2_20_1
+            if (crop_preset_ar_menu == 3) MENU_SET_VALUE("57 FPS");     // AR_2_35_1
+            if (crop_preset_ar_menu == 4) MENU_SET_VALUE("60 FPS");     // AR_2_39_1  // actually 2.50:1 aspect ratio
+        }
+
+        if (is_100D)
+        {
+            if (crop_preset_ar_menu == 0) MENU_SET_VALUE("46.300 FPS"); // AR_16_9
+            if (crop_preset_ar_menu == 1) MENU_SET_VALUE("50 FPS");     // AR_2_1
+            if (crop_preset_ar_menu == 2) MENU_SET_VALUE("54 FPS");     // AR_2_20_1
+            if (crop_preset_ar_menu == 3) MENU_SET_VALUE("55.6 FPS");   // AR_2_35_1
+            if (crop_preset_ar_menu == 4) MENU_SET_VALUE("58 FPS");     // AR_2_39_1  // actually 2.50:1 aspect ratio
+        }
+
+        MENU_SET_WARNING(MENU_WARN_ADVICE, "This option doesn't work in 3x3 mode.");
+    }
+}
+
 static MENU_UPDATE_FUNC(target_yres_update)
 {
     MENU_SET_RINFO("from %d", max_resolutions[crop_preset][get_video_mode_index()]);
@@ -3774,14 +3891,14 @@ static struct menu_entry crop_rec_menu[] =
                 .choices    = CHOICES("16:9", "2:1", "2.20:1", "2.35:1", "2.39:1"),
                 .help       = "Select aspect ratio for current preset.",
             },
-/*          {
+            {
                 .name       = "Framerate:",
                 .priv       = &crop_preset_fps_menu,
+                .update     = &crop_preset_fps_update,
                 .max        = 2,
-                .choices    = CHOICES("23.976", "25", "30"),
+                .choices    = CHOICES("23.976 FPS", "25 FPS", "30 FPS"),
                 .help       = "Select framerate for current preset.",
-                .icon_type  = IT_ALWAYS_ON,
-            },*/
+            },
             {
                 .name       = "Bit-depth",
                 .priv       = &bit_depth_analog,
