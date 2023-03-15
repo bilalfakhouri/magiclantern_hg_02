@@ -3731,30 +3731,111 @@ static MENU_UPDATE_FUNC(crop_preset_1x3_res_update)
 {
     if (crop_preset_ar_menu == 0) // AR_16_9
     {
-        if (crop_preset_1x3_res_menu == 0) MENU_SET_VALUE("4.5K"); // Anam_Highest
-        if (crop_preset_1x3_res_menu == 1) MENU_SET_VALUE("4.2K"); // Anam_Higher
-        if (crop_preset_1x3_res_menu == 2) MENU_SET_VALUE("UHD");  // Anam_Medium
+        if (crop_preset_1x3_res_menu == 0) // Anam_Highest
+        {
+            MENU_SET_VALUE("4.5K");
+            if (is_650D || is_700D)MENU_SET_HELP("1504x2538 @ 23.976 FPS");
+            if (is_EOSM || is_100D)MENU_SET_HELP("1504x2538 @ 22.250 FPS");
+        }      
+
+        if (crop_preset_1x3_res_menu == 1) // Anam_Higher
+        {
+            MENU_SET_VALUE("4.2K");
+            if (is_650D || is_700D)MENU_SET_HELP("1392x2350 @ 23.976 and 25 FPS");
+            if (is_EOSM || is_100D)MENU_SET_HELP("1376x2322 @ 23.976 FPS");
+        }
+
+        if (crop_preset_1x3_res_menu == 2) // Anam_Medium
+        {
+            MENU_SET_VALUE("UHD");
+            MENU_SET_HELP("1280x2160 @ 23.976 and 25 FPS");
+        }            
     }
 
     if (crop_preset_ar_menu == 1) // AR_2_1
     {
-        if (crop_preset_1x3_res_menu == 0) MENU_SET_VALUE("4.8K"); // Anam_Highest
-        if (crop_preset_1x3_res_menu == 1) MENU_SET_VALUE("4.4K"); // Anam_Higher
-        if (crop_preset_1x3_res_menu == 2) MENU_SET_VALUE("4K");   // Anam_Medium
+        if (crop_preset_1x3_res_menu == 0) // Anam_Highest
+        {
+            MENU_SET_VALUE("4.8K");
+            if (is_650D || is_700D)MENU_SET_HELP("1600x2400 @ 23.976 FPS");
+            if (is_EOSM || is_100D)MENU_SET_HELP("1600x2400 @ 23.300 FPS");
+        }
+
+        if (crop_preset_1x3_res_menu == 1) // Anam_Higher
+        {
+            MENU_SET_VALUE("4.4K");
+            MENU_SET_HELP("1472x2208 @ 23.976 and 25 FPS");
+        }
+
+        if (crop_preset_1x3_res_menu == 2) // Anam_Medium
+        {
+            MENU_SET_VALUE("4K");
+            MENU_SET_HELP("1360x2040 @ 23.976 and 25 FPS");
+        }
     }
 
     if (crop_preset_ar_menu == 2) // AR_2_20_1
     {
-        if (crop_preset_1x3_res_menu == 0) MENU_SET_VALUE("5K");   // Anam_Highest
-        if (crop_preset_1x3_res_menu == 1) MENU_SET_VALUE("4.6K"); // Anam_Higher
-        if (crop_preset_1x3_res_menu == 2) MENU_SET_VALUE("4.2K"); // Anam_Medium
+        if (crop_preset_1x3_res_menu == 0) // Anam_Highest
+        {
+            MENU_SET_VALUE("5K");
+            if (is_650D || is_700D)MENU_SET_HELP("1680x2290 @ 23.976 FPS");
+            if (is_EOSM || is_100D)MENU_SET_HELP("1664x2268 @ 23.976 FPS");
+        }
+
+        if (crop_preset_1x3_res_menu == 1) // Anam_Higher
+        {
+            MENU_SET_VALUE("4.6K");
+            MENU_SET_HELP("1552x2216 @ 23.976 and 25 FPS");
+        }
+
+        if (crop_preset_1x3_res_menu == 2) // Anam_Medium
+        {
+            MENU_SET_VALUE("4.2K");
+            MENU_SET_HELP("1424x1942 @ 23.976 and 25 FPS");
+        }
     }
 
-    if (crop_preset_ar_menu > 2)  // AR_2_35_1, AR_2_39_1
+    if (crop_preset_ar_menu == 3)  // AR_2_35_1
     {
-        if (crop_preset_1x3_res_menu == 0) MENU_SET_VALUE("5.2K"); // Anam_Highest
-        if (crop_preset_1x3_res_menu == 1) MENU_SET_VALUE("4.8K"); // Anam_Higher
-        if (crop_preset_1x3_res_menu == 2) MENU_SET_VALUE("4.4K"); // Anam_Medium
+        if (crop_preset_1x3_res_menu == 0) // Anam_Highest
+        {
+            MENU_SET_VALUE("5.2K");
+            MENU_SET_HELP("1736x2214 @ 23.976 FPS");
+        }
+
+        if (crop_preset_1x3_res_menu == 1) // Anam_Higher
+        {
+            MENU_SET_VALUE("4.8K");
+            MENU_SET_HELP("1600x2040 @ 23.976 and 25 FPS");
+        }
+
+        if (crop_preset_1x3_res_menu == 2) // Anam_Medium
+        {
+            MENU_SET_VALUE("4.4K");
+            MENU_SET_HELP("1472x1878 @ 23.976 and 25 FPS");
+        }
+    }
+
+    if (crop_preset_ar_menu == 4)  // AR_2_39_1
+    {
+        if (crop_preset_1x3_res_menu == 0) // Anam_Highest
+        {
+            MENU_SET_VALUE("5.2K");
+            MENU_SET_HELP("1736x2178 @ 23.976 FPS");
+        }
+
+        if (crop_preset_1x3_res_menu == 1) // Anam_Higher
+        {
+            MENU_SET_VALUE("4.8K");
+            MENU_SET_HELP("1600x2008 @ 23.976 and 25 FPS");
+        }
+
+        if (crop_preset_1x3_res_menu == 2) // Anam_Medium
+        {
+            MENU_SET_VALUE("4.4K");
+            MENU_SET_HELP("1472x1846 @ 23.976 and 25 FPS");
+        }
     }
 }
 
@@ -3787,6 +3868,95 @@ static MENU_UPDATE_FUNC(crop_preset_ar_update)
 
 static MENU_UPDATE_FUNC(crop_preset_fps_update)
 {
+    if (CROP_PRESET_MENU == CROP_PRESET_1X3)
+    {
+        if (crop_preset_ar_menu == 0) // AR_16_9
+        {
+            if (crop_preset_1x3_res_menu == 0) // Anam_Highest
+            {
+                if (is_650D || is_700D) MENU_SET_VALUE("23.976 FPS");
+                if (is_EOSM || is_100D) MENU_SET_VALUE("22.250 FPS");
+                if (crop_preset_fps_menu != 0)
+                {
+                    MENU_SET_WARNING(MENU_WARN_ADVICE, "25 and 30 FPS don't work in current preset.");
+                }
+            }
+
+            if (crop_preset_1x3_res_menu == 1) // Anam_Higher
+            {
+                if (is_650D || is_700D)
+                {
+                    if (crop_preset_fps_menu == 2)
+                    {
+                        MENU_SET_VALUE("25 FPS");
+                        MENU_SET_WARNING(MENU_WARN_ADVICE, "30 FPS doesn't work in current preset.");
+                    }
+                }
+
+                if (is_100D || is_EOSM)
+                {
+                    if (crop_preset_fps_menu > 0)
+                    {
+                        MENU_SET_VALUE("23.976 FPS");
+                        MENU_SET_WARNING(MENU_WARN_ADVICE, "25 and 30 FPS don't work in current preset.");
+                    }
+                }
+            }
+
+            if (crop_preset_1x3_res_menu == 2) // Anam_Medium
+            {
+                if (crop_preset_fps_menu == 2)
+                {
+                    MENU_SET_VALUE("25 FPS");
+                    MENU_SET_WARNING(MENU_WARN_ADVICE, "30 FPS doesn't work in current preset.");
+                }
+            }
+        }
+
+        if (crop_preset_ar_menu == 1) // AR_2_1
+        {
+            if (crop_preset_1x3_res_menu == 0) // Anam_Highest
+            {
+                if (is_650D || is_700D) MENU_SET_VALUE("23.976 FPS");
+                if (is_EOSM || is_100D) MENU_SET_VALUE("23.300 FPS");
+                if (crop_preset_fps_menu != 0)
+                {
+                    MENU_SET_WARNING(MENU_WARN_ADVICE, "25 and 30 FPS don't work in current preset.");
+                }
+            }
+
+            if (crop_preset_1x3_res_menu > 0) // Anam_Higher, Anam_Medium
+            {
+                if (crop_preset_fps_menu == 2)
+                {
+                    MENU_SET_VALUE("25 FPS");
+                    MENU_SET_WARNING(MENU_WARN_ADVICE, "30 FPS doesn't work in current preset.");
+                }
+            }
+        }
+
+        if (crop_preset_ar_menu > 1) // AR_2_20_1, AR_2_35_1, AR_2_39_1
+        {
+            if (crop_preset_1x3_res_menu == 0) // Anam_Highest
+            {
+                MENU_SET_VALUE("23.976 FPS");
+                if (crop_preset_fps_menu != 0)
+                {
+                    MENU_SET_WARNING(MENU_WARN_ADVICE, "25 and 30 FPS don't work in current preset.");
+                }
+            }
+
+            if (crop_preset_1x3_res_menu > 0) // Anam_Higher, Anam_Medium
+            {
+                if (crop_preset_fps_menu == 2)
+                {
+                    MENU_SET_VALUE("25 FPS");
+                    MENU_SET_WARNING(MENU_WARN_ADVICE, "30 FPS doesn't work in current preset.");
+                }
+            }
+        }
+    }
+
     if (CROP_PRESET_MENU == CROP_PRESET_1X1)
     {
         if ((crop_preset_1x1_res_menu == 1 || 
@@ -3799,7 +3969,7 @@ static MENU_UPDATE_FUNC(crop_preset_fps_update)
         if (crop_preset_1x1_res_menu == 2 && crop_preset_fps_menu > 0) // CROP_3K and 25, 30 FPS
         {
             MENU_SET_VALUE("23.976 FPS");
-            MENU_SET_WARNING(MENU_WARN_ADVICE, "25 and 30 FPS doesn't work in current preset.");
+            MENU_SET_WARNING(MENU_WARN_ADVICE, "25 and 30 FPS don't work in current preset.");
         }
 
         if (crop_preset_1x1_res_menu == 4) // CROP_Full_Res
