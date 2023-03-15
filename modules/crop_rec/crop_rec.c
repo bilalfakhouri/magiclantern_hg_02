@@ -3651,20 +3651,20 @@ static struct menu_entry crop_rec_menu[];
 
 static MENU_UPDATE_FUNC(crop_update)
 {
-/*  if (is_DIGIC_5)
-    {
-        MENU_SET_VALUE("%s %s", CROP_2_5K ? ,
-                                (crop_preset_index == 0) ? crop_choices_DIGIC_5[0] : (crop_preset_index == 1) ? crop_choices_DIGIC_5[1] :
-                                (crop_preset_index == 2) ? crop_choices_DIGIC_5[2] : (crop_preset_index == 3) ? crop_choices_DIGIC_5[3] : 
-                                 crop_choices_DIGIC_5[0]);
-    }*/
-
     if (is_DIGIC_5)
     {
         /* reveal options for the current crop mode (1:1, 1x3 and 3x3) */
         crop_rec_menu[0].children[0].shidden = (crop_preset_index != 1);  // 1 CROP_PRESET_1X1
         crop_rec_menu[0].children[1].shidden = (crop_preset_index != 2);  // 2 CROP_PRESET_1X3
         crop_rec_menu[0].children[2].shidden = (crop_preset_index != 3);  // 3 CROP_PRESET_3X3
+
+        /* print resolution and binning mode in help section, maybe add FPS too? */
+        if (CROP_PRESET_MENU && lv && patch_active && raw_lv_is_enabled())
+        {
+            MENU_SET_HELP("%dx%d %d%s%d",raw_info.width - 72, raw_info.height - 28, raw_capture_info.binning_y + raw_capture_info.skipping_y,
+            (raw_capture_info.binning_x + raw_capture_info.skipping_x == 1 && raw_capture_info.binning_y + raw_capture_info.skipping_y == 1) ? 
+            ":" : "x",                                                              raw_capture_info.binning_x + raw_capture_info.skipping_x);
+        }
     }
 
     if (CROP_PRESET_MENU && lv)
