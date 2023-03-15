@@ -4499,6 +4499,46 @@ static LVINFO_UPDATE_FUNC(crop_info)
                 case CROP_PRESET_CENTER_Z:
                     snprintf(buffer, sizeof(buffer), "3.5K");
                     break;
+                case CROP_PRESET_1X1:
+                    if (CROP_2_5K)     snprintf(buffer, sizeof(buffer), "2.5K");
+                    if (CROP_2_8K)     snprintf(buffer, sizeof(buffer), "2.8K");
+                    if (CROP_3K)       snprintf(buffer, sizeof(buffer), "3K");
+                    if (CROP_1440p)    snprintf(buffer, sizeof(buffer), "1440p");
+                    if (CROP_Full_Res) snprintf(buffer, sizeof(buffer), "FLV");
+                    break;
+                case CROP_PRESET_1X3:
+                    if (AR_16_9)
+                    {
+                        if (Anam_Highest) snprintf(buffer, sizeof(buffer), "4.5K");
+                        if (Anam_Higher)  snprintf(buffer, sizeof(buffer), "4.2K");
+                        if (Anam_Medium)  snprintf(buffer, sizeof(buffer), "UHD");
+                    }
+                    if (AR_2_1)
+                    {
+                        if (Anam_Highest) snprintf(buffer, sizeof(buffer), "4.8K");
+                        if (Anam_Higher)  snprintf(buffer, sizeof(buffer), "4.4K");
+                        if (Anam_Medium)  snprintf(buffer, sizeof(buffer), "4K");
+                    }
+                    if (AR_2_20_1)
+                    {
+                        if (Anam_Highest) snprintf(buffer, sizeof(buffer), "5K");
+                        if (Anam_Higher)  snprintf(buffer, sizeof(buffer), "4.6K");
+                        if (Anam_Medium)  snprintf(buffer, sizeof(buffer), "4.2K");
+                    }
+                    if (AR_2_35_1 || AR_2_39_1)
+                    {
+                        if (Anam_Highest) snprintf(buffer, sizeof(buffer), "5.2K");
+                        if (Anam_Higher)  snprintf(buffer, sizeof(buffer), "4.8K");
+                        if (Anam_Medium)  snprintf(buffer, sizeof(buffer), "4.4K");
+                    }
+                    break;
+                case CROP_PRESET_3X3:
+                    if (AR_16_9)    snprintf(buffer, sizeof(buffer), "976p");
+                    if (AR_2_1)     snprintf(buffer, sizeof(buffer), "868p");
+                    if (AR_2_20_1)  snprintf(buffer, sizeof(buffer), "790p");
+                    if (AR_2_35_1)  snprintf(buffer, sizeof(buffer), "738p");
+                    if (AR_2_39_1)  snprintf(buffer, sizeof(buffer), "694p"); // Actually 2.50:1 AR
+                    break;
             }
         }
         else
