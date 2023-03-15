@@ -2109,23 +2109,6 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
                 case 0xC0F08184: return (RAW_V - 1) + Preview_V_Recover; // used to exceed vertical preview limit
             }
         }
-        
-        if (shamem_read(0xC0F11BC8) != 0)
-        {
-            EngDrvOutLV(0xC0F11BC8, YUV_HD_S_V_E); // Enable vertical stretch on YUV (HD) path
-        }
-
-        switch (reg)
-        {
-            case 0xC0F1A00C: return (Preview_V << 16) + Preview_H - 0x1;   
-            case 0xC0F11B9C: return (Preview_V << 16) + Preview_H - 0x1;
-
-            case 0xC0F11B8C: return YUV_HD_S_H;
-            case 0xC0F11BCC: return YUV_HD_S_V;
-        //  case 0xC0F11BC8: return YUV_HD_S_V_E; // overriding it from here doesn't work
-            case 0xC0F11ACC: return YUV_LV_S_V;
-            case 0xC0F04210: return YUV_LV_Buf;
-        }
     }
 
     if (Preview_Control_Basic)
@@ -2788,23 +2771,6 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 case 0xC0F08184: return RAW_V - 1; // used to exceed vertical preview limit
             }
         }
-
-        if (shamem_read(0xC0F11BC8) != 0)
-        {
-            EngDrvOutLV(0xC0F11BC8, YUV_HD_S_V_E); // Enable vertical stretch on YUV (HD) path
-        }
-
-        switch (reg)
-        {
-            case 0xC0F1A00C: return (Preview_V << 16) + Preview_H - 0x1;   
-            case 0xC0F11B9C: return (Preview_V << 16) + Preview_H - 0x1;
-
-            case 0xC0F11B8C: return YUV_HD_S_H;
-            case 0xC0F11BCC: return YUV_HD_S_V;
-        //  case 0xC0F11BC8: return YUV_HD_S_V_E; // overriding it from here doesn't work
-            case 0xC0F11ACC: return YUV_LV_S_V;
-            case 0xC0F04210: return YUV_LV_Buf;
-        }
     }
 
     switch (reg)
@@ -2973,10 +2939,10 @@ static inline uint32_t reg_override_3X3(uint32_t reg, uint32_t old_val)
         Preview_H     = 1728;
         Preview_V     = 694;
         Preview_R     = 0x1D000E;
-        YUV_HD_S_V    = 0;  // solve frozen preview first!
-        
-        YUV_LV_S_V    = 0;  // solve frozen preview first!
-        YUV_LV_Buf    = 0;  // solve frozen preview first!
+        YUV_HD_S_V    = 0;          // default x5 mode value
+
+        YUV_LV_S_V    = 0x1E002B;   // default x5 mode value
+        YUV_LV_Buf    = 0x1DF05A0;  // default x5 mode value
     }
 
     YUV_HD_S_H    = 0x10501B5;
@@ -2985,26 +2951,6 @@ static inline uint32_t reg_override_3X3(uint32_t reg, uint32_t old_val)
     YUV_HD_S_V_E  = 0;
     Preview_Control = 1;
     Preview_Control_Basic = 0;
-
-    if (Preview_Control)
-    {
-        if (shamem_read(0xC0F11BC8) != 0)
-        {
-            EngDrvOutLV(0xC0F11BC8, YUV_HD_S_V_E); // Enable vertical stretch on YUV (HD) path
-        }
-
-        switch (reg)
-        {
-            case 0xC0F1A00C: return (Preview_V << 16) + Preview_H - 0x1;   
-            case 0xC0F11B9C: return (Preview_V << 16) + Preview_H - 0x1;
-
-            case 0xC0F11B8C: return YUV_HD_S_H;
-            case 0xC0F11BCC: return YUV_HD_S_V;
-        //  case 0xC0F11BC8: return YUV_HD_S_V_E; // overriding it from here doesn't work
-            case 0xC0F11ACC: return YUV_LV_S_V;
-            case 0xC0F04210: return YUV_LV_Buf;
-        }
-    }
 
     switch (reg)
     {
@@ -3142,8 +3088,24 @@ static void FAST engio_write_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             
                 if (OUTPUT_10BIT && old != 0x4040404)
                 {
-                *(buf+1) = 0x4040404;
+                    *(buf+1) = 0x4040404;
                 }
+            }
+        }
+
+        /* it seems more reliable to override them directly from here */
+        if (Preview_Control)
+        {
+            switch (reg)
+            {
+                case 0xC0F1A00C: *(buf+1) = (Preview_V << 16) + Preview_H - 0x1;  break;
+                case 0xC0F11B9C: *(buf+1) = (Preview_V << 16) + Preview_H - 0x1;  break;
+
+                case 0xC0F11B8C: *(buf+1) = YUV_HD_S_H;                           break;
+                case 0xC0F11BCC: *(buf+1) = YUV_HD_S_V;                           break;
+                case 0xC0F11BC8: *(buf+1) = YUV_HD_S_V_E;                         break;
+                case 0xC0F11ACC: *(buf+1) = YUV_LV_S_V;                           break;
+                case 0xC0F04210: *(buf+1) = YUV_LV_Buf;                           break;
             }
         }
     }
