@@ -3745,7 +3745,6 @@ static struct menu_entry crop_rec_menu[] =
                 .max        = 4,
                 .choices    = CHOICES("2.5K", "2.8K", "3K", "1440p", "Full-Res LV"),
                 .help       = "Choose 1:1 preset.",
-                .icon_type  = IT_ALWAYS_ON,
                 .shidden    = 1,
             },
             {
@@ -3755,7 +3754,6 @@ static struct menu_entry crop_rec_menu[] =
                 .max        = 2,
                 .choices    = CHOICES("Highest", "Higher", "Medium"),  // dummy choices, strings are being changed depending on aspect ratio and res
                 .help       = "Choose 1x3 preset.",
-                .icon_type  = IT_ALWAYS_ON,
                 .shidden    = 1,
             },
             {
@@ -3775,7 +3773,6 @@ static struct menu_entry crop_rec_menu[] =
                 .max        = 4,
                 .choices    = CHOICES("16:9", "2:1", "2.20:1", "2.35:1", "2.39:1"),
                 .help       = "Select aspect ratio for current preset.",
-                .icon_type  = IT_ALWAYS_ON,
             },
 /*          {
                 .name       = "Framerate:",
@@ -3792,7 +3789,6 @@ static struct menu_entry crop_rec_menu[] =
                 .max        = 3,
                 .choices    = CHOICES("14-bit", "12-bit","11-bit", "10-bit"),
                 .help       = "Choose bit-depth for lossless RAW video compression.",
-                .icon_type  = IT_ALWAYS_ON,
             },
             {
                 .name       = "Shutter range",
