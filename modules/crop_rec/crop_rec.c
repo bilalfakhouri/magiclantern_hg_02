@@ -3583,7 +3583,7 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
     if (is_1080i_Full_Output())
     {
         DefaultShift  = 0x12C;
-        DefaultClear  = 0x96;
+        DefaultClear  = 0x12C;
         ShiftAddress  = Shift_x5_HDMI_1080i_Full;
         ClearAddress  = Clear_Vram_x5_HDMI_1080i_Full;
     }
@@ -3591,7 +3591,7 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
     if (is_1080i_Info_Output())
     {
         DefaultShift  = 0x16A58;
-        DefaultClear  = 0x12C;
+        DefaultClear  = 0x258;
         ShiftAddress  = Shift_x5_HDMI_1080i_Info;
         ClearAddress  = Clear_Vram_x5_HDMI_1080i_Info;
     }
@@ -4914,8 +4914,8 @@ static unsigned int crop_rec_init()
 
         Clear_Vram_x5_LCD = 0xFF96EA60;
         Clear_Vram_x5_HDMI_480p = 0xFF96F420;
-        Clear_Vram_x5_HDMI_1080i_Full = 0xFF96FF78;
-        Clear_Vram_x5_HDMI_1080i_Info = 0xFF97057C;
+        Clear_Vram_x5_HDMI_1080i_Full = 0xFF96FF90;
+        Clear_Vram_x5_HDMI_1080i_Info = 0xFF970594;
         
         is_EOSM = 1;
         is_DIGIC_5 = 1;
@@ -4954,8 +4954,8 @@ static unsigned int crop_rec_init()
 
         Clear_Vram_x5_LCD = is_camera("700D", "1.1.5") ? 0xFF962A98 : 0xFF9558B8;
         Clear_Vram_x5_HDMI_480p = is_camera("700D", "1.1.5") ? 0xFF963458 : 0xFF956278;
-        Clear_Vram_x5_HDMI_1080i_Full = is_camera("700D", "1.1.5") ? 0xFF963FB0 : 0xFF956DD0;
-        Clear_Vram_x5_HDMI_1080i_Info = is_camera("700D", "1.1.5") ? 0xFF9645B4 : 0xFF9573D4;
+        Clear_Vram_x5_HDMI_1080i_Full = is_camera("700D", "1.1.5") ? 0xFF963FC8 : 0xFF956DE8;
+        Clear_Vram_x5_HDMI_1080i_Info = is_camera("700D", "1.1.5") ? 0xFF9645CC : 0xFF9573EC;
         
         is_650D = 1;
         is_700D = 1;
@@ -4994,8 +4994,8 @@ static unsigned int crop_rec_init()
 
         Clear_Vram_x5_LCD = 0xFF98F610;
         Clear_Vram_x5_HDMI_480p = 0xFF98FFD0;
-        Clear_Vram_x5_HDMI_1080i_Full = 0xFF990B28;
-        Clear_Vram_x5_HDMI_1080i_Info = 0xFF99112C;
+        Clear_Vram_x5_HDMI_1080i_Full = 0xFF990B40;
+        Clear_Vram_x5_HDMI_1080i_Info = 0xFF991144;
         
         is_100D = 1;
         is_DIGIC_5 = 1;
