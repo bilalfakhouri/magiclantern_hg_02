@@ -3325,6 +3325,51 @@ static void FAST EngDrvOuts_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     }
 }
 
+int is_LCD_Output()
+{
+    if (PathDriveMode->OutputType == 0)
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
+int is_480p_Output()
+{
+    if (PathDriveMode->OutputType == 7)
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
+int is_1080i_Full_Output()
+{
+    if (PathDriveMode->OutputType == 3)
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
+int is_1080i_Info_Output()
+{
+    if (PathDriveMode->OutputType == 4)
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
+static uint32_t ShiftAddress  = 0;
+static uint32_t ClearAddress  = 0;
+static uint32_t DefaultShift  = 0; // expected value which we want to patch
+static uint32_t DefaultClear  = 0; // expected value which we want to patch
+
 static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
 {
     /* we need to enable and set preview shifting and clearing artifacts values here especially for clear artifacts value */
@@ -3353,6 +3398,52 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
 
     /* FIXME: we might be able to implement clearing artifacts directly in VRAM_PTH_StartTripleRamClearInALump
               this way we don't to patch ROM addresses for clearing artifacts for x5 mode and for every output on every model */
+
+    /* always unpatch to check output and update addresses and values */
+    if (Center_Preview_ON)
+    {
+        unpatch_memory(ShiftAddress);
+        Center_Preview_ON = 0;
+    }
+
+    if (Clear_Artifacts_ON)
+    {
+        unpatch_memory(ClearAddress);
+        Clear_Artifacts_ON = 0;
+    }
+
+    /* detect current output and update patch parameters */
+    if (is_LCD_Output())
+    {
+        DefaultShift  = 0x0;
+        DefaultClear  = 0x0;
+        ShiftAddress  = Shift_x5_LCD;
+        ClearAddress  = Clear_Vram_x5_LCD;
+    }
+
+    if (is_480p_Output())
+    {
+        DefaultShift  = 0x8740;
+        DefaultClear  = 0x40;
+        ShiftAddress  = Shift_x5_HDMI_480p;
+        ClearAddress  = Clear_Vram_x5_HDMI_480p;
+    }
+
+    if (is_1080i_Full_Output())
+    {
+        DefaultShift  = 0x12C;
+        DefaultClear  = 0x96;
+        ShiftAddress  = Shift_x5_HDMI_1080i_Full;
+        ClearAddress  = Clear_Vram_x5_HDMI_1080i_Full;
+    }
+
+    if (is_1080i_Info_Output())
+    {
+        DefaultShift  = 0x16A58;
+        DefaultClear  = 0x12C;
+        ShiftAddress  = Shift_x5_HDMI_1080i_Info;
+        ClearAddress  = Clear_Vram_x5_HDMI_1080i_Info;
+    }
 
     /* FIXME: duplicated code regarding preview_shift_value */
 
@@ -3423,7 +3514,7 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
         Clear_Artifacts = 1;
         EDMAC_9_Vertical_Change = 1;
     }
-    
+
     if (CROP_PRESET_MENU == CROP_PRESET_3X3)
     {
         if (crop_preset_ar == 0)  // 16:9
@@ -3474,26 +3565,26 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
         /* patch supported presets if patch not active */
         if (Shift_Preview && !Center_Preview_ON)
         {
-            patch_memory(Shift_x5_LCD, 0x0, preview_shift_value, "Center");
+            patch_memory(ShiftAddress, DefaultShift, preview_shift_value, "Center");
             Center_Preview_ON = 1;
         }
 
         if (Clear_Artifacts && !Clear_Artifacts_ON)
         {
-            patch_memory(Clear_Vram_x5_LCD, 0x0, 0x5a0, "Clear"); // 0x5a0 seems to clear all artifacts
+            patch_memory(ClearAddress, DefaultClear, 0x5a0, "Clear"); // 0x5a0 seems to clear all artifacts
             Clear_Artifacts_ON = 1;
         }
 
         /* unpatch not supported presets if patch already active */
         if (!Shift_Preview && Center_Preview_ON)
         {
-            unpatch_memory(Shift_x5_LCD);
+            unpatch_memory(ShiftAddress);
             Center_Preview_ON = 0;
         }
 
         if (!Clear_Artifacts && Clear_Artifacts_ON)
         {
-            unpatch_memory(Clear_Vram_x5_LCD);
+            unpatch_memory(ClearAddress);
             Clear_Artifacts_ON = 0;
         }
     }
@@ -3503,13 +3594,13 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
     {
         if (Center_Preview_ON)
         {
-            unpatch_memory(Shift_x5_LCD);
+            unpatch_memory(ShiftAddress);
             Center_Preview_ON = 0;
         }
 
         if (Clear_Artifacts_ON)
         {
-            unpatch_memory(Clear_Vram_x5_LCD);
+            unpatch_memory(ClearAddress);
             Clear_Artifacts_ON = 0;
         }
     }
@@ -3581,12 +3672,12 @@ static void update_patch()
             /* FIXME: hardcoded addresses for x5 mode on LCD screen, implement HDMI support! */
             if (Clear_Artifacts_ON)
             {
-                unpatch_memory(Clear_Vram_x5_LCD);
+                unpatch_memory(ClearAddress);
                 Clear_Artifacts_ON = 0;
             }
             if (Center_Preview_ON)
             {
-                unpatch_memory(Shift_x5_LCD);
+                unpatch_memory(ShiftAddress);
                 Center_Preview_ON = 0 ;
             }
             patch_active = 0;
