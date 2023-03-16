@@ -1930,9 +1930,6 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         YUV_HD_S_V_E  = 0;
         Black_Bar     = 2;
 
-        YUV_LV_S_V    = 0x1050244;
-        YUV_LV_Buf    = 0x13505A0;
-
         Preview_Control = 1;
         EDMAC_24_Redirect = 0;
         Preview_V_Recover = 0;
@@ -1983,9 +1980,6 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         YUV_HD_S_V    = 0x10501CC;
         YUV_HD_S_V_E  = 0;
         Black_Bar     = 2;
-        
-        YUV_LV_S_V    = 0x1050248;
-        YUV_LV_Buf    = 0x13305A0;
 
         Preview_Control = 1;
         EDMAC_24_Redirect = 1;
@@ -2052,9 +2046,6 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         
         YUV_HD_S_H    = 0x1050286;
         YUV_HD_S_V    = 0x105021E;
-        
-        YUV_LV_S_V    = 0x10501BA;
-        YUV_LV_Buf    = 0x19505A0;
 
         Black_Bar     = 2;
         Preview_Control = 1;
@@ -2280,9 +2271,6 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             YUV_HD_S_H    = 0x1050142;
             YUV_HD_S_V    = 0x105032F;
         }
-
-        YUV_LV_S_V    = 0x10501BA;
-        YUV_LV_Buf    = 0x19505A0;
     }
 
     if (AR_2_1)
@@ -2397,9 +2385,6 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             YUV_HD_S_H    = 0x1050157;
             YUV_HD_S_V    = 0x1050301;
         }
-
-        YUV_LV_S_V    = 0x10501F2;
-        YUV_LV_Buf    = 0x16805A0;
     }
 
     if (AR_2_20_1)
@@ -2526,9 +2511,6 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             YUV_HD_S_H    = 0x1050167;
             YUV_HD_S_V    = 0x10502DB;
         }
-
-        YUV_LV_S_V    = 0x1050224;
-        YUV_LV_Buf    = 0x14705A0;
     }
 
     if (AR_2_35_1)
@@ -2635,9 +2617,6 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             YUV_HD_S_H    = 0x1050173;
             YUV_HD_S_V    = 0x10502C4;
         }
-
-        YUV_LV_S_V    = 0x1050249;
-        YUV_LV_Buf    = 0x13205A0;
     }
 
     if (AR_2_39_1)
@@ -2832,9 +2811,6 @@ static inline uint32_t reg_override_3X3(uint32_t reg, uint32_t old_val)
         Preview_V     = 976;
         Preview_R     = 0x1D000E;  // from mv1080 mode
         YUV_HD_S_V    = 0x105016C;
-        
-        YUV_LV_S_V    = 0x10501BA;
-        YUV_LV_Buf    = 0x19505A0;
     }
 
     if (AR_2_1)
@@ -2859,9 +2835,6 @@ static inline uint32_t reg_override_3X3(uint32_t reg, uint32_t old_val)
         Preview_V     = 868;
         Preview_R     = 0x1D000E;
         YUV_HD_S_V    = 0x1050143;
-        
-        YUV_LV_S_V    = 0x10501F2;
-        YUV_LV_Buf    = 0x16805A0;
     }
     
     if (AR_2_20_1)
@@ -2886,9 +2859,6 @@ static inline uint32_t reg_override_3X3(uint32_t reg, uint32_t old_val)
         Preview_V     = 790;
         Preview_R     = 0x1D000E;
         YUV_HD_S_V    = 0x1050125;
-
-        YUV_LV_S_V    = 0x1050222;
-        YUV_LV_Buf    = 0x14805A0;
     }
 
     if (AR_2_35_1)
@@ -2913,9 +2883,6 @@ static inline uint32_t reg_override_3X3(uint32_t reg, uint32_t old_val)
         Preview_V     = 738;
         Preview_R     = 0x1D000E;
         YUV_HD_S_V    = 0x1050112;
-        
-        YUV_LV_S_V    = 0x1050249;
-        YUV_LV_Buf    = 0x13205A0;
     }
 
     if (AR_2_39_1)  // 2.39:1 doesn't make sense, very similair to 2.35:1, let's make it 2.50:1
@@ -3422,6 +3389,120 @@ int GetShiftValue()
     return 0;
 }
 
+void SetAspectRatioCorrectionValues()
+{
+    if (CROP_PRESET_MENU == CROP_PRESET_1X1)
+    {
+        if (is_LCD_Output())
+        {
+            switch (crop_preset_1x1_res)
+            {
+                case 0:  YUV_LV_Buf = 0x13505A0; YUV_LV_S_V = 0x1050244; break; // CROP_2_5K
+                case 1:  YUV_LV_Buf = 0x13305A0; YUV_LV_S_V = 0x1050248; break; // CROP_2_8K
+                case 3:  YUV_LV_Buf = 0x19505A0; YUV_LV_S_V = 0x10501BA; break; // CROP_1440p
+                default: YUV_LV_Buf = 0x1DF05A0; YUV_LV_S_V = 0x1E002B;  break;
+            }
+        }
+        if (is_480p_Output())
+        {
+            switch (crop_preset_1x1_res)
+            {
+                case 0:                                                         // CROP_2_5K
+                case 1:                                                         // CROP_2_8K
+                         YUV_LV_Buf = 0x1170520; YUV_LV_S_V = 0x1050282; break;
+                case 3:  YUV_LV_Buf = 0x1710520; YUV_LV_S_V = 0x10501E5; break; // CROP_1440p
+                default: YUV_LV_Buf = 0x1830520; YUV_LV_S_V = 0x6100AC;  break;
+            }
+        }
+        if (is_1080i_Full_Output())
+        {
+            switch (crop_preset_1x1_res)
+            {
+                case 0:                                                         // CROP_2_5K
+                case 1:                                                         // CROP_2_8K
+                         YUV_LV_Buf = 0x1580CA8; YUV_LV_S_V = 0x1050209; break;
+                case 3:  YUV_LV_Buf = 0x1C70CA8; YUV_LV_S_V = 0x105081A; break; // CROP_1440p
+                default: YUV_LV_Buf = 0x21B0CA8; YUV_LV_S_V = 0x8700AC;  break;
+            }
+        }
+        if (is_1080i_Info_Output())
+        {
+            switch (crop_preset_1x1_res)
+            {
+                case 0:                                                         // CROP_2_5K
+                case 1:                                                         // CROP_2_8K
+                         YUV_LV_Buf = 0x1180A50; YUV_LV_S_V = 0x1050280; break;
+                case 3:  YUV_LV_Buf = 0x1730A50; YUV_LV_S_V = 0x10501E3; break; // CROP_1440p
+                default: YUV_LV_Buf = 0x1B70A50; YUV_LV_S_V = 0x370056;  break;
+            }
+        }
+    }
+
+    if (CROP_PRESET_MENU == CROP_PRESET_1X3 || CROP_PRESET_MENU == CROP_PRESET_3X3)
+    {
+        if (is_LCD_Output())
+        {
+            switch (crop_preset_ar)
+            {
+                case 0: YUV_LV_Buf = 0x19505A0; YUV_LV_S_V = 0x10501BA; break; // AR_16_9
+                case 1: YUV_LV_Buf = 0x16805A0; YUV_LV_S_V = 0x10501F2; break; // AR_2_1
+                case 2: YUV_LV_Buf = 0x14805A0; YUV_LV_S_V = 0x1050222; break; // AR_2_20_1
+                case 3: // AR_2_35_1
+                case 4: // AR_2_39_1
+                {
+                    YUV_LV_Buf = 0x13205A0; YUV_LV_S_V = 0x1050249;
+                }
+                break;
+            }  
+        }
+        if (is_480p_Output())
+        {
+            switch (crop_preset_ar)
+            {
+                case 0: YUV_LV_Buf = 0x1710520; YUV_LV_S_V = 0x10501E5; break; // AR_16_9
+                case 1: YUV_LV_Buf = 0x1480520; YUV_LV_S_V = 0x1050222; break; // AR_2_1
+                case 2: YUV_LV_Buf = 0x12A0520; YUV_LV_S_V = 0x1050259; break; // AR_2_20_1
+                case 3: // AR_2_35_1
+                case 4: // AR_2_39_1
+                {
+                    YUV_LV_Buf = 0x1170520; YUV_LV_S_V = 0x1050282;
+                }
+                break;
+            }  
+        }
+        if (is_1080i_Full_Output())
+        {
+            switch (crop_preset_ar)
+            {
+                case 0: YUV_LV_Buf = 0x1C70CA8; YUV_LV_S_V = 0x105018A; break; // AR_16_9
+                case 1: YUV_LV_Buf = 0x1950CA8; YUV_LV_S_V = 0x10501BA; break; // AR_2_1
+                case 2: YUV_LV_Buf = 0x1700CA8; YUV_LV_S_V = 0x10501E7; break; // AR_2_20_1
+                case 3: // AR_2_35_1
+                case 4: // AR_2_39_1
+                {
+                    YUV_LV_Buf = 0x1580CA8; YUV_LV_S_V = 0x1050209;
+                }
+                break;
+            }  
+        }
+        if (is_1080i_Info_Output())
+        {
+            switch (crop_preset_ar)
+            {
+                case 0: YUV_LV_Buf = 0x1730A50; YUV_LV_S_V = 0x10501E3; break; // AR_16_9
+                case 1: YUV_LV_Buf = 0x14A0A50; YUV_LV_S_V = 0x105021F; break; // AR_2_1
+                case 2: YUV_LV_Buf = 0x12C0A50; YUV_LV_S_V = 0x1050255; break; // AR_2_20_1
+                case 3: // AR_2_35_1
+                case 4: // AR_2_39_1
+                {
+                    YUV_LV_Buf = 0x1180A50; YUV_LV_S_V = 0x1050280;
+                }
+                break;
+            }  
+        }
+    }
+}
+
 static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
 {
     /* we need to enable and set preview shifting and clearing artifacts values here especially for clear artifacts value */
@@ -3544,6 +3625,7 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
     }
 
     preview_shift_value = GetShiftValue();
+    SetAspectRatioCorrectionValues();
 
     /* restore defualt EDMAC#9 vertical size */
     if (EDMAC_9_Vertical_Change == 0 || PathDriveMode->zoom != 5)
