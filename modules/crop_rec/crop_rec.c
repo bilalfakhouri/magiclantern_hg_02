@@ -4632,7 +4632,7 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
             old_3x3_preset = crop_preset_3x3_res_menu;
         }
     }
-patch_instruction(0xff33157c, 0xe3a00002, 0xe3a00005, "HDMI Code");
+
     return CBR_RET_CONTINUE;
 }
 
