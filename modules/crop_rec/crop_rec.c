@@ -3370,6 +3370,58 @@ static uint32_t ClearAddress  = 0;
 static uint32_t DefaultShift  = 0; // expected value which we want to patch
 static uint32_t DefaultClear  = 0; // expected value which we want to patch
 
+int GetShiftValue()
+{
+    if (CROP_PRESET_MENU == CROP_PRESET_1X1)
+    {
+        switch (crop_preset_1x1_res)
+         {
+            case 0:
+            case 1:
+            {
+                if (is_LCD_Output()) return 0x1F4A0;
+            }
+
+            case 3: 
+            {
+                if (is_LCD_Output()) return 0xD5C0;
+            }
+
+            case 2:
+            case 4:
+            {
+                if (is_LCD_Output()) return 0;
+            }
+        }        
+    }
+
+    if (CROP_PRESET_MENU == CROP_PRESET_1X3 || CROP_PRESET_MENU == CROP_PRESET_3X3)
+    {
+        switch (crop_preset_ar)
+        {
+            case 0:
+            {
+                if (is_LCD_Output()) return 0xD5C0;
+            }            
+            case 1:
+            {
+                if (is_LCD_Output()) return 0x15720;
+            }            
+            case 2:
+            {
+                if (is_LCD_Output()) return 0x1B6C0;
+            }            
+            case 3:
+            case 4:
+            {
+                if (is_LCD_Output()) return 0x1F4A0;
+            }
+        }  
+    }
+
+    return 0;
+}
+
 static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
 {
     /* we need to enable and set preview shifting and clearing artifacts values here especially for clear artifacts value */
@@ -3445,13 +3497,10 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
         ClearAddress  = Clear_Vram_x5_HDMI_1080i_Info;
     }
 
-    /* FIXME: duplicated code regarding preview_shift_value */
-
     if (CROP_PRESET_MENU == CROP_PRESET_1X1)
     {
         if (crop_preset_1x1_res == 0)  // CROP_2_5K
         {
-            preview_shift_value = 0x1F4A0;
             Shift_Preview = 1;
             Clear_Artifacts = 1;
             EDMAC_9_Vertical_Change = 0;
@@ -3459,7 +3508,6 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
 
         if (crop_preset_1x1_res == 1)  // CROP_2_8K
         {
-            preview_shift_value = 0x1F4A0;
             Shift_Preview = 1;
             Clear_Artifacts = 1;
             EDMAC_9_Vertical_Change = 1;
@@ -3467,7 +3515,6 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
 
         if (crop_preset_1x1_res == 3)  // CROP_1440p
         {
-            preview_shift_value = 0xD5C0;
             Shift_Preview = 1;
             Clear_Artifacts = 1;
             EDMAC_9_Vertical_Change = 1;
@@ -3476,7 +3523,6 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
         if (crop_preset_1x1_res == 2 ||  // CROP_3K
             crop_preset_1x1_res == 4  )  // CROP_Full_Res
         {
-            preview_shift_value = 0;
             Shift_Preview = 0;
             Clear_Artifacts = 0;
             EDMAC_9_Vertical_Change = 1;
@@ -3485,31 +3531,6 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
 
     if (CROP_PRESET_MENU == CROP_PRESET_1X3)
     {
-        if (crop_preset_ar == 0)  // 16:9
-        {
-            preview_shift_value = 0xD5C0;
-        }
-
-        if (crop_preset_ar == 1)  // 2:1
-        {
-            preview_shift_value = 0x15720;
-        }
-
-        if (crop_preset_ar == 2)  // 2.20:1
-        {
-            preview_shift_value = 0x1B6C0;
-        }
-
-        if (crop_preset_ar == 3)  // 2.35:1
-        {
-            preview_shift_value = 0x1F4A0;
-        }
-
-        if (crop_preset_ar == 4)  // 2.39:1
-        {
-            preview_shift_value = 0x1F4A0;
-        }
-
         Shift_Preview = 1;
         Clear_Artifacts = 1;
         EDMAC_9_Vertical_Change = 1;
@@ -3517,35 +3538,12 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
 
     if (CROP_PRESET_MENU == CROP_PRESET_3X3)
     {
-        if (crop_preset_ar == 0)  // 16:9
-        {
-            preview_shift_value = 0xD5C0;
-        }
-        
-        if (crop_preset_ar == 1)  // 2:1
-        {
-            preview_shift_value = 0x15720;
-        }
-        
-        if (crop_preset_ar == 2)  // 2.20:1
-        {
-            preview_shift_value = 0x1B6C0;
-        }
-        
-        if (crop_preset_ar == 3)  // 2.35:1
-        {
-            preview_shift_value = 0x1F4A0;
-        }
-        
-        if (crop_preset_ar == 4)  // 2.39:1 but actually 2.50:1
-        {
-            preview_shift_value = 0x1F4A0; // dummy value, needs tweaking
-        }
-
         Shift_Preview = 1;
         Clear_Artifacts = 1;
         EDMAC_9_Vertical_Change = 0;
     }
+
+    preview_shift_value = GetShiftValue();
 
     /* restore defualt EDMAC#9 vertical size */
     if (EDMAC_9_Vertical_Change == 0 || PathDriveMode->zoom != 5)
