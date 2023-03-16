@@ -3662,7 +3662,6 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
         EDMAC_9_Vertical_Change = 0;
     }
 
-    /* FIXME: hardcoded addresses for x5 mode on LCD screen, implement HDMI support! */
     if (PathDriveMode->zoom == 5)
     {
         /* patch supported presets if patch not active */
@@ -3772,7 +3771,6 @@ static void update_patch()
                 unpatch_memory(PATH_SelectPathDriveMode);
             }
 
-            /* FIXME: hardcoded addresses for x5 mode on LCD screen, implement HDMI support! */
             if (Clear_Artifacts_ON)
             {
                 unpatch_memory(ClearAddress);
