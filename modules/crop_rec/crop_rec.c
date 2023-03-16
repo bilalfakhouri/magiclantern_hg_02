@@ -252,7 +252,7 @@ const struct PathDriveMode
     uint32_t SV;            /* 100D, EOSM, 80D: ? */
     uint32_t unk_2c;
     uint32_t unk_30;
-    uint32_t unk_34;
+    uint32_t OutputType;   /*  SelectPath: 0 LCD, 1 VIDEO(NTSC), 2 VIDEO(PAL), 3 HDMI(1080i FULL), 4 HDMI(1080i INFO), 5 HDMI(720p FULL), 6 HDMI(720p INFO), 7 HDMI(480), 8 HDMI(576) */
     uint32_t unk_38;
     uint32_t unk_3c;
     uint32_t unk_40;
