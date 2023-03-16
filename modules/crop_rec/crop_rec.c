@@ -3336,6 +3336,7 @@ static uint32_t ShiftAddress  = 0;
 static uint32_t ClearAddress  = 0;
 static uint32_t DefaultShift  = 0; // expected value which we want to patch
 static uint32_t DefaultClear  = 0; // expected value which we want to patch
+static uint32_t NewClearVal   = 0; // new clear value, should be same as width from 0xC0F04210?
 
 int GetShiftValue()
 {
@@ -3568,6 +3569,7 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
     {
         DefaultShift  = 0x0;
         DefaultClear  = 0x0;
+        NewClearVal   = 0x5A0;
         ShiftAddress  = Shift_x5_LCD;
         ClearAddress  = Clear_Vram_x5_LCD;
     }
@@ -3576,6 +3578,7 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
     {
         DefaultShift  = 0x8740;
         DefaultClear  = 0x40;
+        NewClearVal   = 0x520;
         ShiftAddress  = Shift_x5_HDMI_480p;
         ClearAddress  = Clear_Vram_x5_HDMI_480p;
     }
@@ -3584,6 +3587,7 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
     {
         DefaultShift  = 0x12C;
         DefaultClear  = 0x12C;
+        NewClearVal   = 0xCA8;
         ShiftAddress  = Shift_x5_HDMI_1080i_Full;
         ClearAddress  = Clear_Vram_x5_HDMI_1080i_Full;
     }
@@ -3592,6 +3596,7 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
     {
         DefaultShift  = 0x16A58;
         DefaultClear  = 0x258;
+        NewClearVal   = 0xA50;
         ShiftAddress  = Shift_x5_HDMI_1080i_Info;
         ClearAddress  = Clear_Vram_x5_HDMI_1080i_Info;
     }
@@ -3669,7 +3674,7 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
 
         if (Clear_Artifacts && !Clear_Artifacts_ON)
         {
-            patch_memory(ClearAddress, DefaultClear, 0x5a0, "Clear"); // 0x5a0 seems to clear all artifacts
+            patch_memory(ClearAddress, DefaultClear, NewClearVal, "Clear");
             Clear_Artifacts_ON = 1;
         }
 
