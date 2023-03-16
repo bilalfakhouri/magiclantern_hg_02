@@ -3346,12 +3346,14 @@ int GetShiftValue()
             case 0:
             case 1:
             {
-                if (is_LCD_Output()) return 0x1F4A0;
+                if (is_LCD_Output())  return 0x1F4A0;
+                if (is_480p_Output()) return 0x1B160;
             }
 
             case 3: 
             {
-                if (is_LCD_Output()) return 0xD5C0;
+                if (is_LCD_Output())  return 0xD5C0;
+                if (is_480p_Output()) return 0xB9E0;
             }
 
             case 2:
@@ -3368,20 +3370,24 @@ int GetShiftValue()
         {
             case 0:
             {
-                if (is_LCD_Output()) return 0xD5C0;
+                if (is_LCD_Output())  return 0xD5C0;
+                if (is_480p_Output()) return 0xB9E0;
             }            
             case 1:
             {
-                if (is_LCD_Output()) return 0x15720;
+                if (is_LCD_Output())  return 0x15720;
+                if (is_480p_Output()) return 0x124C0;
             }            
             case 2:
             {
-                if (is_LCD_Output()) return 0x1B6C0;
+                if (is_LCD_Output())  return 0x1B6C0;
+                if (is_480p_Output()) return 0x17380;
             }            
             case 3:
             case 4:
             {
-                if (is_LCD_Output()) return 0x1F4A0;
+                if (is_LCD_Output())  return 0x1F4A0;
+                if (is_480p_Output()) return 0x1B160;
             }
         }  
     }
