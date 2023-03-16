@@ -3348,12 +3348,16 @@ int GetShiftValue()
             {
                 if (is_LCD_Output())  return 0x1F4A0;
                 if (is_480p_Output()) return 0x1B160;
+                if (is_1080i_Full_Output()) return 0x5BF2C;
+                if (is_1080i_Info_Output()) return 0x5ED58;
             }
 
             case 3: 
             {
                 if (is_LCD_Output())  return 0xD5C0;
                 if (is_480p_Output()) return 0xB9E0;
+                if (is_1080i_Full_Output()) return 0x2772C;
+                if (is_1080i_Info_Output()) return 0x33B58;
             }
 
             case 2:
@@ -3372,22 +3376,30 @@ int GetShiftValue()
             {
                 if (is_LCD_Output())  return 0xD5C0;
                 if (is_480p_Output()) return 0xB9E0;
+                if (is_1080i_Full_Output()) return 0x2772C;
+                if (is_1080i_Info_Output()) return 0x33B58;
             }            
             case 1:
             {
                 if (is_LCD_Output())  return 0x15720;
                 if (is_480p_Output()) return 0x124C0;
+                if (is_1080i_Full_Output()) return 0x3FD2C;
+                if (is_1080i_Info_Output()) return 0x46758;
             }            
             case 2:
             {
                 if (is_LCD_Output())  return 0x1B6C0;
                 if (is_480p_Output()) return 0x17380;
+                if (is_1080i_Full_Output()) return 0x51A2C;
+                if (is_1080i_Info_Output()) return 0x55758;
             }            
             case 3:
             case 4:
             {
                 if (is_LCD_Output())  return 0x1F4A0;
                 if (is_480p_Output()) return 0x1B160;
+                if (is_1080i_Full_Output()) return 0x5BF2C;
+                if (is_1080i_Info_Output()) return 0x5ED58;
             }
         }  
     }
@@ -4620,7 +4632,7 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
             old_3x3_preset = crop_preset_3x3_res_menu;
         }
     }
-
+patch_instruction(0xff33157c, 0xe3a00002, 0xe3a00005, "HDMI Code");
     return CBR_RET_CONTINUE;
 }
 
