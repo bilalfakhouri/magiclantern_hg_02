@@ -1895,6 +1895,10 @@ static uint32_t Clear_Vram_x5_HDMI_480p = 0;
 static uint32_t Clear_Vram_x5_HDMI_1080i_Full = 0;
 static uint32_t Clear_Vram_x5_HDMI_1080i_Info = 0;
 
+/* address holds darkframe subtraction data for photo mode for (RAW_V) */
+static uint32_t HIV_Vertical_Photo_Address = 0;
+static uint32_t HIV_Vertical_Address_hook = 0; // LVx5_StartPreproPath, sets HIV address for RAW_V
+
 static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
 {
     if (CROP_2_5K)
@@ -3292,6 +3296,15 @@ static void FAST EngDrvOuts_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     }
 }
 
+// 0xC0F04908 register sets EDMAC#9 address, I think it holds darkframe subtraction data, change it to photo mode address (use darkframe data from photo mode)
+// cleaner preview this way in presets which exceed default vertical RAW resolution (above 1080 vertical pixels), photo mode data should cover height up to 3528
+// 0xC0F04908 changes among two addresses in LiveView, one dedicated for RAW_H and other one for RAW_V, we want to change the address for RAW_V (our hook does that)
+// note: I am not sure what I am doing
+static void Change_HIV_V_Address(uint32_t* regs, uint32_t* stack, uint32_t pc)     
+{
+    regs[1] = HIV_Vertical_Photo_Address;
+}
+
 int is_LCD_Output()
 {
     if (PathDriveMode->OutputType == 0)
@@ -3744,6 +3757,10 @@ static void update_patch()
             {
                 patch_hook_function(PATH_SelectPathDriveMode, MEM(PATH_SelectPathDriveMode), PATH_SelectPathDriveMode_hook, "crop_rec: preview stuff 3");
             }
+            if (HIV_Vertical_Address_hook)
+            {
+                patch_hook_function(HIV_Vertical_Address_hook, MEM(HIV_Vertical_Address_hook), Change_HIV_V_Address, "crop_rec: preview stuff 4");
+            }
             patch_active = 1;
         }
     }
@@ -3769,6 +3786,10 @@ static void update_patch()
             if (PATH_SelectPathDriveMode)
             {
                 unpatch_memory(PATH_SelectPathDriveMode);
+            }
+            if (HIV_Vertical_Address_hook)
+            {
+                unpatch_memory(HIV_Vertical_Address_hook);
             }
 
             if (Clear_Artifacts_ON)
@@ -4907,6 +4928,8 @@ static unsigned int crop_rec_init()
         
         EDMAC_9_Vertical_1 = 0x5976C;
         EDMAC_9_Vertical_2 = 0x5979C;
+        HIV_Vertical_Photo_Address = 0x4FE5F070;
+        HIV_Vertical_Address_hook = 0xFF500D04;
         
         EDID_HDMI_INFO = (void *) 0x821CC;
         
@@ -4946,6 +4969,8 @@ static unsigned int crop_rec_init()
         
         EDMAC_9_Vertical_1 = is_camera("700D", "1.1.5") ? 0x3E200 : 0x3E120;
         EDMAC_9_Vertical_2 = is_camera("700D", "1.1.5") ? 0x3E230 : 0x3E150;
+        HIV_Vertical_Photo_Address = 0x4205E098;
+        HIV_Vertical_Address_hook = is_camera("700D", "1.1.5") ? 0xFF4F2A04 : 0xFF4EF224;
         
         EDID_HDMI_INFO = (void *) (is_camera("700D", "1.1.5") ? 0x648B0 : 0x63F7C);
         
@@ -4987,6 +5012,8 @@ static unsigned int crop_rec_init()
         
         EDMAC_9_Vertical_1 = 0x77170;
         EDMAC_9_Vertical_2 = 0x771A0;
+        HIV_Vertical_Photo_Address = 0x4144F9E4;
+        HIV_Vertical_Address_hook = 0xFF50CCD4;
         
         EDID_HDMI_INFO = (void *) 0xA3C0C;
         
