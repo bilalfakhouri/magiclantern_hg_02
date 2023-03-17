@@ -174,7 +174,10 @@ static const char * crop_choices_DIGIC_5[] = {
 };
 
 static const char crop_choices_help_DIGIC_5[] =
-    "Change 1080p and 720p movie modes into crop modes (select one)";
+    "Change 1080p and 720p movie modes into crop modes (select one)\n"
+    "Center crop on sensor, no pixel binning/skipping in this mode.\n"
+    "a.k.a Anamorphic, reads all vertical pixels, reduces aliasing.\n"
+    "Experimental High FPS modes. Start recording to reveal the preview!\n";
     
     
 /* menu choices for cameras that only have the basic 3x3 crop_rec option */
