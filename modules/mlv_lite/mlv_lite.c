@@ -2169,6 +2169,13 @@ static void (*CartridgeCancel)() = 0;
 static int more_hacks_are_supported = 0;
 static int CartridgeCancel_works = 0;
 
+int is_more_hacks_selected()
+{
+    if (small_hacks >= 2) return 1;
+
+    return 0;
+}
+
 static REQUIRES(RawRecTask)
 void hack_liveview(int unhack)
 {

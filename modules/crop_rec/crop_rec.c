@@ -4646,6 +4646,14 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
             }
         }
 
+        // FIXME: for now, "More" hacks must be on in order to get wokring preview in 3x3 presets while recording
+        // see notes in reg_override_3X3
+        if (CROP_PRESET_MENU == CROP_PRESET_3X3 && lv && raw_lv_is_enabled() && !is_more_hacks_selected())
+        {
+            menu_set_str_value_from_script("RAW video", "Small hacks", "More", 2);
+            NotifyBox(2000,"Small hacks was set to More");
+        }
+
         if (!menu_shown)
         {   
             // check crop_rec configurations while outside ML menu
