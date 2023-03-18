@@ -3299,6 +3299,92 @@ static void FAST EngDrvOuts_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     }
 }
 
+/* sometime and for some reaseon not all preview registers get overriden, especially the ones in engio_write hook and when HDMI is connected */
+/* while idle let's check preview registers values, if they don't match our values, set values using EngDrvOut call */
+void CheckPreviewRegsValuesAndForce()
+{
+    if (!lv) return;
+    if (!CROP_PRESET_MENU) return;
+    if (lv_dispsize != 5) return;
+    if (PathDriveMode->zoom != 5) return;
+    if (Preview_Control_Basic) return;
+
+    if (shamem_read(0xC0F38070) != ((Preview_V + 0x9) << 16) + Preview_H / 4 + 5      ||
+        shamem_read(0xC0F38078) != (((Preview_H / 4) + 6) << 16) + 1                  ||
+        shamem_read(0xC0F3807C) != ((Preview_H / 4) + 5) << 16                        ||
+        shamem_read(0xC0F38080) != ((Preview_V + 0x7) << 16) + 2                      ||
+        shamem_read(0xC0F38084) != ((Preview_H / 4) + 7) << 16                        ||
+        shamem_read(0xC0F38094) != ( Preview_V + 0xa) << 16                           ||
+        shamem_read(0xC0F380A0) != ((Preview_H / 4) + 7) << 16                        ||
+        shamem_read(0xC0F380A4) != ((Preview_H / 4) + 7) << 16                        ||
+        shamem_read(0xC0F38024) != ((RAW_V - 1) << 16)  + RAW_H - 0x11                ||
+        shamem_read(0xC0F383D4) != Preview_R                                          ||
+        shamem_read(0xC0F383DC) != ((Preview_V + 0x1c) << 16)  + Preview_H / 4 + 0x48 ||
+        shamem_read(0xC0F38934) != ((Preview_V + 0x6) << 16)   + Preview_H / 4 + 5    ||
+        shamem_read(0xC0F38960) != ( Preview_V + 0x6) << 16                           ||
+        shamem_read(0xC0F389A4) != ((Preview_V + 0x6) << 16)   + Preview_H / 4 + 5    ||
+        shamem_read(0xC0F389B4) != ((Preview_V + 0x7) << 16)   + Preview_H / 4 + 6    ||
+        shamem_read(0xC0F389D4) != ((Preview_V + 0x6) << 16)   + Preview_H / 4 + 5    ||
+        shamem_read(0xC0F389E4) != ((Preview_V + 0x7) << 16)   + Preview_H / 4 + 7    ||
+        shamem_read(0xC0F389EC) != ((Preview_H / 4 + 6) << 16) + 1                    ||
+        shamem_read(0xC0F42014) != ((Preview_V + 0x9) << 16) + Preview_H / 4 + 5      ||
+        shamem_read(0xC0F4204C) != ((Preview_V + 0x9) << 16) + Preview_H / 4 + 5      ||
+        shamem_read(0xC0F42194) != ( Preview_H / 4) + 5                               ||
+        shamem_read(0xC0F3A04C) != ((Preview_V + 0x6) << 16)   + Preview_H / 4 + 5    ||
+        shamem_read(0xC0F3A0A0) != ((Preview_V + 0xa) << 16)   + Preview_H + 0xb      ||
+        shamem_read(0xC0F3A0B0) != ((Preview_V + 0xa) << 16)   + Preview_H + 0x8      ||
+        shamem_read(0xC0F3B054) != ((Preview_V + 0x6) << 16)   + Preview_H + 0x7      ||
+        shamem_read(0xC0F3B070) != ((Preview_V + 0x6) << 16)   + Preview_H + 0x57     ||
+        shamem_read(0xC0F3B074) != ( Preview_V        << 16)   + Preview_H + 0x57     ||
+        shamem_read(0xC0F3B0DC) != ( Preview_V        << 16)   + Preview_H + 0x4f     ||
+        shamem_read(0xC0F1A00C) != (Preview_V << 16) + Preview_H - 0x1                ||
+        shamem_read(0xC0F11B9C) != (Preview_V << 16) + Preview_H - 0x1                ||
+        shamem_read(0xC0F11B8C) != YUV_HD_S_H                                         ||
+        shamem_read(0xC0F11BCC) != YUV_HD_S_V                                         ||
+        shamem_read(0xC0F11BC8) != YUV_HD_S_V_E                                       ||
+        shamem_read(0xC0F11ACC) != YUV_LV_S_V                                         ||
+        shamem_read(0xC0F04210) != YUV_LV_Buf                                          )
+        {
+            gui_uilock(UILOCK_EVERYTHING);
+            EngDrvOutLV(0xC0F38070, ((Preview_V + 0x9) << 16) + Preview_H / 4 + 5);
+            EngDrvOutLV(0xC0F38078, (((Preview_H / 4) + 6) << 16) + 1);
+            EngDrvOutLV(0xC0F3807C, ((Preview_H / 4) + 5) << 16);
+            EngDrvOutLV(0xC0F38080, ((Preview_V + 0x7) << 16) + 2);
+            EngDrvOutLV(0xC0F38084, ((Preview_H / 4) + 7) << 16);
+            EngDrvOutLV(0xC0F38094, ( Preview_V + 0xa) << 16);
+            EngDrvOutLV(0xC0F380A0, ((Preview_H / 4) + 7) << 16);
+            EngDrvOutLV(0xC0F380A4, ((Preview_H / 4) + 7) << 16);
+            EngDrvOutLV(0xC0F38024, ((RAW_V - 1) << 16)  + RAW_H - 0x11);
+            EngDrvOutLV(0xC0F383D4, Preview_R);
+            EngDrvOutLV(0xC0F383DC, ((Preview_V + 0x1c) << 16)  + Preview_H / 4 + 0x48);
+            EngDrvOutLV(0xC0F38934, ((Preview_V + 0x6) << 16)   + Preview_H / 4 + 5);
+            EngDrvOutLV(0xC0F38960, ( Preview_V + 0x6) << 16);
+            EngDrvOutLV(0xC0F389A4, ((Preview_V + 0x6) << 16)   + Preview_H / 4 + 5);
+            EngDrvOutLV(0xC0F389B4, ((Preview_V + 0x7) << 16)   + Preview_H / 4 + 6);
+            EngDrvOutLV(0xC0F389D4, ((Preview_V + 0x6) << 16)   + Preview_H / 4 + 5);
+            EngDrvOutLV(0xC0F389E4, ((Preview_V + 0x7) << 16)   + Preview_H / 4 + 7);
+            EngDrvOutLV(0xC0F389EC, ((Preview_H / 4 + 6) << 16) + 1);
+            EngDrvOutLV(0xC0F42014, ((Preview_V + 0x9) << 16) + Preview_H / 4 + 5);
+            EngDrvOutLV(0xC0F4204C, ((Preview_V + 0x9) << 16) + Preview_H / 4 + 5);
+            EngDrvOutLV(0xC0F42194, ( Preview_H / 4) + 5);
+            EngDrvOutLV(0xC0F3A04C, ((Preview_V + 0x6) << 16)   + Preview_H / 4 + 5);
+            EngDrvOutLV(0xC0F3A0A0, ((Preview_V + 0xa) << 16)   + Preview_H + 0xb);
+            EngDrvOutLV(0xC0F3A0B0, ((Preview_V + 0xa) << 16)   + Preview_H + 0x8);
+            EngDrvOutLV(0xC0F3B054, ((Preview_V + 0x6) << 16)   + Preview_H + 0x7);
+            EngDrvOutLV(0xC0F3B070, ((Preview_V + 0x6) << 16)   + Preview_H + 0x57);
+            EngDrvOutLV(0xC0F3B074, ( Preview_V        << 16)   + Preview_H + 0x57);
+            EngDrvOutLV(0xC0F3B0DC, ( Preview_V        << 16)   + Preview_H + 0x4f);
+            EngDrvOutLV(0xC0F1A00C, (Preview_V << 16) + Preview_H - 0x1);
+            EngDrvOutLV(0xC0F11B9C, (Preview_V << 16) + Preview_H - 0x1);
+            EngDrvOutLV(0xC0F11B8C, YUV_HD_S_H);
+            EngDrvOutLV(0xC0F11BCC, YUV_HD_S_V);
+            EngDrvOutLV(0xC0F11BC8, YUV_HD_S_V_E);
+            EngDrvOutLV(0xC0F11ACC, YUV_LV_S_V);
+            EngDrvOutLV(0xC0F04210, YUV_LV_Buf);
+            gui_uilock(UILOCK_NONE);
+        }
+}
+
 // 0xC0F04908 register sets EDMAC#9 address, I think it holds darkframe subtraction data, change it to photo mode address (use darkframe data from photo mode)
 // cleaner preview this way in presets which exceed default vertical RAW resolution (above 1080 vertical pixels), photo mode data should cover height up to 3528
 // 0xC0F04908 changes among two addresses in LiveView, one dedicated for RAW_H and other one for RAW_V, we want to change the address for RAW_V (our hook does that)
@@ -4646,6 +4732,15 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
             if (!is_manual_focus() && lv_af_mode == 1)
             {
                 set_zoom(5);
+            }
+        }
+
+        /* while idle, check our preview resgisters, force the new values if not set yet */
+        if (!lv_dirty && !crop_rec_needs_lv_refresh() && CROP_PRESET_MENU && !RECORDING && lv_dispsize == 5 && PathDriveMode->zoom == 5 && lv)
+        {
+            if (Preview_Control && !Preview_Control_Basic) // presets with basic preview don't need it
+            {
+                CheckPreviewRegsValuesAndForce();
             }
         }
 
