@@ -3542,7 +3542,7 @@ void SetAspectRatioCorrectionValues()
                 case 0:                                                         // CROP_2_5K
                 case 1:                                                         // CROP_2_8K
                          YUV_LV_Buf = 0x1580CA8; YUV_LV_S_V = 0x1050209; break;
-                case 3:  YUV_LV_Buf = 0x1C70CA8; YUV_LV_S_V = 0x105081A; break; // CROP_1440p
+                case 3:  YUV_LV_Buf = 0x1C70CA8; YUV_LV_S_V = 0x105018A; break; // CROP_1440p
                 default: YUV_LV_Buf = 0x21B0CA8; YUV_LV_S_V = 0x8700AC;  break;
             }
         }
