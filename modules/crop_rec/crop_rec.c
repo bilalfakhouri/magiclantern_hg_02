@@ -4903,12 +4903,34 @@ warn:
     }
 }
 
+/* Display Bitdepth in ML bottom bar */
+static LVINFO_UPDATE_FUNC(bitdepth_info)
+{
+    LVINFO_BUFFER(8);
+
+    if (patch_active && is_movie_mode())
+    {
+        if (OUTPUT_14BIT) snprintf(buffer, sizeof(buffer), "14 Bit");
+        if (OUTPUT_12BIT) snprintf(buffer, sizeof(buffer), "12 Bit");
+        if (OUTPUT_11BIT) snprintf(buffer, sizeof(buffer), "11 Bit");
+        if (OUTPUT_10BIT) snprintf(buffer, sizeof(buffer), "10 Bit");
+        item->color_fg = COLOR_GREEN1;
+    }
+}
+
 static struct lvinfo_item info_items[] = {
     {
         .name = "Crop info",
         .which_bar = LV_BOTTOM_BAR_ONLY,
         .update = crop_info,
         .preferred_position = -50,  /* near the focal length display */
+        .priority = 1,
+    },
+    {
+        .name = "Bitdepth info",
+        .which_bar = LV_BOTTOM_BAR_ONLY,
+        .update = bitdepth_info,
+        .preferred_position = -128,
         .priority = 1,
     }
 };
