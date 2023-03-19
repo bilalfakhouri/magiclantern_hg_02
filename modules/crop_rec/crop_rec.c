@@ -3991,7 +3991,7 @@ static MENU_UPDATE_FUNC(crop_preset_1x1_res_update)
     }
     if (crop_preset_1x1_res_menu == 4)
     {
-        MENU_SET_HELP("5208x3478 @ 2 FPS. Has cropped centered real-time preview.");
+        MENU_SET_HELP("5208x3478 @ 3 FPS. Has cropped centered real-time preview.");
     }
 }
 
