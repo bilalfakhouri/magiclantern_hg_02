@@ -3301,6 +3301,7 @@ static void FAST EngDrvOuts_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
 
 /* sometime and for some reaseon not all preview registers get overriden, especially the ones in engio_write hook and when HDMI is connected */
 /* while idle let's check preview registers values, if they don't match our values, set values using EngDrvOut call */
+uint32_t REG_C0F38024_Val = 0;
 void CheckPreviewRegsValuesAndForce()
 {
     if (!lv) return;
@@ -3309,10 +3310,8 @@ void CheckPreviewRegsValuesAndForce()
     if (PathDriveMode->zoom != 5) return;
     if (Preview_Control_Basic) return;
 
-    uint32_t REG_C0F38024_Val;
     if (is_100D)                       REG_C0F38024_Val = ((RAW_V - 5) << 16)  + RAW_H - 0x1A;
     if (is_650D || is_700D || is_EOSM) REG_C0F38024_Val = ((RAW_V - 1) << 16)  + RAW_H - 0x11;
-    
 
     if (shamem_read(0xC0F38070) != ((Preview_V + 0x9) << 16) + Preview_H / 4 + 5      ||
         shamem_read(0xC0F38078) != (((Preview_H / 4) + 6) << 16) + 1                  ||
