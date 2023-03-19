@@ -1921,8 +1921,8 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
             RAW_H         = 0x2a1;
             RAW_V         = 0x459;
             TimerA        = 0x2DB;
-            if (Framerate_24) TimerB = 0x737;
-            if (Framerate_25) TimerB = 0x6EA;
+            if (Framerate_24) TimerB = 0x71E;
+            if (Framerate_25) TimerB = 0x6D3;
             if (Framerate_30) TimerB = 0x5B3;
         }
 
