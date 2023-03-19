@@ -2061,13 +2061,13 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         Preview_Control_Basic = 0;
     }
 
-    if (CROP_Full_Res) /* 5208x3478 @ 2 FPS */
+    if (CROP_Full_Res) /* 5208x3478 @ 3 FPS */
     {
         if (is_650D || is_700D || is_EOSM)
         {
             RAW_H    = 0x538;
             RAW_V    = 0xDB2;
-            TimerB   = 0x2D06;
+            TimerB   = 0x1E03;
             TimerA   = 0x56B;
         }
 
@@ -2075,7 +2075,7 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         {
             RAW_H    = 0x541;
             RAW_V    = 0xDB7;
-            TimerB   = 0x2CC0;
+            TimerB   = 0x1DD6;
             TimerA   = 0x573;
         }
 
@@ -4242,7 +4242,7 @@ static MENU_UPDATE_FUNC(crop_preset_fps_update)
 
         if (crop_preset_1x1_res_menu == 4) // CROP_Full_Res
         {
-            MENU_SET_VALUE("2 FPS");
+            MENU_SET_VALUE("3 FPS");
             MENU_SET_WARNING(MENU_WARN_ADVICE, "This option doesn't work with Full-Res LV.");
         }
     }
