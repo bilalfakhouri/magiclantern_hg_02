@@ -3317,7 +3317,9 @@ void CheckPreviewRegsValuesAndForce()
         shamem_read(0xC0F38094) != ( Preview_V + 0xa) << 16                           ||
         shamem_read(0xC0F380A0) != ((Preview_H / 4) + 7) << 16                        ||
         shamem_read(0xC0F380A4) != ((Preview_H / 4) + 7) << 16                        ||
-        shamem_read(0xC0F38024) != ((RAW_V - 1) << 16)  + RAW_H - 0x11                ||
+        shamem_read(0xC0F38024) != (is_650D || is_700D || is_EOSM) ?
+                                   ((RAW_V - 1) << 16)  + RAW_H - 0x11 :
+                                   ((RAW_V - 5) << 16)  + RAW_H - 0x1A                ||
         shamem_read(0xC0F383D4) != Preview_R                                          ||
         shamem_read(0xC0F383DC) != ((Preview_V + 0x1c) << 16)  + Preview_H / 4 + 0x48 ||
         shamem_read(0xC0F38934) != ((Preview_V + 0x6) << 16)   + Preview_H / 4 + 5    ||
@@ -3354,7 +3356,9 @@ void CheckPreviewRegsValuesAndForce()
             EngDrvOutLV(0xC0F38094, ( Preview_V + 0xa) << 16);
             EngDrvOutLV(0xC0F380A0, ((Preview_H / 4) + 7) << 16);
             EngDrvOutLV(0xC0F380A4, ((Preview_H / 4) + 7) << 16);
-            EngDrvOutLV(0xC0F38024, ((RAW_V - 1) << 16)  + RAW_H - 0x11);
+            EngDrvOutLV(0xC0F38024, (is_650D || is_700D || is_EOSM) ?
+                                    ((RAW_V - 1) << 16)  + RAW_H - 0x11 :
+                                    ((RAW_V - 5) << 16)  + RAW_H - 0x1A);
             EngDrvOutLV(0xC0F383D4, Preview_R);
             EngDrvOutLV(0xC0F383DC, ((Preview_V + 0x1c) << 16)  + Preview_H / 4 + 0x48);
             EngDrvOutLV(0xC0F38934, ((Preview_V + 0x6) << 16)   + Preview_H / 4 + 5);
