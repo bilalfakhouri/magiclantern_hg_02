@@ -1588,71 +1588,16 @@ int setup_buffers()
         fullsize_buffers[0] = UNCACHEABLE(raw_info.buffer);
     }
 
-    static int valid_slots_count_single_buffering = 0;
-    static int valid_slots_count_double_buffering = 0;
-
-    /* check slots with and without double buffering before making our final choice among using single or double buffering */
-    /* in some cases (all cases?), by using single buffering we can get one more extra slot compared to double buffering */
-    if (!fullsize_buffers[0] && OUTPUT_COMPRESSION)
-    {
-        /* reset slots count and discard old full-size buffers */
-        total_slot_count = 0;
-        valid_slot_count = 0;
-        fullsize_buffers[0] = fullsize_buffers[1] = 0;
-        
-        /* allocate single buffer */
-        fullsize_buffers[0] = UNCACHEABLE(raw_info.buffer);
-
-        /* check slots count with single-buffering */
-        int chunk_index_single_buffering = 0;
-        chunk_index_single_buffering = add_mem_suite(shoot_mem_suite, chunk_index_single_buffering, max_frame_size, fullres_buf_size);
-        chunk_index_single_buffering = add_mem_suite(srm_mem_suite, chunk_index_single_buffering, max_frame_size, fullres_buf_size);
-        valid_slots_count_single_buffering = valid_slot_count;
-        printf("Allocated %d slots with single buffering.\n", valid_slot_count);
-
-        /* reset slots count and discard old full-size buffers */
-        total_slot_count = 0;
-        valid_slot_count = 0;
-        fullsize_buffers[0] = fullsize_buffers[1] = 0;
-
-        /* try double-buffering */
-        if (!fullsize_buffers[0])
-        {
-            fullsize_buffers[0] = alloc_fullsize_buffer(shoot_mem_suite, fullres_buf_size);
-        }
-        if (!fullsize_buffers[0])
-        {
-            fullsize_buffers[0] = alloc_fullsize_buffer(srm_mem_suite, fullres_buf_size);
-        }
-
-        /* check slots count with double-buffering if double-buffering was successful*/
-        int chunk_index_double_buffering = 0;
-        if (fullsize_buffers[0])
-        {
-            chunk_index_double_buffering = add_mem_suite(shoot_mem_suite, chunk_index_double_buffering, max_frame_size, fullres_buf_size);
-            chunk_index_double_buffering = add_mem_suite(srm_mem_suite, chunk_index_double_buffering, max_frame_size, fullres_buf_size);
-            valid_slots_count_double_buffering = valid_slot_count;
-            printf("Allocated %d slots with double buffering.\n", valid_slot_count);
-        }
-
-        /* discard old full-size buffers */
-        fullsize_buffers[0] = fullsize_buffers[1] = 0;
+    /* allocate a full-size buffer, if we haven't one already */
+   if (!fullsize_buffers[0])
+   {
+        printf("Trying double buffering (shoot, full size %s)...\n", format_memory_size(fullres_buf_size));
+        fullsize_buffers[0] = alloc_fullsize_buffer(shoot_mem_suite, fullres_buf_size);
     }
-
-    /* allocate a full-size buffer, if we haven't one already, use double buffering */
-    /* only if it would give more valid slots compared to single buffering */
-    if (valid_slots_count_double_buffering > valid_slots_count_single_buffering) 
+    if (!fullsize_buffers[0])
     {
-        if (!fullsize_buffers[0])
-        {
-            printf("Trying double buffering (shoot, full size %s)...\n", format_memory_size(fullres_buf_size));
-            fullsize_buffers[0] = alloc_fullsize_buffer(shoot_mem_suite, fullres_buf_size);
-        }
-        if (!fullsize_buffers[0])
-        {
-            printf("Trying double buffering (SRM)...\n");
-            fullsize_buffers[0] = alloc_fullsize_buffer(srm_mem_suite, fullres_buf_size);
-        }
+        printf("Trying double buffering (SRM)...\n");
+        fullsize_buffers[0] = alloc_fullsize_buffer(srm_mem_suite, fullres_buf_size);
     }
 
     if (!fullsize_buffers[0])
