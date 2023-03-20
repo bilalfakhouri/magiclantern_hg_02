@@ -3895,6 +3895,18 @@ static void update_patch()
                 unpatch_memory(ShiftAddress);
                 Center_Preview_ON = 0 ;
             }
+            
+            /* enable Canon overlays (turn off Kill Canon GUI setting) */
+            extern int kill_canon_gui_mode;
+            if (kill_canon_gui_mode != 0)
+            {
+                kill_canon_gui_mode = 0;
+                if (canon_gui_front_buffer_disabled())
+                {
+                    canon_gui_enable_front_buffer(0);
+                }
+            }
+
             patch_active = 0;
             crop_preset = 0;
         }
@@ -4754,6 +4766,26 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
         {
             menu_set_str_value_from_script("RAW video", "Small hacks", "More", 2);
             NotifyBox(2000,"Small hacks was set to More");
+        }
+
+        /* disable Canon overlays in x5 mode for cleaner preview */
+        extern int kill_canon_gui_mode;
+        if (lv && patch_active && CROP_PRESET_MENU)
+        {
+            if (PathDriveMode->zoom == 5 && kill_canon_gui_mode != 1)
+            {
+                kill_canon_gui_mode = 1;
+            }
+
+            /* enable Canon overlays in x10 mode */
+            if (PathDriveMode->zoom == 10 && kill_canon_gui_mode != 0)
+            {
+                kill_canon_gui_mode = 0;
+                if (canon_gui_front_buffer_disabled())
+                {
+                    canon_gui_enable_front_buffer(0);
+                }
+            }
         }
 
         if (!menu_shown)
