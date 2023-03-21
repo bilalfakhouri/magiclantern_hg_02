@@ -3929,6 +3929,9 @@ PROP_HANDLER(PROP_LV_DISPSIZE)
 /* forward reference */
 static struct menu_entry crop_rec_menu[];
 
+/* give a warning if picture quality not set to RAW for entry-level models */
+static int pic_quality_warning = 0;
+
 static MENU_UPDATE_FUNC(crop_update)
 {
     if (is_DIGIC_5)
@@ -3944,6 +3947,11 @@ static MENU_UPDATE_FUNC(crop_update)
             MENU_SET_HELP("%dx%d %d%s%d",raw_info.width - 72, raw_info.height - 28, raw_capture_info.binning_y + raw_capture_info.skipping_y,
             (raw_capture_info.binning_x + raw_capture_info.skipping_x == 1 && raw_capture_info.binning_y + raw_capture_info.skipping_y == 1) ? 
             ":" : "x",                                                              raw_capture_info.binning_x + raw_capture_info.skipping_x);
+
+            if (pic_quality_warning)
+            {
+                MENU_SET_WARNING(MENU_WARN_ADVICE, "Set Image quality to RAW, restart camera. This extends recording times.");
+            }
         }
     }
 
@@ -4785,6 +4793,19 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
                 {
                     canon_gui_enable_front_buffer(0);
                 }
+            }
+        }
+
+        /* on entry-level models, setting picture quality to RAW from Canon menu gains extra SRM chunk 
+         * https://www.magiclantern.fm/forum/index.php?topic=26521.msg239231#msg239231 (+31 MB of RAM)  
+         * let's check picture quality on startup, also when the user change it to other than RAW          
+         * let's inform the user to change pic quality back to RAW, and a camera restart would required 
+         * this extends recording times at high resolutions, also allows to record Full-Res LV @ 3 FPS */
+        if (lv && patch_active && CROP_PRESET_MENU && is_movie_mode())
+        {
+            if (pic_quality != 0x4060000)
+            {
+                pic_quality_warning = 1;
             }
         }
 
