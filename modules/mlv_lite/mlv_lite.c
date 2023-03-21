@@ -1544,6 +1544,23 @@ void realloc_buffers()
     printf("SRM memory: %s\n", srm_mem_suite ? format_memory_size(srm_mem_suite->size) : "N/A");
 }
 
+/* skip double buffering for Full-Res preset, this gain an extra slot, didn't notice side effects */
+int Full_Res_LV()
+{
+    /* picture quality must be set to RAW for entry-level cams from Canon menu to gain an extra SRM memory chunk */
+    /* https://www.magiclantern.fm/forum/index.php?topic=26521.msg239231#msg239231 */
+    if (cam_650d || cam_700d || cam_100d || cam_eos_m)
+    {
+        if (raw_info.width > 5208 && raw_info.height > 3478)
+        {
+            printf("Skipping double-buffering for Full-Res LV\n");
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 /* internal memory management - allocate frame slots and fullsize raw buffers
  * from memory suites already allocated from Canon with realloc_buffers
  * this routine is fast and will get called every time we refresh the raw parameters */
@@ -1589,15 +1606,18 @@ int setup_buffers()
     }
 
     /* allocate a full-size buffer, if we haven't one already */
-   if (!fullsize_buffers[0])
-   {
-        printf("Trying double buffering (shoot, full size %s)...\n", format_memory_size(fullres_buf_size));
-        fullsize_buffers[0] = alloc_fullsize_buffer(shoot_mem_suite, fullres_buf_size);
-    }
-    if (!fullsize_buffers[0])
+    if (!Full_Res_LV()) // skip double buffering for Full-Res LV, to gain extra slot
     {
-        printf("Trying double buffering (SRM)...\n");
-        fullsize_buffers[0] = alloc_fullsize_buffer(srm_mem_suite, fullres_buf_size);
+        if (!fullsize_buffers[0])
+        {
+            printf("Trying double buffering (shoot, full size %s)...\n", format_memory_size(fullres_buf_size));
+            fullsize_buffers[0] = alloc_fullsize_buffer(shoot_mem_suite, fullres_buf_size);
+        }
+        if (!fullsize_buffers[0])
+        {
+            printf("Trying double buffering (SRM)...\n");
+            fullsize_buffers[0] = alloc_fullsize_buffer(srm_mem_suite, fullres_buf_size);
+        }
     }
 
     if (!fullsize_buffers[0])
