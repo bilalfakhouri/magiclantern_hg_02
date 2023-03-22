@@ -3955,6 +3955,10 @@ static MENU_UPDATE_FUNC(crop_update)
         }
     }
 
+    /* hide Framerate and Aspect ratio menus for none supported models */
+    crop_rec_menu[0].children[3].shidden = !is_DIGIC_5;  // Aspect ratio
+    crop_rec_menu[0].children[4].shidden = !is_DIGIC_5;  // Framerate
+
     if (CROP_PRESET_MENU && lv)
     {
         if (CROP_PRESET_MENU == CROP_PRESET_CENTER_Z || is_DIGIC_5)
@@ -4348,6 +4352,7 @@ static struct menu_entry crop_rec_menu[] =
                 .max        = 4,
                 .choices    = CHOICES("16:9", "2:1", "2.20:1", "2.35:1", "2.39:1"),
                 .help       = "Select aspect ratio for current preset.",
+                .shidden    = 1,
             },
             {
                 .name       = "Framerate:",
@@ -4356,6 +4361,7 @@ static struct menu_entry crop_rec_menu[] =
                 .max        = 2,
                 .choices    = CHOICES("23.976 FPS", "25 FPS", "30 FPS"),
                 .help       = "Select framerate for current preset.",
+                .shidden    = 1,
             },
             {
                 .name       = "Bit-depth",
