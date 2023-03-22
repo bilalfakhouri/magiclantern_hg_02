@@ -702,11 +702,11 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
 
             case CROP_PRESET_UHD:
                 cmos_new[1] =
-                    (video_mode_fps == 24) ? PACK12(4,9)  :
-                    (video_mode_fps == 25) ? PACK12(4,9)  :
-                    (video_mode_fps == 30) ? PACK12(5,8)  :
-                    (video_mode_fps == 50) ? PACK12(12,9) :
-                    (video_mode_fps == 60) ? PACK12(13,9) :
+                    (video_mode_fps == 24) ? PACK12(10,12) :
+                    (video_mode_fps == 25) ? PACK12(10,12) :
+                    (video_mode_fps == 30) ? PACK12(11,11) :
+                    (video_mode_fps == 50) ? PACK12(14,9)  :
+                    (video_mode_fps == 60) ? PACK12(13,9)  :
                                             (uint32_t) -1 ;
                 cmos_new[2] = 0x08E;    /* horizontal centering (trial and error) */
                 cmos_new[6] = 0x170;    /* pink highlights without this */
