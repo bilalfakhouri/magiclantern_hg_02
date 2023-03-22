@@ -705,7 +705,7 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                     (video_mode_fps == 24) ? PACK12(10,12) :
                     (video_mode_fps == 25) ? PACK12(10,12) :
                     (video_mode_fps == 30) ? PACK12(11,11) :
-                    (video_mode_fps == 50) ? PACK12(14,9)  :
+                    (video_mode_fps == 50) ? PACK12(14,10) :
                     (video_mode_fps == 60) ? PACK12(13,9)  :
                                             (uint32_t) -1 ;
                 cmos_new[2] = 0x08E;    /* horizontal centering (trial and error) */
