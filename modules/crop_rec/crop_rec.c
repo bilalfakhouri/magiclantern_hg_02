@@ -14,6 +14,7 @@
 #include <lens.h>
 #include <focus.h>
 #include "../mlv_lite/mlv_lite.h"
+#include "../dual_iso/dual_iso.h"
 
 #undef CROP_DEBUG
 
@@ -34,6 +35,7 @@ static int is_basic = 0;
 
 static CONFIG_INT("crop.preset", crop_preset_index, 0);
 static CONFIG_INT("crop.shutter_range", shutter_range, 0);
+static CONFIG_INT("crop.fix_dual_iso_flicker", fix_dual_iso_flicker, 1);
 
 static CONFIG_INT("crop.bit_depth", bit_depth_analog, 0);
 #define OUTPUT_14BIT (bit_depth_analog == 0)
@@ -1822,6 +1824,13 @@ static inline uint32_t reg_override_zoom_fps(uint32_t reg, uint32_t old_val)
     return reg_override_fps_nocheck(reg, timerA, timerB, old_val);
 }
 
+/* adjust Timer B to make scanning Dual-ISO lines static  */
+/* Timer B value should be in 4 increment  */
+int Adjust_TimerB_For_Dual_ISO(int TimerB)
+{   TimerB = (TimerB / 4) * 4;
+    return TimerB + 3;
+}
+
 /* 650D / 700D / EOSM/M2 / 100D reg_override presets */
 
 int preview_debug_1 = 0;
@@ -2125,6 +2134,12 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
                case 0xC0F08184: return (RAW_V - 1) + Preview_V_Recover; // used to exceed vertical preview limit
             }
         }
+    }
+
+    /* get rid of moving Dual ISO lines by tweaking Timer B a tiny bit */
+    if (fix_dual_iso_flicker && dual_iso_is_enabled())
+    {
+        TimerB = Adjust_TimerB_For_Dual_ISO(TimerB);
     }
 
     switch (reg)
@@ -2759,6 +2774,12 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
         }
     }
 
+    /* get rid of moving Dual ISO lines by tweaking Timer B a tiny bit */
+    if (fix_dual_iso_flicker && dual_iso_is_enabled())
+    {
+        TimerB = Adjust_TimerB_For_Dual_ISO(TimerB);
+    }
+
     switch (reg)
     {
         case 0xC0F06804: return (RAW_V << 16) + RAW_H;
@@ -2925,6 +2946,12 @@ static inline uint32_t reg_override_3X3(uint32_t reg, uint32_t old_val)
     YUV_HD_S_V_E  = 0;
     Preview_Control = 1;
     Preview_Control_Basic = 0;
+
+    /* get rid of moving Dual ISO lines by tweaking Timer B a tiny bit */
+    if (fix_dual_iso_flicker && dual_iso_is_enabled())
+    {
+        TimerB = Adjust_TimerB_For_Dual_ISO(TimerB);
+    }
 
     switch (reg)
     {
@@ -4308,6 +4335,14 @@ static MENU_UPDATE_FUNC(bit_depth_analog_update)
     }
 }
 
+static MENU_UPDATE_FUNC(fix_dual_iso_flicker_update)
+{
+    if (!dual_iso_is_enabled())
+    {
+        MENU_SET_WARNING(MENU_WARN_NOT_WORKING, "This option only works with Dual-ISO.");
+    }
+}
+
 static struct menu_entry crop_rec_menu[] =
 {
     // FIXME: how to handle menu in cleaner way for is_DIGIC_5 models?
@@ -4379,6 +4414,16 @@ static struct menu_entry crop_rec_menu[] =
                 .help       = "Choose the available shutter speed range:",
                 .help2      = "Original: default range used by Canon in selected video mode.\n"
                               "Full range: from 1/FPS to minimum exposure time allowed by hardware."
+            },
+            {            
+                .name       = "Fix Dual-ISO flicker",
+                .priv       = &fix_dual_iso_flicker,
+                .update     = fix_dual_iso_flicker_update,
+                .max        = 1,
+                .choices    = CHOICES("OFF", "ON"),
+                .icon_type  = IT_DICE,
+                .help       = "Removes Dual-ISO lines waterfall effect by reducing FPS a tiny bit.",
+                .help2      = "This fixes a flicker and crawling cuased by moving Dual-ISO lines."
             },
             {
                 .name   = "Preview Debug 1",
@@ -4661,6 +4706,8 @@ static int old_fps_preset;
 static int old_1x1_preset;
 static int old_1x3_preset;
 static int old_3x3_preset;
+static int old_dual_iso;
+static int old_diso_fix;
 
 int check_if_settings_changed()
 {
@@ -4668,7 +4715,9 @@ int check_if_settings_changed()
         old_fps_preset != crop_preset_fps_menu      ||
         old_1x1_preset != crop_preset_1x1_res_menu  ||
         old_1x3_preset != crop_preset_1x3_res_menu  ||
-        old_3x3_preset != crop_preset_3x3_res_menu)
+        old_3x3_preset != crop_preset_3x3_res_menu  ||
+        old_dual_iso   != dual_iso_is_enabled()     ||
+        old_diso_fix   != fix_dual_iso_flicker)
     {
         return 1;
     }
@@ -4823,6 +4872,8 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
             old_1x1_preset = crop_preset_1x1_res_menu;
             old_1x3_preset = crop_preset_1x3_res_menu;
             old_3x3_preset = crop_preset_3x3_res_menu;
+            old_dual_iso   = dual_iso_is_enabled();
+            old_diso_fix   = fix_dual_iso_flicker;
         }
     }
 
@@ -5326,6 +5377,7 @@ MODULE_CONFIGS_START()
     MODULE_CONFIG(crop_preset_3x3_res_menu)
     MODULE_CONFIG(crop_preset_ar_menu)
     MODULE_CONFIG(crop_preset_fps_menu)
+    MODULE_CONFIG(fix_dual_iso_flicker)
 MODULE_CONFIGS_END()
 
 MODULE_CBRS_START()
