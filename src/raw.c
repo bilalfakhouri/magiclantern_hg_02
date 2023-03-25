@@ -689,6 +689,10 @@ static void raw_lv_realloc_buffer()
     printf("Default raw buffer too small (%s", format_memory_size(raw_lv_buffer_size));
     printf(", need %dx%d %s) - reallocating.\n", width, height, format_memory_size(required_size));
 
+#ifdef CONFIG_ALLOCATE_RAW_LV_BUFFER
+    allocating_new_buffer_is_needed = 1; // flag to tell mlv_lite to free its buffers while we allocate a new buufer
+#endif 
+
     if (raw_lv_buffer && raw_lv_buffer != (void *) DEFAULT_RAW_BUFFER)
     {
         ASSERT(0);
@@ -696,11 +700,10 @@ static void raw_lv_realloc_buffer()
     }
 
 #ifdef CONFIG_ALLOCATE_RAW_LV_BUFFER
-    allocating_new_buffer_is_needed = 1; // flag to tell mlv_lite to free its buffers while we allocate a new buufer
     raw_allocated_lv_buffer = fio_malloc(RAW_LV_BUFFER_ALLOC_SIZE);
     if (!raw_allocated_lv_buffer)
     {
-        printf("New buffer isn't allocated");
+        printf("New buffer isn't allocated\n");
         return; // retry
     }
     raw_lv_buffer = raw_allocated_lv_buffer;
