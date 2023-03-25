@@ -179,7 +179,7 @@ static const char crop_choices_help_DIGIC_5[] =
     "Change 1080p and 720p movie modes into crop modes (select one)\n"
     "Center crop on sensor, no pixel binning/skipping in this mode.\n"
     "a.k.a Anamorphic, reads all vertical pixels, reduces aliasing.\n"
-    "Experimental High FPS modes. Start recording to reveal the preview!\n";
+    "1080p mode and experimental High Framerate options.\n";
     
     
 /* menu choices for cameras that only have the basic 3x3 crop_rec option */
@@ -887,11 +887,15 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             break;
 
             case CROP_PRESET_3X3:
-                if (AR_16_9)   cmos_new[7] = 0x802;
-                if (AR_2_1    || 
-                    AR_2_20_1) cmos_new[7] = 0x804;
-                if (AR_2_35_1 ||
-                    AR_2_39_1) cmos_new[7] = 0x806; // AR_2_39_1 is actually 2.50:1 preset
+                if (High_FPS)
+                {
+                    if (AR_16_9)   cmos_new[7] = 0x802;
+                    if (AR_2_1    || 
+                        AR_2_20_1) cmos_new[7] = 0x804;
+                    if (AR_2_35_1 ||
+                        AR_2_39_1) cmos_new[7] = 0x806; // AR_2_39_1 is actually 2.50:1 preset
+                }
+                if (mv1080) cmos_new[7] = 0x800;
                 cmos_new[5] = 0x20;
             break;
         }
@@ -1833,7 +1837,7 @@ int Adjust_TimerB_For_Dual_ISO(int TimerB)
 
 /* 650D / 700D / EOSM/M2 / 100D reg_override presets */
 
-int preview_debug_1 = 0;
+int preview_debug_1 = 0x105016C;
 int preview_debug_2 = 0;
 int preview_debug_3 = 0;
 int preview_debug_4 = 0;
@@ -2817,127 +2821,155 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
    or where to look exactly, for 1736x694 it could from YUV (HD) path resolution too */
 static inline uint32_t reg_override_3X3(uint32_t reg, uint32_t old_val)
 {
-    if (AR_16_9)
+    if (High_FPS)
     {
-        if (is_650D || is_700D || is_EOSM) // 1736x976 @ 46.800 FPS
+        if (AR_16_9)
         {
-            RAW_H         = 0x1D4;
-            RAW_V         = 0x3EC;
-            TimerB        = 0x50E;
-            TimerA        = 0x20F;  // can go lower down to 0x207
+            if (is_650D || is_700D || is_EOSM) // 1736x976 @ 46.800 FPS
+            {
+                RAW_H         = 0x1D4;
+                RAW_V         = 0x3EC;
+                TimerB        = 0x50E;
+                TimerA        = 0x20F;  // can go lower down to 0x207
+            }
+
+            if (is_100D) // 1736x976 @ 46.300 FPS
+            {
+                RAW_H         = 0x1DD;
+                RAW_V         = 0x3F1;
+                TimerB        = 0x51C;
+                TimerA        = 0x20F;
+            }
+
+            Preview_H     = 1728;      // from mv1080 mode
+            Preview_V     = 976;
+            Preview_R     = 0x1D000E;  // from mv1080 mode
+            YUV_HD_S_V    = 0x105016C;
         }
 
-        if (is_100D) // 1736x976 @ 46.300 FPS
+        if (AR_2_1)
+        {
+            if (is_650D || is_700D || is_EOSM) // 1736x868 @ 50 FPS
+            {
+                RAW_H         = 0x1D4;
+                RAW_V         = 0x380;
+                TimerB        = 0x4CD;
+                TimerA        = 0x207;
+            }
+
+            if (is_100D)
+            {
+                RAW_H         = 0x1DD;
+                RAW_V         = 0x385;
+                TimerB        = 0x4BB;
+                TimerA        = 0x20F;
+            }
+        
+            Preview_H     = 1728;
+            Preview_V     = 868;
+            Preview_R     = 0x1D000E;
+            YUV_HD_S_V    = 0x1050143;
+        }
+    
+        if (AR_2_20_1)
+        {
+            if (is_650D || is_700D || is_EOSM) // 1736x790 @ 54 FPS
+            {
+                RAW_H         = 0x1D4;
+                RAW_V         = 0x332;
+                TimerB        = 0x472; // we might be able to lower it even more
+                TimerA        = 0x207;
+            }
+
+            if (is_100D)
+            {
+                RAW_H         = 0x1DD;
+                RAW_V         = 0x337;
+                TimerB        = 0x461;
+                TimerA        = 0x20F;
+            }
+        
+            Preview_H     = 1728;
+            Preview_V     = 790;
+            Preview_R     = 0x1D000E;
+            YUV_HD_S_V    = 0x1050125;
+        }
+
+        if (AR_2_35_1)
+        {
+            if (is_650D || is_700D || is_EOSM) // 1736x738 @ 57 FPS
+            {
+                RAW_H         = 0x1D4;
+                RAW_V         = 0x2FE;
+                TimerB        = 0x436;  // it can go lower but with risk of corrupted frames
+                TimerA        = 0x207;
+            }
+
+            if (is_100D) // 1736x738 @ 55.6 FPS
+            {
+                RAW_H         = 0x1DD;
+                RAW_V         = 0x303;
+                TimerB        = 0x441;
+                TimerA        = 0x20F;
+            }
+        
+            Preview_H     = 1728;
+            Preview_V     = 738;
+            Preview_R     = 0x1D000E;
+            YUV_HD_S_V    = 0x1050112;
+    }
+
+        if (AR_2_39_1)  // 2.39:1 doesn't make sense, very similair to 2.35:1, let's make it 2.50:1
+        {
+            if (is_650D || is_700D || is_EOSM) // 1736x694 @ 60 FPS
+            {
+                RAW_H         = 0x1D4;
+                RAW_V         = 0x2D2;
+                TimerB        = 0x401;
+                TimerA        = 0x207;
+            }
+
+            if (is_100D) // 1736x694 @ 58 FPS
+            {
+                RAW_H         = 0x1DD;
+                RAW_V         = 0x2D7;
+                TimerB        = 0x413;
+                TimerA        = 0x20F;
+            }
+        
+            Preview_H     = 1728;
+            Preview_V     = 694;
+            Preview_R     = 0x1D000E;
+            YUV_HD_S_V    = 0;          // default x5 mode value
+
+            YUV_LV_S_V    = 0x1E002B;   // default x5 mode value
+            YUV_LV_Buf    = 0x1DF05A0;  // default x5 mode value
+        }
+    }
+
+    /* mv1080 preset made to enable 1080p mode mainly for EOS M (other models don't really need it) */
+    if (mv1080)
+    {
+        if (is_650D || is_700D || is_EOSM)
+        {
+            RAW_H         = 0x1D4;
+            RAW_V         = 0x4A4;
+        }
+
+        if (is_100D)
         {
             RAW_H         = 0x1DD;
-            RAW_V         = 0x3F1;
-            TimerB        = 0x51C;
-            TimerA        = 0x20F;
+            RAW_V         = 0x4A9;
         }
+        
+        if (Framerate_24) {TimerA = 0x20F; TimerB = 0x9DE;}              
+        if (Framerate_25) {TimerA = 0x27F; TimerB = 0x7CF;}
+        if (Framerate_30) {TimerA = 0x20F; TimerB = 0x7E4;}
 
         Preview_H     = 1728;      // from mv1080 mode
-        Preview_V     = 976;
+        Preview_V     = 1152;      // from mv1080 mode
         Preview_R     = 0x1D000E;  // from mv1080 mode
-        YUV_HD_S_V    = 0x105016C;
-    }
-
-    if (AR_2_1)
-    {
-        if (is_650D || is_700D || is_EOSM) // 1736x868 @ 50 FPS
-        {
-            RAW_H         = 0x1D4;
-            RAW_V         = 0x380;
-            TimerB        = 0x4CD;
-            TimerA        = 0x207;
-        }
-
-        if (is_100D)
-        {
-            RAW_H         = 0x1DD;
-            RAW_V         = 0x385;
-            TimerB        = 0x4BB;
-            TimerA        = 0x20F;
-        }
-        
-        Preview_H     = 1728;
-        Preview_V     = 868;
-        Preview_R     = 0x1D000E;
-        YUV_HD_S_V    = 0x1050143;
-    }
-    
-    if (AR_2_20_1)
-    {
-        if (is_650D || is_700D || is_EOSM) // 1736x790 @ 54 FPS
-        {
-            RAW_H         = 0x1D4;
-            RAW_V         = 0x332;
-            TimerB        = 0x472; // we might be able to lower it even more
-            TimerA        = 0x207;
-        }
-
-        if (is_100D)
-        {
-            RAW_H         = 0x1DD;
-            RAW_V         = 0x337;
-            TimerB        = 0x461;
-            TimerA        = 0x20F;
-        }
-        
-        Preview_H     = 1728;
-        Preview_V     = 790;
-        Preview_R     = 0x1D000E;
-        YUV_HD_S_V    = 0x1050125;
-    }
-
-    if (AR_2_35_1)
-    {
-        if (is_650D || is_700D || is_EOSM) // 1736x738 @ 57 FPS
-        {
-            RAW_H         = 0x1D4;
-            RAW_V         = 0x2FE;
-            TimerB        = 0x436;  // it can go lower but with risk of corrupted frames
-            TimerA        = 0x207;
-        }
-
-        if (is_100D) // 1736x738 @ 55.6 FPS
-        {
-            RAW_H         = 0x1DD;
-            RAW_V         = 0x303;
-            TimerB        = 0x441;
-            TimerA        = 0x20F;
-        }
-        
-        Preview_H     = 1728;
-        Preview_V     = 738;
-        Preview_R     = 0x1D000E;
-        YUV_HD_S_V    = 0x1050112;
-    }
-
-    if (AR_2_39_1)  // 2.39:1 doesn't make sense, very similair to 2.35:1, let's make it 2.50:1
-    {
-        if (is_650D || is_700D || is_EOSM) // 1736x694 @ 60 FPS
-        {
-            RAW_H         = 0x1D4;
-            RAW_V         = 0x2D2;
-            TimerB        = 0x401;
-            TimerA        = 0x207;
-        }
-
-        if (is_100D) // 1736x694 @ 58 FPS
-        {
-            RAW_H         = 0x1DD;
-            RAW_V         = 0x2D7;
-            TimerB        = 0x413;
-            TimerA        = 0x20F;
-        }
-        
-        Preview_H     = 1728;
-        Preview_V     = 694;
-        Preview_R     = 0x1D000E;
-        YUV_HD_S_V    = 0;          // default x5 mode value
-
-        YUV_LV_S_V    = 0x1E002B;   // default x5 mode value
-        YUV_LV_Buf    = 0x1DF05A0;  // default x5 mode value
+        YUV_HD_S_V    = 0x450072;
     }
 
     YUV_HD_S_H    = 0x10501B5;
@@ -3653,6 +3685,18 @@ void SetAspectRatioCorrectionValues()
             }  
         }
     }
+
+    /* Set default values for mv1080 preset */
+    if (CROP_PRESET_MENU == CROP_PRESET_3X3)
+    {
+        if (crop_preset_3x3_res == 1) // mv1080
+        {
+            if (is_LCD_Output()){        YUV_LV_Buf = 0x1DF05A0; YUV_LV_S_V = 0x1E002B;}
+            if (is_480p_Output()){       YUV_LV_Buf = 0x1830520; YUV_LV_S_V = 0x6100AC;}
+            if (is_1080i_Full_Output()){ YUV_LV_Buf = 0x21B0CA8; YUV_LV_S_V = 0x8700AC;}
+            if (is_1080i_Info_Output()){ YUV_LV_Buf = 0x1B70A50; YUV_LV_S_V = 0x370056;}
+        }
+    }
 }
 
 static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
@@ -3778,6 +3822,12 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
         Shift_Preview = 1;
         Clear_Artifacts = 1;
         EDMAC_9_Vertical_Change = 0;
+        
+        if (crop_preset_3x3_res == 1) // mv1080 doesn't need them
+        {
+            Shift_Preview = 0;
+            Clear_Artifacts = 0;
+        }
     }
 
     preview_shift_value = GetShiftValue();
@@ -4160,18 +4210,29 @@ static MENU_UPDATE_FUNC(crop_preset_1x3_res_update)
 
 static MENU_UPDATE_FUNC(crop_preset_3x3_res_update)
 {
-    if (crop_preset_ar_menu == 0) MENU_SET_VALUE("1736x976"); // AR_16_9
-    if (crop_preset_ar_menu == 1) MENU_SET_VALUE("1736x868"); // AR_2_1
-    if (crop_preset_ar_menu == 2) MENU_SET_VALUE("1736x790"); // AR_2_20_1
-    if (crop_preset_ar_menu == 3) MENU_SET_VALUE("1736x738"); // AR_2_35_1
-    if (crop_preset_ar_menu == 4) MENU_SET_VALUE("1736x694"); // AR_2_39_1  // actually 2.50:1 aspect ratio
+    if (crop_preset_3x3_res_menu == 0) // High FPS
+    {
+        if (crop_preset_ar_menu == 0) MENU_SET_VALUE("976p (HFR)"); // AR_16_9
+        if (crop_preset_ar_menu == 1) MENU_SET_VALUE("868p (HFR)"); // AR_2_1
+        if (crop_preset_ar_menu == 2) MENU_SET_VALUE("790p (HFR)"); // AR_2_20_1
+        if (crop_preset_ar_menu == 3) MENU_SET_VALUE("738p (HFR)"); // AR_2_35_1
+        if (crop_preset_ar_menu == 4) MENU_SET_VALUE("694p (HFR)"); // AR_2_39_1  // actually 2.50:1 aspect ratio*/
+    }
 }
 
 static MENU_UPDATE_FUNC(crop_preset_ar_update)
 {
     if (CROP_PRESET_MENU == CROP_PRESET_3X3)
     {
-        if (crop_preset_ar_menu == 4) MENU_SET_VALUE("2.50:1"); // AR_2_39_1 // we are using AR_2_39_1 as 2.50:1 in this case
+        if (crop_preset_3x3_res_menu == 0)  // High_FPS
+        {
+            if (crop_preset_ar_menu == 4) MENU_SET_VALUE("2.50:1"); // AR_2_39_1 // we are using AR_2_39_1 as 2.50:1 in this case
+        }
+        if (crop_preset_3x3_res_menu == 1)  // mv1080
+        {
+            MENU_SET_VALUE("3:2");
+            MENU_SET_WARNING(MENU_WARN_ADVICE, "This option doesn't work in current preset.");
+        }
     }
 
     if (CROP_PRESET_MENU == CROP_PRESET_1X1)
@@ -4300,25 +4361,28 @@ static MENU_UPDATE_FUNC(crop_preset_fps_update)
 
     if (CROP_PRESET_MENU == CROP_PRESET_3X3)
     {
-        if (is_650D || is_700D || is_EOSM)
+        if (crop_preset_3x3_res_menu == 0) // High FPS
         {
-            if (crop_preset_ar_menu == 0) MENU_SET_VALUE("46.800 FPS"); // AR_16_9
-            if (crop_preset_ar_menu == 1) MENU_SET_VALUE("50 FPS");     // AR_2_1
-            if (crop_preset_ar_menu == 2) MENU_SET_VALUE("54 FPS");     // AR_2_20_1
-            if (crop_preset_ar_menu == 3) MENU_SET_VALUE("57 FPS");     // AR_2_35_1
-            if (crop_preset_ar_menu == 4) MENU_SET_VALUE("60 FPS");     // AR_2_39_1  // actually 2.50:1 aspect ratio
-        }
+            if (is_650D || is_700D || is_EOSM)
+            {
+                if (crop_preset_ar_menu == 0) MENU_SET_VALUE("46.800 FPS"); // AR_16_9
+                if (crop_preset_ar_menu == 1) MENU_SET_VALUE("50 FPS");     // AR_2_1
+                if (crop_preset_ar_menu == 2) MENU_SET_VALUE("54 FPS");     // AR_2_20_1
+                if (crop_preset_ar_menu == 3) MENU_SET_VALUE("57 FPS");     // AR_2_35_1
+                if (crop_preset_ar_menu == 4) MENU_SET_VALUE("60 FPS");     // AR_2_39_1  // actually 2.50:1 aspect ratio
+            }
 
-        if (is_100D)
-        {
-            if (crop_preset_ar_menu == 0) MENU_SET_VALUE("46.300 FPS"); // AR_16_9
-            if (crop_preset_ar_menu == 1) MENU_SET_VALUE("50 FPS");     // AR_2_1
-            if (crop_preset_ar_menu == 2) MENU_SET_VALUE("54 FPS");     // AR_2_20_1
-            if (crop_preset_ar_menu == 3) MENU_SET_VALUE("55.6 FPS");   // AR_2_35_1
-            if (crop_preset_ar_menu == 4) MENU_SET_VALUE("58 FPS");     // AR_2_39_1  // actually 2.50:1 aspect ratio
-        }
+            if (is_100D)
+            {
+                if (crop_preset_ar_menu == 0) MENU_SET_VALUE("46.300 FPS"); // AR_16_9
+                if (crop_preset_ar_menu == 1) MENU_SET_VALUE("50 FPS");     // AR_2_1
+                if (crop_preset_ar_menu == 2) MENU_SET_VALUE("54 FPS");     // AR_2_20_1
+                if (crop_preset_ar_menu == 3) MENU_SET_VALUE("55.6 FPS");   // AR_2_35_1
+                if (crop_preset_ar_menu == 4) MENU_SET_VALUE("58 FPS");     // AR_2_39_1  // actually 2.50:1 aspect ratio
+            }
 
-        MENU_SET_WARNING(MENU_WARN_ADVICE, "This option doesn't work in 3x3 mode.");
+            MENU_SET_WARNING(MENU_WARN_ADVICE, "This option doesn't work in 3x3 mode.");
+        }
     }
 }
 
@@ -4374,10 +4438,12 @@ static struct menu_entry crop_rec_menu[] =
                 .name       = "Preset:  ",  // CROP_PRESET_3X3
                 .priv       = &crop_preset_3x3_res_menu,
                 .update     = crop_preset_3x3_res_update,
-                .max        = 0,
-                .choices    = CHOICES("1736"),
-                .help       = "Choose 3x3 preset.",
-                .icon_type  = IT_ALWAYS_ON,
+                .max        = 1,
+                .choices    = CHOICES("High FPS", "1080p"),
+                .help       = "HFR: High framerate. FPS changes depending on selected aspect ratio.\n"
+                              "Enable 1080p video mode from Canon.",
+                .help2      = "If LiveView is black, hit recording button to reveal the preview.\n"
+                              "1736x1160 @ 23.976, 25 and 30 FPS.",
                 .shidden    = 1,
             },
             {
@@ -4928,11 +4994,15 @@ static LVINFO_UPDATE_FUNC(crop_info)
                     }
                     break;
                 case CROP_PRESET_3X3:
-                    if (AR_16_9)    snprintf(buffer, sizeof(buffer), "976p");
-                    if (AR_2_1)     snprintf(buffer, sizeof(buffer), "868p");
-                    if (AR_2_20_1)  snprintf(buffer, sizeof(buffer), "790p");
-                    if (AR_2_35_1)  snprintf(buffer, sizeof(buffer), "738p");
-                    if (AR_2_39_1)  snprintf(buffer, sizeof(buffer), "694p"); // Actually 2.50:1 AR
+                    if (High_FPS)
+                    {
+                        if (AR_16_9)    snprintf(buffer, sizeof(buffer), "976p");
+                        if (AR_2_1)     snprintf(buffer, sizeof(buffer), "868p");
+                        if (AR_2_20_1)  snprintf(buffer, sizeof(buffer), "790p");
+                        if (AR_2_35_1)  snprintf(buffer, sizeof(buffer), "738p");
+                        if (AR_2_39_1)  snprintf(buffer, sizeof(buffer), "694p"); // Actually 2.50:1 AR
+                    }
+                    if (mv1080) snprintf(buffer, sizeof(buffer), "1080p");
                     break;
             }
         }
