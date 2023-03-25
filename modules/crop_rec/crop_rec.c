@@ -1837,7 +1837,7 @@ int Adjust_TimerB_For_Dual_ISO(int TimerB)
 
 /* 650D / 700D / EOSM/M2 / 100D reg_override presets */
 
-int preview_debug_1 = 0x105016C;
+int preview_debug_1 = 0;
 int preview_debug_2 = 0;
 int preview_debug_3 = 0;
 int preview_debug_4 = 0;
@@ -1891,8 +1891,7 @@ static unsigned EDMAC_9_Vertical_Change = 0;    // flag to enable/disable EDMAC#
 /* used to recover preview height eaten by C0F38024 after increasing C0F38024 horizontal value */
 static int Preview_V_Recover = 0;
 
-/* used to center preview and clear VRAM artifacts */
-static unsigned preview_shift_value = 0;
+/* flags to center preview and clear VRAM artifacts (NewShiftVal, NewClearVal are related too) */
 static unsigned Shift_Preview = 0;
 static unsigned Center_Preview_ON = 0;
 static unsigned Clear_Artifacts = 0;
@@ -3408,7 +3407,6 @@ void CheckPreviewRegsValuesAndForce()
         shamem_read(0xC0F11ACC) != YUV_LV_S_V                                         ||
         shamem_read(0xC0F04210) != YUV_LV_Buf                                          )
         {
-            gui_uilock(UILOCK_EVERYTHING);
             EngDrvOutLV(0xC0F38070, ((Preview_V + 0x9) << 16) + Preview_H / 4 + 5);
             EngDrvOutLV(0xC0F38078, (((Preview_H / 4) + 6) << 16) + 1);
             EngDrvOutLV(0xC0F3807C, ((Preview_H / 4) + 5) << 16);
@@ -3444,7 +3442,6 @@ void CheckPreviewRegsValuesAndForce()
             EngDrvOutLV(0xC0F11BC8, YUV_HD_S_V_E);
             EngDrvOutLV(0xC0F11ACC, YUV_LV_S_V);
             EngDrvOutLV(0xC0F04210, YUV_LV_Buf);
-            gui_uilock(UILOCK_NONE);
         }
 }
 
@@ -3501,6 +3498,7 @@ static uint32_t ShiftAddress  = 0;
 static uint32_t ClearAddress  = 0;
 static uint32_t DefaultShift  = 0; // expected value which we want to patch
 static uint32_t DefaultClear  = 0; // expected value which we want to patch
+static uint32_t NewShiftVal   = 0; // new shift value, trial and error
 static uint32_t NewClearVal   = 0; // new clear value, should be same as width from 0xC0F04210?
 
 int GetShiftValue()
@@ -3686,7 +3684,7 @@ void SetAspectRatioCorrectionValues()
         }
     }
 
-    /* Set default values for mv1080 preset */
+    /* Set default x5 mode values for mv1080 preset */
     if (CROP_PRESET_MENU == CROP_PRESET_3X3)
     {
         if (crop_preset_3x3_res == 1) // mv1080
@@ -3830,7 +3828,7 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
         }
     }
 
-    preview_shift_value = GetShiftValue();
+    NewShiftVal = GetShiftValue();
     SetAspectRatioCorrectionValues();
 
     /* restore defualt EDMAC#9 vertical size */
@@ -3850,7 +3848,7 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
         /* patch supported presets if patch not active */
         if (Shift_Preview && !Center_Preview_ON)
         {
-            patch_memory(ShiftAddress, DefaultShift, preview_shift_value, "Center");
+            patch_memory(ShiftAddress, DefaultShift, NewShiftVal, "Center");
             Center_Preview_ON = 1;
         }
 
@@ -4216,7 +4214,7 @@ static MENU_UPDATE_FUNC(crop_preset_3x3_res_update)
         if (crop_preset_ar_menu == 1) MENU_SET_VALUE("868p (HFR)"); // AR_2_1
         if (crop_preset_ar_menu == 2) MENU_SET_VALUE("790p (HFR)"); // AR_2_20_1
         if (crop_preset_ar_menu == 3) MENU_SET_VALUE("738p (HFR)"); // AR_2_35_1
-        if (crop_preset_ar_menu == 4) MENU_SET_VALUE("694p (HFR)"); // AR_2_39_1  // actually 2.50:1 aspect ratio*/
+        if (crop_preset_ar_menu == 4) MENU_SET_VALUE("694p (HFR)"); // AR_2_39_1  // actually 2.50:1 aspect ratio */
     }
 }
 
@@ -4381,7 +4379,7 @@ static MENU_UPDATE_FUNC(crop_preset_fps_update)
                 if (crop_preset_ar_menu == 4) MENU_SET_VALUE("58 FPS");     // AR_2_39_1  // actually 2.50:1 aspect ratio
             }
 
-            MENU_SET_WARNING(MENU_WARN_ADVICE, "This option doesn't work in 3x3 mode.");
+            MENU_SET_WARNING(MENU_WARN_ADVICE, "This option doesn't work in (HFR) preset.");
         }
     }
 }
