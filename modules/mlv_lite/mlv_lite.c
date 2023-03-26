@@ -660,7 +660,7 @@ void update_cropping_offsets()
         sx += frame_offset_x;
         sy += frame_offset_y;
     }
-    else if (FRAMING_CENTER && lv_dispsize > 1)
+    else if (FRAMING_CENTER && lv_dispsize > 1 && !crop_rec_is_enabled())
     {
         /* try to center the recording window on the YUV frame */
         int delta_x, delta_y;
