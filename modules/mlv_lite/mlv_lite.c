@@ -3426,6 +3426,15 @@ void raw_video_rec_task(uint32_t thread)
             /* assume x10 is for focusing */
             /* todo: detect x5 preset in crop_rec? */
             set_lv_zoom(1);
+
+            if (crop_rec_is_enabled())
+            {
+                /* our crop_rec for entry-level models work only in x5 mode */
+                if (cam_100d || cam_650d || cam_700d || cam_eos_m)
+                {
+                    set_lv_zoom(5);
+                }
+            }
         }
 
         /* note: rec_trigger is implemented via pre_recording */
