@@ -4016,16 +4016,55 @@ static MENU_UPDATE_FUNC(crop_update)
         crop_rec_menu[0].children[1].shidden = (crop_preset_index != 2);  // 2 CROP_PRESET_1X3
         crop_rec_menu[0].children[2].shidden = (crop_preset_index != 3);  // 3 CROP_PRESET_3X3
 
-        /* print resolution and binning mode in help section, maybe add FPS too? */
-        if (CROP_PRESET_MENU && lv && patch_active && raw_lv_is_enabled())
+        if (CROP_PRESET_MENU && lv && patch_active)
         {
-            MENU_SET_HELP("%dx%d %d%s%d",raw_info.width - 72, raw_info.height - 28, raw_capture_info.binning_y + raw_capture_info.skipping_y,
-            (raw_capture_info.binning_x + raw_capture_info.skipping_x == 1 && raw_capture_info.binning_y + raw_capture_info.skipping_y == 1) ? 
-            ":" : "x",                                                              raw_capture_info.binning_x + raw_capture_info.skipping_x);
-
-            if (pic_quality_warning)
+            if (raw_lv_is_enabled())
             {
-                MENU_SET_WARNING(MENU_WARN_ADVICE, "Set Image quality to RAW, restart camera. This extends recording times.");
+                /* print resolution and binning mode in help section, maybe add FPS too? */
+                MENU_SET_HELP("%dx%d %d%s%d",raw_info.width - 72, raw_info.height - 28, raw_capture_info.binning_y + raw_capture_info.skipping_y,
+                                                                                       (raw_capture_info.binning_x + raw_capture_info.skipping_x == 1 &&
+                                                                                        raw_capture_info.binning_y + raw_capture_info.skipping_y == 1) ? 
+                            ":" : "x",                                                  raw_capture_info.binning_x + raw_capture_info.skipping_x);
+
+                /* print picture warning if Image quality not set to RAW from Canon menu */
+                if (pic_quality_warning)
+                {
+                    MENU_SET_WARNING(MENU_WARN_ADVICE, "Set Image quality to RAW, restart camera. This extends recording times.");
+                }
+            }
+
+            /* print selected preset name in crop mode menu */
+            if (CROP_PRESET_MENU == CROP_PRESET_1X1)
+            {
+                MENU_SET_VALUE("%s %s", crop_preset_1x1_res_menu == 0 ? "2.5K"       : crop_preset_1x1_res_menu == 1 ? "2.8K"  :
+                                        crop_preset_1x1_res_menu == 2 ? "3K"         : crop_preset_1x1_res_menu == 3 ? "1440p" :
+                                        crop_preset_1x1_res_menu == 4 ? "Full-Res"   : "",                          "1:1 crop");
+            }
+            if (CROP_PRESET_MENU == CROP_PRESET_1X3)
+            {
+                MENU_SET_VALUE("%s %s", (crop_preset_1x3_res_menu == 0 && crop_preset_ar_menu == 0) ? "4.5K"  : 
+                                        (crop_preset_1x3_res_menu == 1 && crop_preset_ar_menu == 0) ? "4.2K"  :
+                                        (crop_preset_1x3_res_menu == 2 && crop_preset_ar_menu == 0) ? "UHD"   :
+                                        (crop_preset_1x3_res_menu == 0 && crop_preset_ar_menu == 1) ? "4.8K"  :
+                                        (crop_preset_1x3_res_menu == 1 && crop_preset_ar_menu == 1) ? "4.4K"  :
+                                        (crop_preset_1x3_res_menu == 2 && crop_preset_ar_menu == 1) ? "4K"    :
+                                        (crop_preset_1x3_res_menu == 0 && crop_preset_ar_menu == 2) ? "5K"    :
+                                        (crop_preset_1x3_res_menu == 1 && crop_preset_ar_menu == 2) ? "4.6K"  :
+                                        (crop_preset_1x3_res_menu == 2 && crop_preset_ar_menu == 2) ? "4.2K"  :
+                                        (crop_preset_1x3_res_menu == 0 && crop_preset_ar_menu >= 3) ? "5.2K"  :
+                                        (crop_preset_1x3_res_menu == 1 && crop_preset_ar_menu >= 3) ? "4.8K"  :
+                                        (crop_preset_1x3_res_menu == 2 && crop_preset_ar_menu >= 3) ? "4.4K"  : "",  "1x3");
+            }
+            if (CROP_PRESET_MENU == CROP_PRESET_3X3)
+            {
+                MENU_SET_VALUE("%s %s", (crop_preset_3x3_res_menu == 0 && crop_preset_ar_menu == 0) ? "976p"  : 
+                                        (crop_preset_3x3_res_menu == 0 && crop_preset_ar_menu == 1) ? "868p"  :
+                                        (crop_preset_3x3_res_menu == 0 && crop_preset_ar_menu == 2) ? "790p"  :
+                                        (crop_preset_3x3_res_menu == 0 && crop_preset_ar_menu == 3) ? "738p"  :
+                                        (crop_preset_3x3_res_menu == 0 && crop_preset_ar_menu == 4) ? "694p"  :
+                                        (crop_preset_3x3_res_menu == 1)                             ? "1080p"  : "",  "3x3");
+
+                if (crop_preset_3x3_res_menu == 0) MENU_SET_RINFO("(HFR)");
             }
         }
     }
