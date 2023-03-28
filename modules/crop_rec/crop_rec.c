@@ -57,7 +57,8 @@ static int crop_preset_1x1_res = 0;
 #define CROP_2_8K      (crop_preset_1x1_res == 1)
 #define CROP_3K        (crop_preset_1x1_res == 2)
 #define CROP_1440p     (crop_preset_1x1_res == 3)
-#define CROP_Full_Res  (crop_preset_1x1_res == 4)
+#define CROP_1280p     (crop_preset_1x1_res == 4)
+#define CROP_Full_Res  (crop_preset_1x1_res == 5)
 
 static CONFIG_INT("crop.preset_1x3", crop_preset_1x3_res_menu, 0);
 static int crop_preset_1x3_res = 0;
@@ -801,6 +802,12 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                 {
                     cmos_new[5] = 0x240;
                     cmos_new[7] = 0xAA9;
+                }
+                
+                if (CROP_1280p)
+                {
+                    cmos_new[5] = 0x380;
+                    cmos_new[7] = 0xACA;
                 }
                 
                 if (CROP_Full_Res)
@@ -2070,6 +2077,42 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         Preview_Control = 1;
         EDMAC_24_Redirect = 1;
         EDMAC_9_Vertical_Change = 1;
+        Preview_Control_Basic = 0;
+    }
+
+    if (CROP_1280p)
+    {
+        if (is_650D || is_700D || is_EOSM)
+        {
+            RAW_H    = 0x202;
+            RAW_V    = 0x51C;
+            TimerA   = 0x235;
+            if (Framerate_24) TimerB = 0x935;
+            if (Framerate_25) TimerB = 0x8D4;
+            if (Framerate_30) TimerB = 0x8D4;  // 30 Doesn't work, make it 25
+        }
+
+        if (is_100D)
+        {
+            RAW_H    = 0x20B;
+            RAW_V    = 0x521;
+            TimerA   = 0x23D;
+            if (Framerate_24) TimerB = 0x914;
+            if (Framerate_25) TimerB = 0x8B5;
+            if (Framerate_30) TimerB = 0x8B5;  // 30 Doesn't work, make it 25
+        }
+
+        Preview_H     = 1916;
+        Preview_V     = 1280;
+        Preview_R     = 0x19000D;
+
+        YUV_HD_S_H    = 0x450080;
+        YUV_HD_S_V    = 0x250044;
+
+        Black_Bar     = 0;
+        Preview_Control = 1;
+        EDMAC_24_Redirect = 0;
+        EDMAC_9_Vertical_Change = 0;
         Preview_Control_Basic = 0;
     }
 
@@ -3799,8 +3842,15 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
             EDMAC_9_Vertical_Change = 1;
         }
 
+        if (crop_preset_1x1_res == 4)    // CROP_1280p
+        {
+            Shift_Preview = 0;
+            Clear_Artifacts = 0;
+            EDMAC_9_Vertical_Change = 0;
+        }
+
         if (crop_preset_1x1_res == 2 ||  // CROP_3K
-            crop_preset_1x1_res == 4  )  // CROP_Full_Res
+            crop_preset_1x1_res == 5)    // CROP_Full_Res
         {
             Shift_Preview = 0;
             Clear_Artifacts = 0;
@@ -4036,9 +4086,9 @@ static MENU_UPDATE_FUNC(crop_update)
             /* print selected preset name in crop mode menu */
             if (CROP_PRESET_MENU == CROP_PRESET_1X1)
             {
-                MENU_SET_VALUE("%s %s", crop_preset_1x1_res_menu == 0 ? "2.5K"       : crop_preset_1x1_res_menu == 1 ? "2.8K"  :
-                                        crop_preset_1x1_res_menu == 2 ? "3K"         : crop_preset_1x1_res_menu == 3 ? "1440p" :
-                                        crop_preset_1x1_res_menu == 4 ? "Full-Res"   : "",                          "1:1 crop");
+                MENU_SET_VALUE("%s %s", crop_preset_1x1_res_menu == 0 ? "2.5K"  : crop_preset_1x1_res_menu == 1 ? "2.8K"     :
+                                        crop_preset_1x1_res_menu == 2 ? "3K"    : crop_preset_1x1_res_menu == 3 ? "1440p"    :
+                                        crop_preset_1x1_res_menu == 4 ? "1280p" : crop_preset_1x1_res_menu == 5 ? "Full-Res" : "", "1:1 crop");
             }
             if (CROP_PRESET_MENU == CROP_PRESET_1X3)
             {
@@ -4128,6 +4178,10 @@ static MENU_UPDATE_FUNC(crop_preset_1x1_res_update)
         MENU_SET_HELP("2560x1440 @ 23.976 and 25 FPS");
     }
     if (crop_preset_1x1_res_menu == 4)
+    {
+        MENU_SET_HELP("1920x1280 @ 23.976 and 25 FPS");
+    }
+    if (crop_preset_1x1_res_menu == 5)
     {
         MENU_SET_HELP("5208x3478 @ 3 FPS. Has cropped centered real-time preview.");
     }
@@ -4278,7 +4332,8 @@ static MENU_UPDATE_FUNC(crop_preset_ar_update)
         if (crop_preset_1x1_res_menu == 1) MENU_SET_VALUE("2.35:1");  // CROP_2_8K
         if (crop_preset_1x1_res_menu == 2) MENU_SET_VALUE("2.35:1");  // CROP_3K
         if (crop_preset_1x1_res_menu == 3) MENU_SET_VALUE("16:9");    // CROP_1440p
-        if (crop_preset_1x1_res_menu == 4) MENU_SET_VALUE("3:2");     // CROP_Full_Res
+        if (crop_preset_1x1_res_menu == 4) MENU_SET_VALUE("3:2");     // CROP_1280p
+        if (crop_preset_1x1_res_menu == 5) MENU_SET_VALUE("3:2");     // CROP_Full_Res
         MENU_SET_WARNING(MENU_WARN_ADVICE, "This option doesn't work in 1:1 crop.");
     }
 }
@@ -4377,7 +4432,8 @@ static MENU_UPDATE_FUNC(crop_preset_fps_update)
     if (CROP_PRESET_MENU == CROP_PRESET_1X1)
     {
         if ((crop_preset_1x1_res_menu == 1 || 
-             crop_preset_1x1_res_menu == 3) && crop_preset_fps_menu == 2) // CROP_2_8K, CROP_1440p and 30 FPS
+             crop_preset_1x1_res_menu == 3 ||
+             crop_preset_1x1_res_menu == 4) && crop_preset_fps_menu == 2) // CROP_2_8K, CROP_1440p, CROP_1280p and 30 FPS
         {
             MENU_SET_VALUE("25 FPS");
             MENU_SET_WARNING(MENU_WARN_ADVICE, "30 FPS doesn't work in current preset.");
@@ -4389,7 +4445,7 @@ static MENU_UPDATE_FUNC(crop_preset_fps_update)
             MENU_SET_WARNING(MENU_WARN_ADVICE, "25 and 30 FPS don't work in current preset.");
         }
 
-        if (crop_preset_1x1_res_menu == 4) // CROP_Full_Res
+        if (crop_preset_1x1_res_menu == 5) // CROP_Full_Res
         {
             MENU_SET_VALUE("3 FPS");
             MENU_SET_WARNING(MENU_WARN_ADVICE, "This option doesn't work with Full-Res LV.");
@@ -4457,8 +4513,8 @@ static struct menu_entry crop_rec_menu[] =
                 .name       = "Preset:",   // CROP_PRESET_1X1
                 .priv       = &crop_preset_1x1_res_menu,
                 .update     = crop_preset_1x1_res_update,
-                .max        = 4,
-                .choices    = CHOICES("2.5K", "2.8K", "3K", "1440p", "Full-Res LV"),
+                .max        = 5,
+                .choices    = CHOICES("2.5K", "2.8K", "3K", "1440p", "1280p", "Full-Res LV"),
                 .help       = "Choose 1:1 preset.",
                 .shidden    = 1,
             },
@@ -5005,6 +5061,7 @@ static LVINFO_UPDATE_FUNC(crop_info)
                     if (CROP_2_8K)     snprintf(buffer, sizeof(buffer), "2.8K");
                     if (CROP_3K)       snprintf(buffer, sizeof(buffer), "3K");
                     if (CROP_1440p)    snprintf(buffer, sizeof(buffer), "1440p");
+                    if (CROP_1280p)    snprintf(buffer, sizeof(buffer), "1280p");
                     if (CROP_Full_Res) snprintf(buffer, sizeof(buffer), "FLV");
                     break;
                 case CROP_PRESET_1X3:
