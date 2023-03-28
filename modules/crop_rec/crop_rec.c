@@ -4043,6 +4043,25 @@ static void update_patch()
 PROP_HANDLER(PROP_LV_ACTION)
 {
     update_patch();
+
+    /* assuming we will take a normal picture in LiveView while crop_rec is active
+     * clear artifacts patch will be overwritten by Canon back to default value in this case
+     * which will give us patch error (in memory patches), let's just unpatch these outside lv 
+     * PROP_LV_ACTION then PROP_LV_STOP get triggerd after pressing full shutter button (SW2)
+     * and before taking a picture process happens (before our patch get overwritten) */
+    if (!lv)
+    {
+        if (Clear_Artifacts_ON)
+        {
+            unpatch_memory(ClearAddress);
+            Clear_Artifacts_ON = 0;
+        }
+        if (Center_Preview_ON)
+        {
+            unpatch_memory(ShiftAddress);
+            Center_Preview_ON = 0 ;
+        }
+    }
 }
 
 /* also try when switching zoom modes */
