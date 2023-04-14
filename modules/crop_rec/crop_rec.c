@@ -177,7 +177,7 @@ static const char * crop_choices_DIGIC_5[] = {
 };
 
 static const char crop_choices_help_DIGIC_5[] =
-    "Change 1080p and 720p movie modes into crop modes (select one)\n"
+    "Turn your camera into crop moods (select one)\n"
     "Center crop on sensor, no pixel binning/skipping in this mode.\n"
     "a.k.a Anamorphic, reads all vertical pixels, reduces aliasing.\n"
     "1080p mode and experimental High Framerate options.\n";
@@ -4523,7 +4523,7 @@ static struct menu_entry crop_rec_menu[] =
 {
     // FIXME: how to handle menu in cleaner way for is_DIGIC_5 models?
     {
-        .name       = "Crop mode",
+        .name       = "Crop mood",
         .priv       = &crop_preset_index,
         .update     = crop_update,
         .depends_on = DEP_LIVEVIEW,
