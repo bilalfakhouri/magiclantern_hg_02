@@ -163,6 +163,7 @@ static CONFIG_INT("raw.preview", preview_mode, 1);
 static CONFIG_INT("raw.warm.up", warm_up, 0);
 static CONFIG_INT("raw.use.srm.memory", use_srm_memory, 1);
 static CONFIG_INT("raw.small.hacks", small_hacks, 1);
+static CONFIG_INT("raw.killgd", kill_gd, 0);
 
 static CONFIG_INT("raw.h264.proxy", h264_proxy_menu, 0);
 static CONFIG_INT("raw.sync_beep", sync_beep, 1);
@@ -2200,6 +2201,19 @@ int is_more_hacks_selected()
 static REQUIRES(RawRecTask)
 void hack_liveview(int unhack)
 {
+    if (kill_gd)
+    {
+        if (!unhack)
+        {
+            idle_globaldraw_dis();
+            clrscr();
+        }
+        else
+        {
+            idle_globaldraw_en();
+        }
+    }
+    
     if (small_hacks)
     {
         /* disable canon graphics (gains a little speed) */
@@ -4075,6 +4089,14 @@ static struct menu_entry raw_video_menu[] =
                          "Slow (not real-time) and low-resolution, but has correct framing.\n"
                          "Freeze LiveView for more speed; uses 'Framing' preview if Global Draw ON.\n",
                 .depends_on = DEP_GLOBAL_DRAW,
+            },
+            {
+                .name = "Kill Global Draw",
+                .priv = &kill_gd,
+                .max = 1,
+                .choices = CHOICES("OFF", "ON"),
+                .help = "Disable global draw while recording.",
+                .help2 = "May help with performance. Some previews depend on GD.",
             },
             {
                 .name    = "Pre-record",
