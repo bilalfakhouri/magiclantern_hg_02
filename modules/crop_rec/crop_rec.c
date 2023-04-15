@@ -5222,6 +5222,19 @@ static unsigned int crop_rec_keypress_cbr(unsigned int key)
                     return 0;
                 }
             }
+
+            /* Block INFO button while recording to prevent switching among Full and Info preview in 1080i output */
+            /* Preview configuration must not change during RAW recording, even Canon block preview switch in H.264 */
+            if ((is_1080i_Full_Output() || is_1080i_Info_Output()) && RECORDING)
+            {
+                if (!INFO_button) // Not assigned?
+                {
+                    if (key == MODULE_KEY_INFO)
+                    {
+                        return 0; // Block INFO button
+                    }
+                }
+            }                
         }
     }
 
