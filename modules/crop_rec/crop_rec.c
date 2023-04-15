@@ -77,6 +77,13 @@ static int crop_preset_fps = 0;
 #define Framerate_25   (crop_preset_fps == 1)
 #define Framerate_30   (crop_preset_fps == 2)
 
+/* customized buttons variables */
+static CONFIG_INT("crop.button_SET",       SET_button, 0);
+static CONFIG_INT("crop.button_H-Shutter", Half_Shutter, 0);
+static CONFIG_INT("crop.button_INFO",      INFO_button, 0);
+static CONFIG_INT("crop.arrows_L_R",       Arrows_L_R, 0);
+static CONFIG_INT("crop.arrows_U_D",       Arrows_U_D, 0);
+
 enum crop_preset {
     CROP_PRESET_OFF = 0,
     CROP_PRESET_3X,
@@ -4763,6 +4770,65 @@ static struct menu_entry crop_rec_menu[] =
     },
 };
 
+static MENU_UPDATE_FUNC(customize_buttons_update)
+{
+    if (!CROP_PRESET_MENU && !patch_active)
+    {
+        MENU_SET_WARNING(MENU_WARN_NOT_WORKING, "This setting only work with Crop mood.");
+    }
+}
+
+static struct menu_entry customize_buttons_menu[] =
+{
+    {
+        .name       = "Customize buttons",
+        .select     = menu_open_submenu,
+        .update     = customize_buttons_update,
+        .depends_on = DEP_LIVEVIEW,
+        .help       = "Assign some phyiscal camera buttons to do some tasks.",
+        .help2      = "This setting might block some ML features from using assigned buttons.",
+        .children   =  (struct menu_entry[]) {
+            {
+               .name     = "Half-Shutter",
+               .max      = 1,
+               .choices  = CHOICES("OFF", "Zoom x10"),
+               .priv     = &Half_Shutter,
+               .help     = "Assign Half-Shutter button to a task.",
+            },
+            {
+               .name     = "SET Button",
+               .max      = 3,
+               .choices  = CHOICES("OFF", "Zoom x10", "ISO", "Aperture"),
+               .priv     = &SET_button,
+               .help     = "Assign SET button to a task.",
+            },
+            {
+                .name     = "INFO Button",
+                .max      = 3,
+                .choices  = CHOICES("OFF", "Zoom x10", "ISO", "Aperture"),
+                .priv     = &INFO_button,
+                .help     = "Assign INFO button to a task.",
+            },
+            {
+                .name     = "U/D Arrows",
+                .max      = 2,
+                .choices  = CHOICES("OFF", "ISO", "Aperture"),
+                .priv     = &Arrows_U_D,
+                .help     = "Assign Up and Down arrows to a task.",
+            },
+            {
+                .name     = "L/R Arrows",
+                .max      = 2,
+                .choices  = CHOICES("OFF", "ISO", "Aperture"),
+                .priv     = &Arrows_L_R,
+                .help     = "Assign Left and Right arrows to a task.",
+            },
+
+            MENU_EOL,
+        },
+    }
+};
+
 static int settings_changed = 0;
 static int crop_rec_needs_lv_refresh()
 {
@@ -5059,6 +5125,107 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
     }
 
     return CBR_RET_CONTINUE;
+}
+
+/* customize buttons and buttons shortcuts, FIXME: implement these as feature in ML core? */
+static unsigned int crop_rec_keypress_cbr(unsigned int key)
+{
+    extern int kill_canon_gui_mode;
+
+    /* we need to use customize buttons in LiveView while ML isn't showing and when using Crop mood */
+    if (lv)
+    {
+        if (CROP_PRESET_MENU && patch_active && !gui_menu_shown())
+        {
+            /* Quick x10 mode */
+            if (lv_dispsize == 5 && !RECORDING)
+            {
+                if (((key == MODULE_KEY_PRESS_SET         ) && SET_button  == 1)                 ||
+                    ((key == MODULE_KEY_INFO              ) && INFO_button == 1)                 ||
+                    ((key == MODULE_KEY_PRESS_HALFSHUTTER ) && Half_Shutter && is_manual_focus()) )
+                {
+                    set_zoom(10);
+
+                    /* Enable Canon overlays in x10 mode */
+                    kill_canon_gui_mode = 0;
+                    if (canon_gui_front_buffer_disabled())
+                    {
+                            canon_gui_enable_front_buffer(0);
+                    }
+
+                    return 0;
+                }
+            }
+
+            /* Finished from x10 mode? Let's get back to normal preview */
+            if (lv_dispsize == 10 && !RECORDING)
+            {
+                if (((key == MODULE_KEY_PRESS_SET           ) && SET_button  == 1)                 ||
+                    ((key == MODULE_KEY_INFO                ) && INFO_button == 1)                 ||
+                    ((key == MODULE_KEY_UNPRESS_HALFSHUTTER ) && Half_Shutter && is_manual_focus()) )
+                {
+                    set_zoom(1); // Get to x1 first, sometime we get black preview when going x10 --> x5
+                    set_zoom(5);
+
+                    /* Disable Canon overlays in x5 mode */
+                    kill_canon_gui_mode = 1;
+
+                    return 0;
+                }
+            }
+
+            if (lv_dispsize == 5)
+            {
+                /* ISO change shortcuts */
+                if (((key == MODULE_KEY_PRESS_UP)    && Arrows_U_D == 1) ||
+                    ((key == MODULE_KEY_PRESS_RIGHT) && Arrows_L_R == 1)  )
+                {
+                    if (lens_info.raw_iso == 0x0) return 0; // Don't change ISO when it's set to Auto
+                    if (lens_info.raw_iso == ISO_6400) return 0; // We reached highest ISO, don't do anything
+                    iso_toggle(0, 2);
+                    return 0;
+                }
+                if (((key == MODULE_KEY_PRESS_DOWN)  && Arrows_U_D == 1) ||
+                    ((key == MODULE_KEY_PRESS_LEFT)  && Arrows_L_R == 1)  )
+                {
+                    if (lens_info.raw_iso == 0x0) return 0; // Don't change ISO when it's set to Auto
+                    if (lens_info.raw_iso == ISO_100) return 0; // We reached lowest ISO, don't do anything
+                    iso_toggle(0, -2);
+                    return 0;
+                }
+                if (((key == MODULE_KEY_INFO)       && INFO_button == 2) ||
+                    ((key == MODULE_KEY_PRESS_SET)  && SET_button  == 2))
+                {
+                    iso_toggle(0, 2);
+                    return 0;
+                }
+
+                /* Aperture change shortcuts */
+                if (((key == MODULE_KEY_PRESS_UP)    && Arrows_U_D == 2) ||
+                    ((key == MODULE_KEY_PRESS_RIGHT) && Arrows_L_R == 2)  )
+                {
+                    if (lens_info.raw_aperture == lens_info.raw_aperture_max) return 0; // We reached max aperture, don't do anything
+                    aperture_toggle(0, 1);
+                    return 0;
+                }
+                if (((key == MODULE_KEY_PRESS_DOWN)  && Arrows_U_D == 2) ||
+                    ((key == MODULE_KEY_PRESS_LEFT)  && Arrows_L_R == 2)  )
+                {
+                    if (lens_info.raw_aperture == lens_info.raw_aperture_min) return 0; // We reached min aperture, don't do anything
+                    aperture_toggle(0, -1);
+                    return 0;
+                }
+                if (((key == MODULE_KEY_INFO)       && INFO_button == 3) ||
+                    ((key == MODULE_KEY_PRESS_SET)  && SET_button  == 3))
+                {
+                    aperture_toggle(0, 1);
+                    return 0;
+                }
+            }
+        }
+    }
+
+    return 1;
 }
 
 /* Display recording status in top info bar */
@@ -5539,6 +5706,7 @@ static unsigned int crop_rec_init()
     }
     
     menu_add("Movie", crop_rec_menu, COUNT(crop_rec_menu));
+    menu_add("Prefs", customize_buttons_menu, COUNT(customize_buttons_menu));
     lvinfo_add_items (info_items, COUNT(info_items));
 
     return 0;
@@ -5564,11 +5732,17 @@ MODULE_CONFIGS_START()
     MODULE_CONFIG(crop_preset_ar_menu)
     MODULE_CONFIG(crop_preset_fps_menu)
     MODULE_CONFIG(fix_dual_iso_flicker)
+    MODULE_CONFIG(Half_Shutter)
+    MODULE_CONFIG(SET_button)
+    MODULE_CONFIG(INFO_button)
+    MODULE_CONFIG(Arrows_L_R)
+    MODULE_CONFIG(Arrows_U_D)
 MODULE_CONFIGS_END()
 
 MODULE_CBRS_START()
     MODULE_CBR(CBR_SHOOT_TASK, crop_rec_polling_cbr, 0)
     MODULE_CBR(CBR_RAW_INFO_UPDATE, raw_info_update_cbr, 0)
+    MODULE_CBR(CBR_KEYPRESS, crop_rec_keypress_cbr, 0)
 MODULE_CBRS_END()
 
 MODULE_PROPHANDLERS_START()
