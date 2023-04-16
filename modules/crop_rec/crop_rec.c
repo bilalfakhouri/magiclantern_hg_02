@@ -3254,8 +3254,11 @@ static void FAST EngDrvOut_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     }
 
     /* makes LiveView smoother when using 3x3 presets for is_DIGIC_5 models when aewb task is active 
-     * the values taken when setting focus box to center then pressing down button one time in x5 mode */
-    if (CROP_PRESET_MENU == CROP_PRESET_3X3)
+     * the values taken when setting focus box to center then pressing down button one time in x5 mode.
+     * it seems these also make preview more reliable in these modes, in some focus box positions preview
+     * become black without these values */
+    if ((CROP_PRESET_MENU == CROP_PRESET_3X3) || 
+       ((CROP_PRESET_MENU == CROP_PRESET_1X1) && crop_preset_1x1_res == 4)) // also for 1280p preset
     {
         if (data == 0xC0F09050) {regs[1] =   0x3002D0;}
         if (data == 0xC0F09054) {regs[1] =  0x2E006D8;}
