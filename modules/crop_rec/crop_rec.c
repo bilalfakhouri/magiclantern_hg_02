@@ -4344,7 +4344,11 @@ static MENU_UPDATE_FUNC(crop_preset_3x3_res_update)
         if (crop_preset_ar_menu == 1) MENU_SET_VALUE("868p (HFR)"); // AR_2_1
         if (crop_preset_ar_menu == 2) MENU_SET_VALUE("790p (HFR)"); // AR_2_20_1
         if (crop_preset_ar_menu == 3) MENU_SET_VALUE("738p (HFR)"); // AR_2_35_1
-        if (crop_preset_ar_menu == 4) MENU_SET_VALUE("694p (HFR)"); // AR_2_39_1  // actually 2.50:1 aspect ratio */
+        if (crop_preset_ar_menu == 4) // AR_2_39_1  // actually 2.50:1 aspect ratio */
+        {
+            MENU_SET_VALUE("694p (HFR)"); 
+            MENU_SET_WARNING(MENU_WARN_ADVICE, "Real-Time preview doesn't work in 694p (HFR), it's always black.");
+        }            
     }
 }
 
