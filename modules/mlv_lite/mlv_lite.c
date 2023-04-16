@@ -4688,13 +4688,13 @@ static unsigned int raw_rec_init()
     /* Hide More/All hacks options from not supported models  */
     if (!more_hacks_are_supported)
     {
-        raw_video_menu[0].children[11].max = 1;
+        raw_video_menu[0].children[12].max = 1;
     }
     
     /* Hide All hacks option from not supported models */
     if (more_hacks_are_supported && !CartridgeCancel_works)
     {
-        raw_video_menu[0].children[11].max = 2;
+        raw_video_menu[0].children[12].max = 2;
     }
 
     menu_add("Movie", raw_video_menu, COUNT(raw_video_menu));
