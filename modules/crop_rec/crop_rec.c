@@ -4778,6 +4778,14 @@ static MENU_UPDATE_FUNC(customize_buttons_update)
     }
 }
 
+static MENU_UPDATE_FUNC(Half_Shutter_update)
+{
+    if (Half_Shutter && !is_manual_focus())
+    {
+        MENU_SET_WARNING(MENU_WARN_NOT_WORKING, "Half-Shutter assignment only works with manual focus.");
+    }
+}
+
 static struct menu_entry customize_buttons_menu[] =
 {
     {
@@ -4792,6 +4800,7 @@ static struct menu_entry customize_buttons_menu[] =
                .name     = "Half-Shutter",
                .max      = 1,
                .choices  = CHOICES("OFF", "Zoom x10"),
+               .update   = Half_Shutter_update,
                .priv     = &Half_Shutter,
                .help     = "Assign Half-Shutter button to a task.",
             },
