@@ -5048,6 +5048,12 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
         // all of our presets work in x5 mode because of preview, even none-cropped ones
         if (lv_dispsize == 1 && CROP_PRESET_MENU && !RECORDING) 
         {
+            // WB value will change in ML, but won't be applied until we refresh LV manually, that's because 
+            // of setting LV zoom to x5 zoom directly after we enter LV, this delay helps to avoid this issue
+            gui_uilock(UILOCK_EVERYTHING);
+            msleep(700); 
+            gui_uilock(UILOCK_NONE);
+
             if (is_manual_focus())
             {
                 set_zoom(5);

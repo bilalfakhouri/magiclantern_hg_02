@@ -3964,7 +3964,21 @@ cleanup:
         ResumeLiveView();
         redraw();
         raw_recording_state = RAW_IDLE;
-        
+
+        /* mlv_lite seems to make WB has no effect when changing its value after RAW video recording stops in x5 mode 
+         * refreshing LiveView will make WhiteBalance work again in this case, the following code does it         */
+        if (crop_rec_is_enabled())
+        {
+            if (cam_650d || cam_700d || cam_eos_m || cam_100d) // what about other models?
+            {
+                if (lv_dispsize == 5)
+                {
+                    set_lv_zoom(1);
+                    set_lv_zoom(5);
+                }
+            }
+        }
+
         mlv_rec_call_cbr(MLV_REC_EVENT_STOPPED, NULL);
     }
 }
