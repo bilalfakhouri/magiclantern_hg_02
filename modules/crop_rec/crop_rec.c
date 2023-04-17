@@ -4806,15 +4806,15 @@ static struct menu_entry customize_buttons_menu[] =
             },
             {
                .name     = "SET Button",
-               .max      = 3,
-               .choices  = CHOICES("OFF", "Zoom x10", "ISO", "Aperture"),
+               .max      = 5,
+               .choices  = CHOICES("OFF", "Zoom x10", "ISO", "Aperture", "Dual ISO", "False color"),
                .priv     = &SET_button,
                .help     = "Assign SET button to a task.",
             },
             {
                 .name     = "INFO Button",
-                .max      = 3,
-                .choices  = CHOICES("OFF", "Zoom x10", "ISO", "Aperture"),
+                .max      = 5,
+                .choices  = CHOICES("OFF", "Zoom x10", "ISO", "Aperture", "Dual ISO", "False color"),
                 .priv     = &INFO_button,
                 .help     = "Assign INFO button to a task.",
             },
@@ -5235,6 +5235,43 @@ static unsigned int crop_rec_keypress_cbr(unsigned int key)
                 {
                     aperture_toggle(0, 1);
                     return 0;
+                }
+
+                /* Dual ISO ON / OFF */
+                if (((key == MODULE_KEY_INFO)       && INFO_button == 4) ||
+                    ((key == MODULE_KEY_PRESS_SET)  && SET_button  == 4))
+                {
+                    if (!RECORDING)
+                    {
+                        if (!dual_iso_is_enabled())
+                        {
+                            menu_set_str_value_from_script("Expo", "Dual ISO", "ON", 1);
+                            return 0;
+                        }
+                        if (dual_iso_is_enabled())
+                        {
+                            menu_set_str_value_from_script("Expo", "Dual ISO", "OFF", 0);
+                            return 0;
+                        }
+                    }
+                }
+
+                /* False color ON / OFF */
+                if (((key == MODULE_KEY_INFO)       && INFO_button == 5) ||
+                    ((key == MODULE_KEY_PRESS_SET)  && SET_button  == 5))
+                {
+                    extern int falsecolor_draw;
+                    if (!falsecolor_draw)
+                    {
+                        falsecolor_draw = 1;
+                        return 0;
+                    }
+                    if (falsecolor_draw)
+                    {
+                        falsecolor_draw = 0;
+                        redraw();
+                        return 0;
+                    }
                 }
             }
 
