@@ -3959,6 +3959,38 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
 
 static int patch_active = 0;
 
+static void install_patches()
+{
+    patch_hook_function(CMOS_WRITE, MEM_CMOS_WRITE, &cmos_hook, "crop_rec: CMOS[1,2,6] parameters hook");
+    patch_hook_function(ADTG_WRITE, MEM_ADTG_WRITE, &adtg_hook, "crop_rec: ADTG[8000,8806] parameters hook");
+    if (ENGIO_WRITE) patch_hook_function(ENGIO_WRITE, MEM_ENGIO_WRITE, engio_write_hook, "crop_rec: video timers hook");
+    if (ENG_DRV_OUT) patch_hook_function(ENG_DRV_OUT, MEM(ENG_DRV_OUT), EngDrvOut_hook, "crop_rec: preview stuff 1");
+    if (ENG_DRV_OUTS) patch_hook_function(ENG_DRV_OUTS, MEM(ENG_DRV_OUTS), EngDrvOuts_hook, "crop_rec: preview stuff 2");
+    if (PATH_SelectPathDriveMode) patch_hook_function(PATH_SelectPathDriveMode, MEM(PATH_SelectPathDriveMode), PATH_SelectPathDriveMode_hook, "crop_rec: preview stuff 3");
+    if (HIV_Vertical_Address_hook) patch_hook_function(HIV_Vertical_Address_hook, MEM(HIV_Vertical_Address_hook), Change_HIV_V_Address, "crop_rec: preview stuff 4");
+}
+
+static void uninstall_patches()
+{
+    unpatch_memory(CMOS_WRITE);
+    unpatch_memory(ADTG_WRITE);
+    if (ENGIO_WRITE) unpatch_memory(ENGIO_WRITE);
+    if (ENG_DRV_OUT) unpatch_memory(ENG_DRV_OUT);
+    if (ENG_DRV_OUTS) unpatch_memory(ENG_DRV_OUTS);
+    if (PATH_SelectPathDriveMode) unpatch_memory(PATH_SelectPathDriveMode);
+    if (HIV_Vertical_Address_hook) unpatch_memory(HIV_Vertical_Address_hook);
+    if (Clear_Artifacts_ON)
+        {
+            unpatch_memory(ClearAddress);
+            Clear_Artifacts_ON = 0;
+        }
+    if (Center_Preview_ON)
+        {
+            unpatch_memory(ShiftAddress);
+            Center_Preview_ON = 0 ;
+        }
+}
+
 static void update_patch()
 {
     if (CROP_PRESET_MENU)
@@ -3975,70 +4007,42 @@ static void update_patch()
         /* install our hooks, if we haven't already do so */
         if (!patch_active)
         {
-            patch_hook_function(CMOS_WRITE, MEM_CMOS_WRITE, &cmos_hook, "crop_rec: CMOS[1,2,6] parameters hook");
-            patch_hook_function(ADTG_WRITE, MEM_ADTG_WRITE, &adtg_hook, "crop_rec: ADTG[8000,8806] parameters hook");
-            if (ENGIO_WRITE)
-            {
-                patch_hook_function(ENGIO_WRITE, MEM_ENGIO_WRITE, engio_write_hook, "crop_rec: video timers hook");
-            }
-            if (ENG_DRV_OUT)
-            {
-                patch_hook_function(ENG_DRV_OUT, MEM(ENG_DRV_OUT), EngDrvOut_hook, "crop_rec: preview stuff 1");
-            }
-            if (ENG_DRV_OUTS)
-            {
-                patch_hook_function(ENG_DRV_OUTS, MEM(ENG_DRV_OUTS), EngDrvOuts_hook, "crop_rec: preview stuff 2");
-            }
-            if (PATH_SelectPathDriveMode)
-            {
-                patch_hook_function(PATH_SelectPathDriveMode, MEM(PATH_SelectPathDriveMode), PATH_SelectPathDriveMode_hook, "crop_rec: preview stuff 3");
-            }
-            if (HIV_Vertical_Address_hook)
-            {
-                patch_hook_function(HIV_Vertical_Address_hook, MEM(HIV_Vertical_Address_hook), Change_HIV_V_Address, "crop_rec: preview stuff 4");
-            }
+            install_patches();
             patch_active = 1;
         }
     }
-    else
+    
+    /* assuming we will take a normal picture in LiveView while crop_rec is active
+     * clear artifacts patch will be overwritten by Canon back to default value in this case
+     * which will give us patch error (in memory patches), this might help with busy screen too
+     * when taking a picture and crop mood is active, let's unpatch all patches outside lv 
+     * PROP_LV_ACTION then PROP_LV_STOP get triggerd after pressing full shutter button (SW2)
+     * and before taking a picture process happens (also before clear artifacts get overwritten) */
+    if (CROP_PRESET_MENU && !lv)
+    {
+        if (patch_active)
+        {
+            uninstall_patches();
+
+            /* turn off Kill Canon GUI setting */
+            extern int kill_canon_gui_mode;
+            if (kill_canon_gui_mode != 0)
+            {
+                kill_canon_gui_mode = 0;
+            }
+
+            patch_active = 0;
+            crop_preset = 0;
+        }
+    }
+    /* unpatch when no crop presets is selected, also outside movie mode */
+    if (!CROP_PRESET_MENU || !is_movie_mode())
     {
         /* undo active patches, if any */
         if (patch_active)
         {
-            unpatch_memory(CMOS_WRITE);
-            unpatch_memory(ADTG_WRITE);
-            if (ENGIO_WRITE)
-            {
-                unpatch_memory(ENGIO_WRITE);
-            }
-            if (ENG_DRV_OUT)
-            {
-                unpatch_memory(ENG_DRV_OUT);
-            }
-            if (ENG_DRV_OUTS)
-            {
-                unpatch_memory(ENG_DRV_OUTS);
-            }
-            if (PATH_SelectPathDriveMode)
-            {
-                unpatch_memory(PATH_SelectPathDriveMode);
-            }
-            if (HIV_Vertical_Address_hook)
-            {
-                unpatch_memory(HIV_Vertical_Address_hook);
-            }
+            uninstall_patches();
 
-            if (Clear_Artifacts_ON)
-            {
-                unpatch_memory(ClearAddress);
-                Clear_Artifacts_ON = 0;
-            }
-            if (Center_Preview_ON)
-            {
-                unpatch_memory(ShiftAddress);
-                Center_Preview_ON = 0 ;
-            }
-            
             /* enable Canon overlays (turn off Kill Canon GUI setting) */
             extern int kill_canon_gui_mode;
             if (kill_canon_gui_mode != 0)
@@ -4061,25 +4065,6 @@ static void update_patch()
 PROP_HANDLER(PROP_LV_ACTION)
 {
     update_patch();
-
-    /* assuming we will take a normal picture in LiveView while crop_rec is active
-     * clear artifacts patch will be overwritten by Canon back to default value in this case
-     * which will give us patch error (in memory patches), let's just unpatch these outside lv 
-     * PROP_LV_ACTION then PROP_LV_STOP get triggerd after pressing full shutter button (SW2)
-     * and before taking a picture process happens (before our patch get overwritten) */
-    if (!lv)
-    {
-        if (Clear_Artifacts_ON)
-        {
-            unpatch_memory(ClearAddress);
-            Clear_Artifacts_ON = 0;
-        }
-        if (Center_Preview_ON)
-        {
-            unpatch_memory(ShiftAddress);
-            Center_Preview_ON = 0 ;
-        }
-    }
 }
 
 /* also try when switching zoom modes */
@@ -4548,7 +4533,7 @@ static struct menu_entry crop_rec_menu[] =
         .name       = "Crop mood",
         .priv       = &crop_preset_index,
         .update     = crop_update,
-        .depends_on = DEP_LIVEVIEW,
+        .depends_on = DEP_LIVEVIEW | DEP_MOVIE_MODE,
         .children =  (struct menu_entry[]) {
             {
                 .name       = "Preset:",   // CROP_PRESET_1X1
@@ -5046,7 +5031,7 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
     if (is_DIGIC_5)
     {
         // all of our presets work in x5 mode because of preview, even none-cropped ones
-        if (lv_dispsize == 1 && CROP_PRESET_MENU && !RECORDING) 
+        if (lv_dispsize == 1 && CROP_PRESET_MENU && !RECORDING && is_movie_mode()) 
         {
             // WB value will change in ML, but won't be applied until we refresh LV manually, that's because 
             // of setting LV zoom to x5 zoom directly after we enter LV, this delay helps to avoid this issue
