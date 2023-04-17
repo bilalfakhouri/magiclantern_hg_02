@@ -2798,9 +2798,6 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             YUV_HD_S_H    = 0x1050173;
             YUV_HD_S_V    = 0x10502B6;
         }
-
-        YUV_LV_S_V    = 0x1050253;
-        YUV_LV_Buf    = 0x12D05A0;
     }
 
     Black_Bar = 0;
