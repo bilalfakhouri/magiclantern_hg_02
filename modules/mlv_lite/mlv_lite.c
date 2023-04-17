@@ -586,19 +586,66 @@ static inline int pre_recorded_frames()
         : 0;
 }
 
+/* we need to enable crop marks in x5 mode when crop mode 
+ * is enabled in presets with real-time correct previews */
+int crop_rec_cropmarks()
+{
+    if (crop_rec_is_enabled() && lv_dispsize == 5)
+    {
+        if (cam_650d || cam_700d || cam_eos_m || cam_100d)
+        {
+            /* only for 1080p 3x3 preset for now */
+            if (raw_info.width - 72 == 1736 && raw_info.height - 28 == 1160) 
+            {
+                return 1;
+            }
+        }
+    }
+
+    return 0;
+}
+
 static void refresh_cropmarks()
 {
-    if (lv_dispsize > 1 || raw_rec_should_preview() || !raw_video_enabled)
+    if ((lv_dispsize > 1 && !crop_rec_cropmarks()) || lv_dispsize > 5 || raw_rec_should_preview() || !raw_video_enabled)
     {
         reset_movie_cropmarks();
     }
     else
     {
+        /* not sure how to implement cropmarks in x5 mode in generic way 
+         * let's hardcode it for 1080p 3x3 preset for now, the following 
+         * values are taken from normal 1080p on 700D and it works */
+        if (crop_rec_cropmarks())
+        {
+            if (is_LCD_Output())
+            {
+                lv2raw.sx = 2429;
+                lv2raw.tx = 82;
+                lv2raw.sy = 2440;
+                lv2raw.ty = 36;
+            }
+            if (is_480p_Output())
+            {
+                lv2raw.sx = 2732;
+                lv2raw.tx = -20;
+                lv2raw.sy = 3019;
+                lv2raw.ty = -34;
+            }
+            if (is_1080i_Full_Output() || is_1080i_Info_Output())
+            {
+                lv2raw.sx = 1079;
+                lv2raw.tx = -72;
+                lv2raw.sy = 1084;
+                lv2raw.ty = 36;
+            }
+        }
+
         int x = RAW2BM_X(skip_x);
         int y = RAW2BM_Y(skip_y);
         int w = RAW2BM_DX(res_x);
         int h = RAW2BM_DY(res_y);
-        
+
         set_movie_cropmarks(x, y, w, h);
     }
 }
