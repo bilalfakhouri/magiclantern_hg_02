@@ -160,6 +160,8 @@ static CONFIG_INT("raw.preview", preview_mode, 1);
 #define PREVIEW_ML     (preview_mode == 2)
 #define PREVIEW_HACKED (preview_mode == 3)
 
+static CONFIG_INT("raw.preview_toggle", preview_toggle, 1);
+
 static CONFIG_INT("raw.warm.up", warm_up, 0);
 static CONFIG_INT("raw.use.srm.memory", use_srm_memory, 1);
 static CONFIG_INT("raw.small.hacks", small_hacks, 1);
@@ -4152,6 +4154,13 @@ static struct menu_entry raw_video_menu[] =
                 .depends_on = DEP_GLOBAL_DRAW,
             },
             {
+                .name = "Preview toggle",
+                .priv = &preview_toggle,
+                .max = 1,
+                .choices = CHOICES("OFF", "Half-shutter"),
+                .help = "Switch among Framing and Real-Time preview on half-shutter press.",
+            },
+            {
                 .name = "Kill Global Draw",
                 .priv = &kill_gd,
                 .max = 1,
@@ -4489,6 +4498,12 @@ static int raw_rec_should_preview(void)
         return 0;
     }
 
+    /* disable preview toggle on half shutter press */
+    if (!preview_toggle)
+    {
+        return 0;
+    }
+
     if (PREVIEW_AUTO)
     {
         /* half-shutter overrides default choice */
@@ -4749,13 +4764,13 @@ static unsigned int raw_rec_init()
     /* Hide More/All hacks options from not supported models  */
     if (!more_hacks_are_supported)
     {
-        raw_video_menu[0].children[12].max = 1;
+        raw_video_menu[0].children[13].max = 1;
     }
     
     /* Hide All hacks option from not supported models */
     if (more_hacks_are_supported && !CartridgeCancel_works)
     {
-        raw_video_menu[0].children[12].max = 2;
+        raw_video_menu[0].children[13].max = 2;
     }
 
     menu_add("Movie", raw_video_menu, COUNT(raw_video_menu));
@@ -4824,6 +4839,7 @@ MODULE_CONFIGS_START()
     MODULE_CONFIG(card_spanning)
     MODULE_CONFIG(dolly_mode)
     MODULE_CONFIG(preview_mode)
+    MODULE_CONFIG(preview_toggle)
     MODULE_CONFIG(use_srm_memory)
     MODULE_CONFIG(small_hacks)
     MODULE_CONFIG(kill_gd)
