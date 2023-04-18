@@ -5272,6 +5272,23 @@ static unsigned int crop_rec_keypress_cbr(unsigned int key)
                 }
             }
 
+            /* Block SET/Arrows/One finger touch while recording to prevent changing focus box position. 
+             * When changing focus box position, a part of preview configuration changes, we don't 
+             * want that to happen, to avoid corrupted frames, black preview or instability 
+             * is there another way to block focus box from shifting, and make its position static? */
+            if (lv_dispsize == 5 && RECORDING)
+            {
+                if (((key == MODULE_KEY_PRESS_SET)   && !SET_button) ||
+                    ((key == MODULE_KEY_PRESS_UP)    && !Arrows_U_D) ||
+                    ((key == MODULE_KEY_PRESS_DOWN)  && !Arrows_U_D) ||
+                    ((key == MODULE_KEY_PRESS_LEFT)  && !Arrows_L_R) ||
+                    ((key == MODULE_KEY_PRESS_RIGHT) && !Arrows_L_R) ||
+                    ((key == MODULE_KEY_TOUCH_1_FINGER)))
+                {
+                    return 0;
+                }
+            }
+
             /* Block INFO button while recording to prevent switching among Full and Info preview in 1080i output */
             /* Preview configuration must not change during RAW recording, even Canon block preview switch in H.264 */
             if ((is_1080i_Full_Output() || is_1080i_Info_Output()) && RECORDING)
