@@ -341,8 +341,7 @@ static int is_supported_mode()
     /* 650D / 700D / EOSM/M2 / 100D prests will only work in x5 mode, don't patch x1 */
     if (PathDriveMode->zoom == 1)
     {
-        // FIXME: 100D will crash if added, probably something related to engio_hook?
-        if (is_650D || is_700D || is_EOSM) 
+        if (is_650D || is_700D || is_EOSM || is_100D) 
         {
             return 0;
         }
