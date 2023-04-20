@@ -3148,28 +3148,6 @@ static void FAST engio_write_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             dbg_printf("[%x] %x: %x -> %x\n", regs[0], reg, old, new);
             *(buf+1) = new;
         }
-        
-        // brighten up LiveView when using negative analog gain in lower bit-depths
-        if (reg == 0xC0F42744) 
-        {
-            if (which_output_format() >= 3) // don't patch if we are using uncompressed RAW 
-            {
-                if (OUTPUT_12BIT && old != 0x2020202)
-                {
-                    *(buf+1) = 0x2020202;
-                }
-            
-                if (OUTPUT_11BIT && old != 0x3030303)
-                {
-                    *(buf+1) = 0x3030303;
-                }
-            
-                if (OUTPUT_10BIT && old != 0x4040404)
-                {
-                    *(buf+1) = 0x4040404;
-                }
-            }
-        }
 
         /* it seems more reliable to override them directly from here */
         if (Preview_Control)
@@ -3203,6 +3181,24 @@ static void FAST EngDrvOut_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     uint16_t dst = (data & 0xFFFF0000) >> 16;
     uint16_t reg = data & 0x0000FFFF;
     uint32_t val = (uint32_t) regs[1];
+
+    // brighten up LiveView when using negative analog gain in lower bit-depths
+    /* These four registers apply positive gain for preview per RGB channel, two for green, one for red, one for blue.
+     * The pervious register which was used to brighten LV is 0xC0F42744, altough it can correct preview brightness
+     * in LiveView, but according to autofocus data it will stay underexposed, resulting in autofocus failure/loss when
+     * using lower bit-depths in lossless. The following four regisers can correct LV image brightness beside it will
+     * affect autofocus data --> the four regisers will adjust autofocus data to the correct brightness too . .
+     * --> This way autofocus in 10/11/12-bit will be as accurate as in 14-bit.
+     * BTW, these regisers used to achieve 12800 digital ISO from Canon.                                           */
+    if (data == 0xC0F37AE4 || data == 0xC0F37AF0 || data == 0xC0F37AFC || data == 0xC0F37B08) 
+    {
+        if (which_output_format() >= 3) // don't patch if we are using uncompressed RAW 
+        {
+            if (OUTPUT_12BIT) regs[1] = 0x30100;
+            if (OUTPUT_11BIT) regs[1] = 0x40100;
+            if (OUTPUT_10BIT) regs[1] = 0x50100;
+        }
+    }
 
     // adjust LiveView black level when using lower bit-depths with negative analog gain
     if (data == 0xC0F0819C)

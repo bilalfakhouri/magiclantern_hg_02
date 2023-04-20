@@ -243,26 +243,25 @@ static int lv_raw_gain = 0;
 static int get_default_white_level()
 {
     #ifdef CONFIG_DIGIC_V
-    
     // adjust white level when using negative analog gain for low bit-depths
     // fixme: implement it in a clean way
     
     /* 10-bit lossless, analog gain */
-    if (shamem_read(0xC0F42744) == 0x4040404)
+    if (shamem_read(0xC0F37AE4) == 0x50100)
         {	
            int default_white = WHITE_LEVEL;
            return (default_white = 2870);   
         }
 			
     /* 11-bit lossless, analog gain */
-    if (shamem_read(0xC0F42744) == 0x3030303)
+    if (shamem_read(0xC0F37AE4) == 0x40100)
         {	
            int default_white = WHITE_LEVEL;
            return (default_white = 3692);   
         }
         
     /* 12-bit lossless, analog gain */
-    if (shamem_read(0xC0F42744) == 0x2020202)
+    if (shamem_read(0xC0F37AE4) == 0x30100)
         {	
            int default_white = WHITE_LEVEL;
            return (default_white = 5336);   
