@@ -4842,9 +4842,15 @@ static int crop_rec_needs_lv_refresh()
     {
         if (is_supported_mode())
         {
-            if (!patch_active || CROP_PRESET_MENU != crop_preset || settings_changed)
+            if (!patch_active || CROP_PRESET_MENU != crop_preset)
             {
                 return 1;
+            }
+
+            /* Currently settings_changed is only supprted for 650D / 700D / EOS M/M2 / 100D */
+            if (is_DIGIC_5)
+            {
+                if (settings_changed) return 1;
             }
         }
     }
