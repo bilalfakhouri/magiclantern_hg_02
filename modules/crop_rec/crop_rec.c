@@ -5569,7 +5569,9 @@ static unsigned int crop_rec_init()
         
         ENGIO_WRITE = is_camera("5D3", "1.2.3") ? 0xFF290F98 : 0xFF28CC3C;
         MEM_ENGIO_WRITE = 0xE51FC15C;
-        
+
+        ENG_DRV_OUT = is_camera("5D3", "1.2.3") ? 0xFF290C80 : 0xFF28C92C;
+
         PathDriveMode = (void *) (is_camera("5D3", "1.2.3") ? 0x56414 : 0x563BC);   /* argument of PATH_SelectPathDriveMode */
         
         is_5D3 = 1;
@@ -5716,6 +5718,8 @@ static unsigned int crop_rec_init()
         
         ADTG_WRITE = 0x24108;
         MEM_ADTG_WRITE = 0xE92D41F0;
+        
+        ENG_DRV_OUT = 0xFF2ADE1C;
         
         PathDriveMode = (void *) 0xB5D1C;   /* argument of PATH_SelectPathDriveMode */
         
