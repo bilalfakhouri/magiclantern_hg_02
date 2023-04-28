@@ -2095,7 +2095,7 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
             TimerA   = 0x235;
             if (Framerate_24) TimerB = 0x935;
             if (Framerate_25) TimerB = 0x8D4;
-            if (Framerate_30) TimerB = 0x8D4;  // 30 Doesn't work, make it 25
+            if (Framerate_30) TimerB = 0x75D;
         }
 
         if (is_100D)
@@ -2105,7 +2105,7 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
             TimerA   = 0x23D;
             if (Framerate_24) TimerB = 0x914;
             if (Framerate_25) TimerB = 0x8B5;
-            if (Framerate_30) TimerB = 0x8B5;  // 30 Doesn't work, make it 25
+            if (Framerate_30) TimerB = 0x743;
         }
 
         Preview_H     = 1916;
@@ -4449,9 +4449,7 @@ static MENU_UPDATE_FUNC(crop_preset_fps_update)
 
     if (CROP_PRESET_MENU == CROP_PRESET_1X1)
     {
-        if ((crop_preset_1x1_res_menu == 1 || 
-             crop_preset_1x1_res_menu == 3 ||
-             crop_preset_1x1_res_menu == 4) && crop_preset_fps_menu == 2) // CROP_2_8K, CROP_1440p, CROP_1280p and 30 FPS
+        if ((crop_preset_1x1_res_menu == 1 || crop_preset_1x1_res_menu == 3) && crop_preset_fps_menu == 2) // CROP_2_8K, CROP_1440p and 30 FPS
         {
             MENU_SET_VALUE("25 FPS");
             MENU_SET_WARNING(MENU_WARN_ADVICE, "30 FPS doesn't work in current preset.");
