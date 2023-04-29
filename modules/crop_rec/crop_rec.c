@@ -5036,7 +5036,7 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
     if (is_DIGIC_5)
     {
         // all of our presets work in x5 mode because of preview, even none-cropped ones
-        if (lv_dispsize == 1 && CROP_PRESET_MENU && !RECORDING && is_movie_mode()) 
+        if (CROP_PRESET_MENU && !RECORDING && is_movie_mode()) 
         {
             // WB value will change in ML, but won't be applied until we refresh LV manually, that's because 
             // of setting LV zoom to x5 zoom directly after we enter LV, this delay helps to avoid this issue
@@ -5046,7 +5046,19 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
 
             if (is_manual_focus())
             {
-                set_zoom(5);
+                /* while we are using manual focus and 3x3 presets change AF method to FlexiZone - Multi 
+                 * this way preview will always work in 3x3 presets, also 738p HFR preset will have working preview while idle */
+                if (lv_af_mode == 1 && CROP_PRESET_MENU == CROP_PRESET_3X3) 
+                {
+                    gui_uilock(UILOCK_EVERYTHING);
+                    set_lv_af_mode(3); // Set it to FlexiZone - Multi
+                    gui_uilock(UILOCK_NONE);
+                    NotifyBox(2500,"AF mode was set to FlexiZone Multi");
+                }
+                else
+                {
+                    if (lv_dispsize == 1) set_zoom(5);
+                }
             }
 
             // our presets works only in x5 mode (when lv_af_mode set to "Tracking", we can't enter x5 mode anymore)
