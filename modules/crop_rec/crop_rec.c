@@ -5080,7 +5080,7 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
 
             if (!is_manual_focus() && lv_af_mode == 1)
             {
-                set_zoom(5);
+                if (lv_dispsize == 1) set_zoom(5);
             }
         }
 
