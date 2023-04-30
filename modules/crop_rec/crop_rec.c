@@ -5040,9 +5040,12 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
         {
             // WB value will change in ML, but won't be applied until we refresh LV manually, that's because 
             // of setting LV zoom to x5 zoom directly after we enter LV, this delay helps to avoid this issue
-            gui_uilock(UILOCK_EVERYTHING);
-            msleep(700); 
-            gui_uilock(UILOCK_NONE);
+            if (lv_dispsize == 1)
+            {
+                gui_uilock(UILOCK_EVERYTHING);
+                msleep(700); 
+                gui_uilock(UILOCK_NONE);
+            }
 
             if (is_manual_focus())
             {
