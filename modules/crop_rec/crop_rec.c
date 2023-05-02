@@ -2296,7 +2296,7 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             if (is_EOSM)
             {
                 RAW_H         = 0x17A;  /* 1376x2322 to achieve 23.976 FPS */
-                RAW_V         = 0x92F;
+                RAW_V         = 0x92E;
                 TimerB        = 0xA2E;
                 TimerA        = 0x1FF;
 
@@ -2304,7 +2304,7 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 Preview_V     = 2322;
                 Preview_R     = 0x1D000D;
                 YUV_HD_S_H    = 0x105015B;
-                YUV_HD_S_V    = 0x105036E;
+                YUV_HD_S_V    = 0x105036D;
             }
 
             if (is_100D)
