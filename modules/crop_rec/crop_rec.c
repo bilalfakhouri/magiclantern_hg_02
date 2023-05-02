@@ -5838,7 +5838,17 @@ static unsigned int crop_rec_init()
             }
         }
     }
-    
+
+    if (is_DIGIC_5)
+    {
+        /* hide 1080p preset for 650D / 700D / 100D (they don't need it) */
+        if (!is_EOSM)
+        {
+            crop_rec_menu[0].children[2].max = 0;
+            crop_preset_3x3_res_menu = 0;
+        }
+    }
+
     menu_add("Movie", crop_rec_menu, COUNT(crop_rec_menu));
     menu_add("Prefs", customize_buttons_menu, COUNT(customize_buttons_menu));
     lvinfo_add_items (info_items, COUNT(info_items));
