@@ -1870,6 +1870,10 @@ static unsigned Preview_x2 = 0;
 static unsigned Preview_y1 = 0;
 static unsigned Preview_y2 = 0;
 
+/* help to shift preview on RAW buffer horizontally in case if active preview width is less than active RAW width */
+/* it should be tweaked with 0xC0F383D4 (Preview_R) which also shift preview on RAW buffer (check Preview_Control_Basic) */
+static int REG_C0F383DC_Tuning = 0;
+
 /* used to increase processed RAW data in LiveView, also show new image on screen via stretch regs */
 static unsigned Preview_H = 0;        // How much width to process        List of registers
 static unsigned Preview_V = 0;        // How much height to process       List of registers
@@ -2037,15 +2041,21 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
             TimerA   = 0x35D;
         }
 
-        Preview_x1 = 0x10A;
-        Preview_x2 = 0x212;
-        Preview_y1 = 0x153;
-        Preview_y2 = 0x40F;
+        Preview_H         = 2868;  // black bar above 2868
+        Preview_V         = 1308;
+        Preview_V_Recover = 284;   // trial and error
 
-        Preview_Control = 0;
+        Preview_R     = 0x190028;
+        REG_C0F383DC_Tuning = -26; 
+
+        YUV_HD_S_H    = 0x1050308;
+        YUV_HD_S_V    = 0x10501EC;
+        YUV_HD_S_V_E  = 0;
+        Black_Bar     = 2;
+
+        Preview_Control = 1;
         EDMAC_24_Redirect = 1;
-        Preview_V_Recover = 0;
-        Preview_Control_Basic = 1;
+        Preview_Control_Basic = 0;
         EDMAC_9_Vertical_Change = 1;
     }
 
@@ -2150,6 +2160,11 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         Preview_V_Recover = 820;  // is this dangrous? this exceeds vertical EDMAC#9 size in photo mode which is 3529 (to 4326)  
         Preview_Control_Basic = 1;
         EDMAC_9_Vertical_Change = 1;
+    }
+
+    if (!CROP_3K)
+    {
+        REG_C0F383DC_Tuning = 0;
     }
 
     if (Preview_Control)
@@ -2805,6 +2820,7 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
     EDMAC_24_Redirect = 1;
     EDMAC_9_Vertical_Change = 1;
     Preview_Control_Basic = 0;
+    REG_C0F383DC_Tuning = 0;
 
     if (Preview_Control)
     {
@@ -3023,6 +3039,7 @@ static inline uint32_t reg_override_3X3(uint32_t reg, uint32_t old_val)
     YUV_HD_S_V_E  = 0;
     Preview_Control = 1;
     Preview_Control_Basic = 0;
+    REG_C0F383DC_Tuning = 0;
 
     /* get rid of moving Dual ISO lines by tweaking Timer B a tiny bit */
     if (fix_dual_iso_flicker && dual_iso_is_enabled())
@@ -3305,7 +3322,8 @@ static void FAST EngDrvOut_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                              regs[1] = ((RAW_V - 1) << 16)  + RAW_H - 0x11;                 
                 if (is_100D) regs[1] = ((RAW_V - 5) << 16)  + RAW_H - 0x1A;                 break;
                 case 0x83D4: regs[1] =   Preview_R;                                         break;
-                case 0x83DC: regs[1] = ((Preview_V + 0x1c) << 16)  + Preview_H / 4 + 0x48;  break;
+                case 0x83DC: regs[1] = ((Preview_V + 0x1c) << 16)  + Preview_H / 4 + 0x48
+                                                                   + REG_C0F383DC_Tuning;   break;
                 case 0x8934: regs[1] = ((Preview_V + 0x6) << 16)   + Preview_H / 4 + 5;     break;
                 case 0x8960: regs[1] = ( Preview_V + 0x6) << 16;                            break;
                 case 0x89A4: regs[1] = ((Preview_V + 0x6) << 16)   + Preview_H / 4 + 5;     break;
@@ -3434,7 +3452,8 @@ void CheckPreviewRegsValuesAndForce()
         shamem_read(0xC0F380A4) != ((Preview_H / 4) + 7) << 16                        ||
         shamem_read(0xC0F38024) != REG_C0F38024_Val                                   ||
         shamem_read(0xC0F383D4) != Preview_R                                          ||
-        shamem_read(0xC0F383DC) != ((Preview_V + 0x1c) << 16)  + Preview_H / 4 + 0x48 ||
+        shamem_read(0xC0F383DC) != ((Preview_V + 0x1c) << 16)  + Preview_H / 4 + 0x48 
+                                                               + REG_C0F383DC_Tuning  ||
         shamem_read(0xC0F38934) != ((Preview_V + 0x6) << 16)   + Preview_H / 4 + 5    ||
         shamem_read(0xC0F38960) != ( Preview_V + 0x6) << 16                           ||
         shamem_read(0xC0F389A4) != ((Preview_V + 0x6) << 16)   + Preview_H / 4 + 5    ||
@@ -3470,7 +3489,8 @@ void CheckPreviewRegsValuesAndForce()
             EngDrvOutLV(0xC0F380A4, ((Preview_H / 4) + 7) << 16);
             EngDrvOutLV(0xC0F38024, REG_C0F38024_Val);
             EngDrvOutLV(0xC0F383D4, Preview_R);
-            EngDrvOutLV(0xC0F383DC, ((Preview_V + 0x1c) << 16)  + Preview_H / 4 + 0x48);
+            EngDrvOutLV(0xC0F383DC, ((Preview_V + 0x1c) << 16)  + Preview_H / 4 + 0x48 
+                                                                + REG_C0F383DC_Tuning);
             EngDrvOutLV(0xC0F38934, ((Preview_V + 0x6) << 16)   + Preview_H / 4 + 5);
             EngDrvOutLV(0xC0F38960, ( Preview_V + 0x6) << 16);
             EngDrvOutLV(0xC0F389A4, ((Preview_V + 0x6) << 16)   + Preview_H / 4 + 5);
@@ -3569,6 +3589,14 @@ int GetShiftValue()
                 if (is_1080i_Info_Output()) return 0x5ED58;
             }
 
+            case 2:
+            {
+                if (is_LCD_Output())  return 0x1F4D0;
+                if (is_480p_Output()) return 0x1B18C;
+                if (is_1080i_Full_Output()) return 0x5BF9C;
+                if (is_1080i_Info_Output()) return 0x5EDB0;
+            }
+
             case 3: 
             {
                 if (is_LCD_Output())  return 0xD5C0;
@@ -3577,7 +3605,6 @@ int GetShiftValue()
                 if (is_1080i_Info_Output()) return 0x33B58;
             }
 
-            case 2:
             case 4:
             {
                 if (is_LCD_Output()) return 0;
@@ -3633,7 +3660,8 @@ void SetAspectRatioCorrectionValues()
             switch (crop_preset_1x1_res)
             {
                 case 0:  YUV_LV_Buf = 0x13505A0; YUV_LV_S_V = 0x1050244; break; // CROP_2_5K
-                case 1:  YUV_LV_Buf = 0x13305A0; YUV_LV_S_V = 0x1050248; break; // CROP_2_8K
+                case 1:                                                         // CROP_2_8K
+                case 2:  YUV_LV_Buf = 0x13305A0; YUV_LV_S_V = 0x1050248; break; // CROP_3K
                 case 3:  YUV_LV_Buf = 0x19505A0; YUV_LV_S_V = 0x10501BA; break; // CROP_1440p
                 default: YUV_LV_Buf = 0x1DF05A0; YUV_LV_S_V = 0x1E002B;  break;
             }
@@ -3644,6 +3672,7 @@ void SetAspectRatioCorrectionValues()
             {
                 case 0:                                                         // CROP_2_5K
                 case 1:                                                         // CROP_2_8K
+                case 2:                                                         // CROP_3K
                          YUV_LV_Buf = 0x1170520; YUV_LV_S_V = 0x1050282; break;
                 case 3:  YUV_LV_Buf = 0x1710520; YUV_LV_S_V = 0x10501E5; break; // CROP_1440p
                 default: YUV_LV_Buf = 0x1830520; YUV_LV_S_V = 0x6100AC;  break;
@@ -3655,6 +3684,7 @@ void SetAspectRatioCorrectionValues()
             {
                 case 0:                                                         // CROP_2_5K
                 case 1:                                                         // CROP_2_8K
+                case 2:                                                         // CROP_3K
                          YUV_LV_Buf = 0x1580CA8; YUV_LV_S_V = 0x1050209; break;
                 case 3:  YUV_LV_Buf = 0x1C70CA8; YUV_LV_S_V = 0x105018A; break; // CROP_1440p
                 default: YUV_LV_Buf = 0x21B0CA8; YUV_LV_S_V = 0x8700AC;  break;
@@ -3666,6 +3696,7 @@ void SetAspectRatioCorrectionValues()
             {
                 case 0:                                                         // CROP_2_5K
                 case 1:                                                         // CROP_2_8K
+                case 2:                                                         // CROP_3K
                          YUV_LV_Buf = 0x1180A50; YUV_LV_S_V = 0x1050280; break;
                 case 3:  YUV_LV_Buf = 0x1730A50; YUV_LV_S_V = 0x10501E3; break; // CROP_1440p
                 default: YUV_LV_Buf = 0x1B70A50; YUV_LV_S_V = 0x370056;  break;
@@ -3845,6 +3876,13 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
             EDMAC_9_Vertical_Change = 1;
         }
 
+        if (crop_preset_1x1_res == 2)  // CROP_3K
+        {
+            Shift_Preview = 1;
+            Clear_Artifacts = 1;
+            EDMAC_9_Vertical_Change = 1;
+        }
+
         if (crop_preset_1x1_res == 3)  // CROP_1440p
         {
             Shift_Preview = 1;
@@ -3859,8 +3897,7 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
             EDMAC_9_Vertical_Change = 0;
         }
 
-        if (crop_preset_1x1_res == 2 ||  // CROP_3K
-            crop_preset_1x1_res == 5)    // CROP_Full_Res
+        if (crop_preset_1x1_res == 5)    // CROP_Full_Res
         {
             Shift_Preview = 0;
             Clear_Artifacts = 0;
@@ -4185,7 +4222,7 @@ static MENU_UPDATE_FUNC(crop_preset_1x1_res_update)
     }
     if (crop_preset_1x1_res_menu == 2)
     {
-        MENU_SET_HELP("3072x1308 @ 23.976 FPS. Has cropped centered real-time preview.");
+        MENU_SET_HELP("3072x1308 @ 23.976 FPS. Real-Time preview isn't perfect.");
     }
     if (crop_preset_1x1_res_menu == 3)
     {
