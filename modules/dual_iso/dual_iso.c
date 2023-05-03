@@ -690,6 +690,40 @@ static void isoless_mlv_rec_cbr (uint32_t event, void *ctx, mlv_hdr_t *hdr)
     mlv_rec_queue_block((mlv_hdr_t *)dual_iso_block);
 }
 
+/* FRAME_CMOS_ISO_START and PHOTO_CMOS_ISO_START changes among some 700D bodies 
+ * FRAME_CMOS_ISO_START and PHOTO_CMOS_ISO_START seem to always hold 0x14CE0803 
+ * Let's check the correct addresses and set them, this method seems to work, 
+ * this method seems to work, and it handle two reported cases for 700D ISOless */
+void SetFRAME_ISO_START()
+{
+    if (is_700d)
+    {
+        if (*(volatile uint32_t*)0x4045368E == 0x14CE0803)
+        {
+            FRAME_CMOS_ISO_START = 0x4045368E;
+        }
+        else
+        {
+            FRAME_CMOS_ISO_START = 0x4045328E;
+        }
+    }
+}
+
+void SetPHOTO_ISO_START()
+{
+    if (is_700d)
+    {
+        if (*(volatile uint32_t*)0x40452444 == 0x14CE0803)
+        {
+            PHOTO_CMOS_ISO_START = 0x40452444;
+        }
+        else
+        {
+            PHOTO_CMOS_ISO_START = 0x40452044;
+        }
+    }
+}
+
 static unsigned int isoless_init()
 {
     if (is_camera("5D3", "1.1.3") || is_camera("5D3", "1.2.3"))
@@ -910,7 +944,7 @@ static unsigned int isoless_init()
     }
     else if (is_camera("700D", "1.1.5"))
     {
-        is_700d = 1;    
+        is_700d = 1;
 
         FRAME_CMOS_ISO_START = 0x4045328E;
         FRAME_CMOS_ISO_COUNT =          6;
@@ -923,6 +957,9 @@ static unsigned int isoless_init()
         CMOS_ISO_BITS = 3;
         CMOS_FLAG_BITS = 2;
         CMOS_EXPECTED_FLAG = 3;
+
+        SetFRAME_ISO_START();
+        SetPHOTO_ISO_START();
     }
     else if (is_camera("650D", "1.0.4"))
     {
