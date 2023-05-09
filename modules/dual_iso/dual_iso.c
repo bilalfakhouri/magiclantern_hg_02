@@ -696,6 +696,17 @@ static void isoless_mlv_rec_cbr (uint32_t event, void *ctx, mlv_hdr_t *hdr)
  * this method seems to work, and it handle two reported cases for 700D ISOless */
 void SetFRAME_ISO_START()
 {
+    if (is_650d)
+    {
+        if (*(volatile uint32_t*)0x404A038E == 0x14CE0803)
+        {
+            FRAME_CMOS_ISO_START = 0x404A038E;
+        }
+        else
+        {
+            FRAME_CMOS_ISO_START = 0x404A048E;
+        }
+    }
     if (is_700d)
     {
         if (*(volatile uint32_t*)0x4045368E == 0x14CE0803)
@@ -711,6 +722,17 @@ void SetFRAME_ISO_START()
 
 void SetPHOTO_ISO_START()
 {
+    if (is_650d)
+    {
+        if (*(volatile uint32_t*)0x4049F144 == 0x14CE0803)
+        {
+            FRAME_CMOS_ISO_START = 0x4049F144;
+        }
+        else
+        {
+            FRAME_CMOS_ISO_START = 0x4049F244;
+        }
+    }
     if (is_700d)
     {
         if (*(volatile uint32_t*)0x40452444 == 0x14CE0803)
@@ -976,6 +998,9 @@ static unsigned int isoless_init()
         CMOS_ISO_BITS = 3;
         CMOS_FLAG_BITS = 2;
         CMOS_EXPECTED_FLAG = 3;
+
+        SetFRAME_ISO_START();
+        SetPHOTO_ISO_START();
     }
 
     else if (is_camera("EOSM", "2.0.2"))
