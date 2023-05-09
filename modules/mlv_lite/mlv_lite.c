@@ -1286,7 +1286,7 @@ static MENU_UPDATE_FUNC(output_format_update)
         
         if (analog_gain_is_acive() || crop_rec_is_enabled())
         {
-            MENU_SET_WARNING(MENU_WARN_NOT_WORKING, "Use 14...10-bit Lossless from crop mode submenu.");
+            MENU_SET_WARNING(MENU_WARN_ADVICE, "Use 14...10-bit Lossless from crop mode submenu.");
         }
     }
 }
