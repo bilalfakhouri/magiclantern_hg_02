@@ -866,17 +866,17 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                 if (Anam_Highest)
                 {
                     cmos_new[5] = 0x60;
-                    cmos_new[7] = 0x325;
+                    cmos_new[7] = 0xB25;
                 }
                 if (Anam_Higher)
                 {
                     cmos_new[5] = 0xA0;
-                    cmos_new[7] = 0x326;
+                    cmos_new[7] = 0xB26;
                 }
                 if (Anam_Medium)
                 {
                     cmos_new[5] = 0x120;
-                    cmos_new[7] = 0x326;
+                    cmos_new[7] = 0xB26;
                 }
             }
             if (AR_2_35_1 || AR_2_39_1)
@@ -884,17 +884,17 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                 if (Anam_Highest)
                 {
                     cmos_new[5] = 0x20;
-                    cmos_new[7] = 0x305;
+                    cmos_new[7] = 0xB05;
                 }
                 if (Anam_Higher)
                 {
                     cmos_new[5] = 0xA0;
-                    cmos_new[7] = 0x326;
+                    cmos_new[7] = 0xB26;
                 }
                 if (Anam_Medium)
                 {
                     cmos_new[5] = 0xE0;
-                    cmos_new[7] = 0x327;
+                    cmos_new[7] = 0xB27;
                 }
             }
             break;
