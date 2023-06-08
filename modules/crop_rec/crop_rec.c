@@ -5559,12 +5559,16 @@ static LVINFO_UPDATE_FUNC(bitdepth_info)
 {
     LVINFO_BUFFER(8);
 
+    int lossless_format = which_output_format() >= 3;
+    /* which_output_format() == 0 means 14-bit uncompressed
+     * which_output_format() == 1 means 12-bit uncompressed
+     * which_output_format() == 2 means 10-bit uncompressed  */
     if (patch_active && is_movie_mode())
     {
-        if (OUTPUT_14BIT) snprintf(buffer, sizeof(buffer), "14 Bit");
-        if (OUTPUT_12BIT) snprintf(buffer, sizeof(buffer), "12 Bit");
-        if (OUTPUT_11BIT) snprintf(buffer, sizeof(buffer), "11 Bit");
-        if (OUTPUT_10BIT) snprintf(buffer, sizeof(buffer), "10 Bit");
+        if ((OUTPUT_14BIT && lossless_format) || which_output_format() == 0) snprintf(buffer, sizeof(buffer), "14 Bit");
+        if ((OUTPUT_12BIT && lossless_format) || which_output_format() == 1) snprintf(buffer, sizeof(buffer), "12 Bit");
+        if ( OUTPUT_11BIT && lossless_format)                                snprintf(buffer, sizeof(buffer), "11 Bit");
+        if ((OUTPUT_10BIT && lossless_format) || which_output_format() == 2) snprintf(buffer, sizeof(buffer), "10 Bit");
         item->color_fg = COLOR_GREEN1;
     }
 }
