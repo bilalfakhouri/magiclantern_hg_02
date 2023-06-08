@@ -240,32 +240,23 @@ static int lv_raw_gain = 0;
  */
 #define WHITE_LEVEL 16200
 
+// flag to detect which bit-depth is selected/applied (when using analog gain) from crop_rec
+// mainly to rely on this flag to apply the correct white level for each bit-depth
+int BitDepth_Analog = 14; // default bit-depth is 14
+
 static int get_default_white_level()
 {
     #ifdef CONFIG_DIGIC_V
-    // adjust white level when using negative analog gain for low bit-depths
+    // adjust white level when using negative analog gain for lower bit-depths
     // fixme: implement it in a clean way
     
-    /* 10-bit lossless, analog gain */
-    if (shamem_read(0xC0F37AE4) == 0x50100)
-        {	
-           int default_white = WHITE_LEVEL;
-           return (default_white = 2870);   
-        }
-			
-    /* 11-bit lossless, analog gain */
-    if (shamem_read(0xC0F37AE4) == 0x40100)
-        {	
-           int default_white = WHITE_LEVEL;
-           return (default_white = 3692);   
-        }
-        
-    /* 12-bit lossless, analog gain */
-    if (shamem_read(0xC0F37AE4) == 0x30100)
-        {	
-           int default_white = WHITE_LEVEL;
-           return (default_white = 5336);   
-        }
+    if (BitDepth_Analog != 14) // check if we are using lower bit-depths
+    {
+        int default_white = WHITE_LEVEL;
+        if (BitDepth_Analog == 10) return (default_white = 2870); /* 10-bit lossless, analog gain */
+        if (BitDepth_Analog == 11) return (default_white = 3692); /* 11-bit lossless, analog gain */
+        if (BitDepth_Analog == 12) return (default_white = 5336); /* 12-bit lossless, analog gain */
+    }
     #endif   
     
     if (lv_raw_gain)

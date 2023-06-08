@@ -43,6 +43,9 @@ static CONFIG_INT("crop.bit_depth", bit_depth_analog, 0);
 #define OUTPUT_11BIT (bit_depth_analog == 2)
 #define OUTPUT_10BIT (bit_depth_analog == 3)
 
+// check raw.c
+extern int BitDepth_Analog;
+
 static CONFIG_INT("crop.preset_aspect_ratio", crop_preset_ar_menu, 0);
 static int crop_preset_ar = 0;
 #define AR_16_9        (crop_preset_ar == 0)
@@ -1306,12 +1309,18 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     /* divid signal to achieve lower bit-depths using negative analog gain */
     if (which_output_format() >= 3) // don't patch if uncompressed RAW is selected
     {
+        if (OUTPUT_14BIT)
+        {
+            BitDepth_Analog = 14;
+        }
+
         if (OUTPUT_12BIT)
         {
             adtg_new[20] = (struct adtg_new) {6, 0x8882, analog_gain / 4};
             adtg_new[21] = (struct adtg_new) {6, 0x8884, analog_gain / 4};
             adtg_new[22] = (struct adtg_new) {6, 0x8886, analog_gain / 4};
             adtg_new[23] = (struct adtg_new) {6, 0x8888, analog_gain / 4};
+            BitDepth_Analog = 12;
         }
     
         if (OUTPUT_11BIT)
@@ -1320,6 +1329,7 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             adtg_new[21] = (struct adtg_new) {6, 0x8884, analog_gain / 8};
             adtg_new[22] = (struct adtg_new) {6, 0x8886, analog_gain / 8};
             adtg_new[23] = (struct adtg_new) {6, 0x8888, analog_gain / 8};
+            BitDepth_Analog = 11;
         }
 
         if (OUTPUT_10BIT)
@@ -1328,6 +1338,7 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             adtg_new[21] = (struct adtg_new) {6, 0x8884, analog_gain / 16};
             adtg_new[22] = (struct adtg_new) {6, 0x8886, analog_gain / 16};
             adtg_new[23] = (struct adtg_new) {6, 0x8888, analog_gain / 16};
+            BitDepth_Analog = 10;
         } 
     }
 
