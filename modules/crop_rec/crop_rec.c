@@ -46,6 +46,8 @@ static CONFIG_INT("crop.bit_depth", bit_depth_analog, 0);
 // check raw.c
 extern int BitDepth_Analog;
 
+static CONFIG_INT("crop.brighten_lv", brighten_lv_method, 0);
+
 static CONFIG_INT("crop.preset_aspect_ratio", crop_preset_ar_menu, 0);
 static int crop_preset_ar = 0;
 #define AR_16_9        (crop_preset_ar == 0)
@@ -3177,6 +3179,35 @@ static void FAST engio_write_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             *(buf+1) = new;
         }
 
+        /* brighten up LiveView when using negative analog gain in lower bit-depths */
+
+        // this method seems better in terms of stability, it doesn't produce corrupted frames,
+        // but it also affect autofocus when using negative analog gain which makes it inaccurate.
+        // (read about the other method for more info.)
+        if (brighten_lv_method == 0)
+        {
+            if (reg == 0xC0F42744) 
+            {
+                if (which_output_format() >= 3) // don't patch if we are using uncompressed RAW 
+                {
+                    if (OUTPUT_12BIT && old != 0x2020202)
+                    {
+                        *(buf+1) = 0x2020202;
+                    }
+            
+                    if (OUTPUT_11BIT && old != 0x3030303)
+                    {
+                        *(buf+1) = 0x3030303;
+                    }
+            
+                    if (OUTPUT_10BIT && old != 0x4040404)
+                    {
+                        *(buf+1) = 0x4040404;
+                    }
+                }
+            }
+        }
+
         /* it seems more reliable to override them directly from here */
         if (Preview_Control)
         {
@@ -3210,7 +3241,10 @@ static void FAST EngDrvOut_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     uint16_t reg = data & 0x0000FFFF;
     uint32_t val = (uint32_t) regs[1];
 
-    // brighten up LiveView when using negative analog gain in lower bit-depths
+    /* brighten up LiveView when using negative analog gain in lower bit-depths */
+    /* this method may produce corrupted frames in some settings (in lowest bit-depth, high ISO and resolution combos?) 
+     * but it has accurate AF ...                                                                                   */
+
     /* These four registers apply positive gain for preview per RGB channel, two for green, one for red, one for blue.
      * The pervious register which was used to brighten LV is 0xC0F42744, altough it can correct preview brightness
      * in LiveView, but according to autofocus data it will stay underexposed, resulting in autofocus failure/loss when
@@ -3218,13 +3252,16 @@ static void FAST EngDrvOut_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
      * affect autofocus data --> the four regisers will adjust autofocus data to the correct brightness too . .
      * --> This way autofocus in 10/11/12-bit will be as accurate as in 14-bit.
      * BTW, these regisers used to achieve 12800 digital ISO from Canon.                                           */
-    if (data == 0xC0F37AE4 || data == 0xC0F37AF0 || data == 0xC0F37AFC || data == 0xC0F37B08) 
+    if (brighten_lv_method == 1)
     {
-        if (which_output_format() >= 3) // don't patch if we are using uncompressed RAW 
+        if (data == 0xC0F37AE4 || data == 0xC0F37AF0 || data == 0xC0F37AFC || data == 0xC0F37B08) 
         {
-            if (OUTPUT_12BIT) regs[1] = 0x30100;
-            if (OUTPUT_11BIT) regs[1] = 0x40100;
-            if (OUTPUT_10BIT) regs[1] = 0x50100;
+            if (which_output_format() >= 3) // don't patch if we are using uncompressed RAW 
+            {
+                if (OUTPUT_12BIT) regs[1] = 0x30100;
+                if (OUTPUT_11BIT) regs[1] = 0x40100;
+                if (OUTPUT_10BIT) regs[1] = 0x50100;
+            }
         }
     }
 
@@ -4800,6 +4837,16 @@ static struct menu_entry crop_rec_menu[] =
                 .unit   = UNIT_HEX,
                 .help   = "Horizontal position / binning.",
                 .help2  = "Use for horizontal centering.",
+                .advanced = 1,
+            },
+            {
+                .name    = "Brighten LV method",
+                .priv    = &brighten_lv_method,
+                .max     = 1,
+                .choices = CHOICES("AeWb", "EVF"),
+                .help    = "Select a method to brighten LV when using negative analog gain.",
+                .help2   = "Brighten LV using a regiser related to AeWb task. Stable, inaccurate AF.\n"
+                           "Brighten LV using regisers related to EVF task. Less stable, accurate AF.",
                 .advanced = 1,
             },
             MENU_ADVANCED_TOGGLE,
