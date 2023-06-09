@@ -2247,6 +2247,14 @@ int is_more_hacks_selected()
     return 0;
 }
 
+static int WillSuspendAeWbTask = 0; // flag tells that we are going to suspend AeWb task
+
+int AeWbTask_Disabled()
+{
+    if (WillSuspendAeWbTask) return 1;
+    return 0;
+}
+
 static REQUIRES(RawRecTask)
 void hack_liveview(int unhack)
 {
@@ -2337,12 +2345,15 @@ void hack_liveview(int unhack)
         {
             if (!unhack) /* hack */
             {
+                WillSuspendAeWbTask = 1; // we are going to suspend AeWb task (check code around shutter_blanking_idle in crop_rec.c)
+                wait_lv_frames(1);
+
                 if (small_hacks == 2)
                 {
                     lvfaceEnd();
                     aewbSuspend();
                 }
-        
+
                 if (small_hacks == 3 && CartridgeCancel_works) // CartridgeCancel_works: calling CartridgeCancel(); freezes LiveView in some models
                 {
                     lvfaceEnd();
@@ -3995,6 +4006,7 @@ cleanup:
         if (liveview_hacked)
         {
             hack_liveview(1);
+            if (WillSuspendAeWbTask) WillSuspendAeWbTask = 0;
         }
         
         /* re-enable powersaving  */

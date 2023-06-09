@@ -1072,6 +1072,7 @@ static int adjust_shutter_blanking(int old)
 }
 
 extern void fps_override_shutter_blanking();
+static int shutter_blanking_idle;
 
 static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
 {
@@ -1163,6 +1164,22 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
         {
             shutter_blanking = adjust_shutter_blanking(shutter_blanking);
         }
+    }
+
+    /* a workaround to fix shutter fine-tuning when using more hacks (suspending AeWb task) in mlv_lite */
+    /* we need to save last shutter_blanking value into a variable before suspending AeWb task */
+    if (!AeWbTask_Disabled())
+    {
+        /* save shutter_blanking value when shutter_blanking value isn't 0 */
+        if (shutter_blanking) shutter_blanking_idle = shutter_blanking;
+    }
+
+    /* always use our saved shutter blanking value when "More" hacks is selected (i.e when AeWb is suspended) */
+    /* FIXME: exclude this method when shutter-fine isn't used */
+    if (is_more_hacks_selected() && AeWbTask_Disabled())
+    {
+        /* change shutter_blanking value to our saved value when shutter_blanking value isn't 0 */
+        if (shutter_blanking) shutter_blanking = shutter_blanking_idle;
     }
 
     /* all modes may want to override shutter speed */
