@@ -4726,7 +4726,6 @@ static unsigned int raw_rec_init()
         aewbSuspend = (void *) 0xFF258818;
         CartridgeCancel = (void *) 0xFFD6B71C;
         more_hacks_are_supported = 1;
-        CartridgeCancel_works = 1; /* Not tested! Keep it on for now for tetsing */
         
         /* fixme: these are dummy values from 5D3 */
         default_width_1080p = 2080;
