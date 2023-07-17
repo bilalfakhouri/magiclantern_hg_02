@@ -125,8 +125,11 @@
 /** FIO_RenameFile works **/
 #define CONFIG_FIO_RENAMEFILE_WORKS
 
-// FPS updates from evf state do not work atm on 70D
-// #define CONFIG_FPS_UPDATE_FROM_EVF_STATE
+// FPS override: change timers from EVF state */
+#define CONFIG_FPS_UPDATE_FROM_EVF_STATE
+
+/** FPS override: Canon changes FPS registers often; we need to undo their changes asap; no idea if needed for 70D */
+#define CONFIG_FPS_AGGRESSIVE_UPDATE
 
 #define CONFIG_REC709
 
