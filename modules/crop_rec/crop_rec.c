@@ -5145,7 +5145,7 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
     }
 
     /* 650D / 700D / EOSM/M2 / 100D preferences */
-    if (is_DIGIC_5)
+    if (is_DIGIC_5 && lv)
     {
         // all of our presets work in x5 mode because of preview, even none-cropped ones
         if (CROP_PRESET_MENU && !RECORDING && is_movie_mode()) 
@@ -5155,7 +5155,7 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
             if (lv_dispsize == 1)
             {
                 gui_uilock(UILOCK_EVERYTHING);
-                msleep(700); 
+                msleep(1100); 
                 gui_uilock(UILOCK_NONE);
             }
 
@@ -5197,7 +5197,7 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
         }
 
         /* while idle, check our preview resgisters, force the new values if not set yet */
-        if (!lv_dirty && !crop_rec_needs_lv_refresh() && CROP_PRESET_MENU && !RECORDING && lv_dispsize == 5 && PathDriveMode->zoom == 5 && lv)
+        if (!lv_dirty && !crop_rec_needs_lv_refresh() && CROP_PRESET_MENU && !RECORDING && lv_dispsize == 5 && PathDriveMode->zoom == 5)
         {
             if (Preview_Control && !Preview_Control_Basic) // presets with basic preview don't need it
             {
@@ -5207,7 +5207,7 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
 
         // FIXME: for now, "More" hacks must be on in order to get wokring preview in 3x3 presets while recording
         // see notes in reg_override_3X3
-        if (CROP_PRESET_MENU == CROP_PRESET_3X3 && lv && raw_lv_is_enabled() && !is_more_hacks_selected())
+        if (CROP_PRESET_MENU == CROP_PRESET_3X3 && raw_lv_is_enabled() && !is_more_hacks_selected())
         {
             if (crop_preset_3x3_res_menu != 1) // exclude 1080p mode
             {
@@ -5241,7 +5241,7 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
          * let's check picture quality on startup, also when the user change it to other than RAW          
          * let's inform the user to change pic quality back to RAW, and a camera restart would required 
          * this extends recording times at high resolutions, also allows to record Full-Res LV @ 3 FPS */
-        if (lv && patch_active && CROP_PRESET_MENU && is_movie_mode())
+        if (patch_active && CROP_PRESET_MENU && is_movie_mode())
         {
             if (pic_quality != 0x4060000)
             {
