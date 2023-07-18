@@ -752,7 +752,9 @@ static void fps_setup_timerB(int fps_x1000)
         timerB -= 1;
         written_value_b = PACK(timerB, fps_reg_b_orig);
         EngDrvOutFPS(FPS_REGISTER_B, written_value_b);
+        #ifdef CONFIG_70D
         EngDrvOutFPS(FPS_REGISTER_B_DUAL_PIXEL, written_value_b);
+        #endif
         fps_needs_updating = 0;
     #if defined(NEW_FPS_METHOD)
     }
@@ -1053,7 +1055,9 @@ static void fps_register_reset()
         written_value_b = 0;
         EngDrvOutFPS(FPS_REGISTER_A, fps_reg_a_orig);
         EngDrvOutFPS(FPS_REGISTER_B, fps_reg_b_orig);
+        #ifdef CONFIG_70D
         EngDrvOutFPS(FPS_REGISTER_B_DUAL_PIXEL, fps_reg_b_orig);
+        #endif
         EngDrvOutFPS(FPS_REGISTER_CONFIRM_CHANGES, 1);
     }
 }
@@ -1655,7 +1659,9 @@ void fps_update_timers_from_evfstate()
     {
         EngDrvOutLV(FPS_REGISTER_A, fps_timerA_override);
         EngDrvOutLV(FPS_REGISTER_B, fps_timerB_override);
+        #ifdef CONFIG_70D
         EngDrvOutLV(FPS_REGISTER_B_DUAL_PIXEL, fps_timerB_override);
+        #endif
         EngDrvOutLV(FPS_REGISTER_CONFIRM_CHANGES, 1);
     }
     fps_timers_updated = 1;
