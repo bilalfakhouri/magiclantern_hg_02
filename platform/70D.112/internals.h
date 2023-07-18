@@ -137,6 +137,9 @@
 #define CONFIG_RAW_PHOTO
 #define CONFIG_RAW_LIVEVIEW
 
+/** Disable canon drawing in LiveView, mainly for having clean preview when using crop_rec presets **/
+#define CONFIG_KILL_FLICKER
+
 /** We can adjust AFMA (AF microadjustment) */
 #define CONFIG_AFMA
 
