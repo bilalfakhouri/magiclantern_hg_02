@@ -27,6 +27,7 @@
 static int is_DIGIC_5 = 0;
 static int is_5D3 = 0;
 static int is_6D = 0;
+static int is_70D = 0;
 static int is_700D = 0;
 static int is_650D = 0;
 static int is_100D = 0;
@@ -593,13 +594,26 @@ static int FAST check_cmos_vidmode(uint16_t* data_buf)
             }
         }
         
-        if (is_basic && !is_6D)
+        if (is_basic && !is_6D && !is_70D)
         {
             if (reg == 7)
             {
                 found = 1;
                 /* prevent running in 600D hack crop mode */
                 if (value != 0x800) 
+                {
+                    ok = 0;
+                }
+            }
+        }
+        
+        if (is_70D)
+        {
+            if (reg == 0xa)
+            {
+                found = 1;
+                /* prevent running in other modes than 720p */
+                if (value != 0x5f1) 
                 {
                     ok = 0;
                 }
@@ -656,7 +670,7 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
         return;
     }
 
-    int cmos_new[10] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+    int cmos_new[15] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
     
     if (is_5D3)
     {
@@ -774,8 +788,17 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             case CROP_PRESET_3x3_1X:
             if (is_720p())
             {
-                /* start/stop scanning line, very large increments */
-                cmos_new[7] = (is_6D) ? PACK12(37,10) : PACK12(6,29);
+                if (!is_70D)
+                {
+                    /* start/stop scanning line, very large increments */
+                    cmos_new[7] = (is_6D) ? PACK12(37,10) : PACK12(6,29);
+                }
+                if (is_70D)
+                {   /* FIXME: ghosty artifacts when pointing the camera to bright objects then pointing it to darker objects 
+                     * https://www.magiclantern.fm/forum/index.php?topic=14309.msg205843#msg205843 */
+                    cmos_new[0xA] = 0x1F1; // vertical offset/line skipping related, value taken from 1080p mode
+                    cmos_new[0xB] = 0x307; // vertical offset
+                }
             }
             break; 
         }
@@ -5866,6 +5889,30 @@ static unsigned int crop_rec_init()
         memcpy(default_timerB, (int[]) { 1955, 1600, 1564,  800,  821, 1172 }, 24);
                                    /* or 1956        1565         822        2445        1956 */
     }
+    else if (is_camera("70D", "1.1.2"))
+    {
+        CMOS_WRITE = 0x26B54;
+        MEM_CMOS_WRITE = 0xE92D41F0;        
+
+        ADTG_WRITE = 0x2684C;
+        MEM_ADTG_WRITE = 0xE92D47F0;
+
+        PathDriveMode = (void *) 0xD945C;   /* argument of PATH_SelectPathDriveMode */
+
+        is_70D = 1;
+        is_basic = 1;
+        crop_presets                = crop_presets_basic;
+        crop_rec_menu[0].choices    = crop_choices_basic;
+        crop_rec_menu[0].max        = COUNT(crop_choices_basic) - 1;
+        crop_rec_menu[0].help       = crop_choices_help_basic;
+        crop_rec_menu[0].help2      = crop_choices_help2_basic;
+        
+        fps_main_clock = 32000000;
+                                       /* 24p,  25p,  30p,  50p,  60p,   x5   c24p, c25p, c30p */
+        memcpy(default_timerA, (int[]) {  700,  800,  700,  800,  672,  672,  462,  500,  462 }, 36);
+        memcpy(default_timerB, (int[]) { 1906, 1600, 1525,  800,  794, 1588, 2888, 2560, 2311 }, 36);
+                                   /* or 1907        1526         795        2889        2312  */
+    }
     
     /* default FPS timers are the same on all these models */
     if (is_EOSM || is_700D || is_650D || is_100D)
@@ -5904,7 +5951,7 @@ static unsigned int crop_rec_init()
                 }
                 else
                 {
-                    printf("%d) %s%d.%03d: A=%d B=%d (%s%d.%03d ?!?)\n", i, FMT_FIXEDPOINT3(default_fps_1k[i]), default_timerA[i], default_timerB[i], FMT_FIXEDPOINT3(fps_i));
+                    NotifyBox(5000,"%d) %s%d.%03d: A=%d B=%d (%s%d.%03d ?!?)\n", i, FMT_FIXEDPOINT3(default_fps_1k[i]), default_timerA[i], default_timerB[i], FMT_FIXEDPOINT3(fps_i));
                     return CBR_RET_ERROR;
                 }
 
