@@ -1053,7 +1053,7 @@ static void fps_register_reset()
         written_value_b = 0;
         EngDrvOutFPS(FPS_REGISTER_A, fps_reg_a_orig);
         EngDrvOutFPS(FPS_REGISTER_B, fps_reg_b_orig);
-        EngDrvOutFPS(FPS_REGISTER_B_DUAL_PIXEL_VALUE, fps_reg_b_orig);
+        EngDrvOutFPS(FPS_REGISTER_B_DUAL_PIXEL, fps_reg_b_orig);
         EngDrvOutFPS(FPS_REGISTER_CONFIRM_CHANGES, 1);
     }
 }
