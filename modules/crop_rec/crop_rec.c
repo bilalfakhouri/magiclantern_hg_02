@@ -5862,6 +5862,13 @@ static unsigned int crop_rec_init()
         crop_rec_menu[0].choices    = crop_choices_DIGIC_5;
         crop_rec_menu[0].max        = COUNT(crop_choices_DIGIC_5) - 1;
         crop_rec_menu[0].help       = crop_choices_help_DIGIC_5;
+        
+        fps_main_clock = 32000000;
+        
+                                       /* 24p,  25p,  30p,  50p,  60p,   x5, c24p, c25p, c30p */
+        memcpy(default_timerA, (int[]) {  520,  640,  520,  640,  528,  732,  600,  576,  600 }, 36);
+        memcpy(default_timerB, (int[]) { 2566, 2000, 2053, 1000, 1011, 1460, 2224, 2222, 1779 }, 36);
+                                   /* or 2567        2054        1012        2225  2223  1780 */
     }       
     else if (is_camera("6D", "1.1.6"))
     {
@@ -5915,7 +5922,7 @@ static unsigned int crop_rec_init()
     }
     
     /* default FPS timers are the same on all these models */
-    if (is_EOSM || is_700D || is_650D || is_100D)
+    if (is_EOSM || is_700D || is_650D)
     {
         fps_main_clock = 32000000;
                                        /* 24p,  25p,  30p,  50p,  60p,   x5, c24p, c25p, c30p */
