@@ -5903,6 +5903,11 @@ static unsigned int crop_rec_init()
 
         ADTG_WRITE = 0x2684C;
         MEM_ADTG_WRITE = 0xE92D47F0;
+        
+        ENGIO_WRITE = 0xFF2BC6C4;
+        MEM_ENGIO_WRITE = 0xE51FC15C;
+        
+        ENG_DRV_OUT = 0xFF2BC3AC;
 
         PathDriveMode = (void *) 0xD945C;   /* argument of PATH_SelectPathDriveMode */
 
