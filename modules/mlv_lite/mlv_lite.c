@@ -1098,6 +1098,9 @@ static int calc_crop_factor()
     return camera_crop * (sensor_res_x / sampling_x) / res_x;
 }
 
+/* forward reference */
+static struct menu_entry raw_video_menu[];
+
 static MENU_UPDATE_FUNC(raw_main_update)
 {
     // reset_movie_cropmarks if raw_rec is disabled
@@ -1120,6 +1123,12 @@ static MENU_UPDATE_FUNC(raw_main_update)
     }
 
     write_speed_update(entry, info);
+}
+
+static MENU_UPDATE_FUNC(preview_mode_update)
+{
+    /* hide preview toggle option when preview isn't set to real-time */
+    raw_video_menu[0].children[4].shidden = (!PREVIEW_CANON);
 }
 
 static MENU_UPDATE_FUNC(aspect_ratio_update_info)
@@ -4157,6 +4166,7 @@ static struct menu_entry raw_video_menu[] =
                 .name = "Preview",
                 .priv = &preview_mode,
                 .max = 3,
+                .update = preview_mode_update,
                 .choices = CHOICES("Auto", "Real-time", "Framing", "Frozen LV"),
                 .help  = "Raw video preview (long half-shutter press to override):",
                 .help2 = "Auto: ML chooses what's best for each video mode\n"
@@ -4171,6 +4181,7 @@ static struct menu_entry raw_video_menu[] =
                 .max = 1,
                 .choices = CHOICES("OFF", "Half-shutter"),
                 .help = "Switch among Framing and Real-Time preview on half-shutter press.",
+                .shidden = 1,
             },
             {
                 .name = "Kill Global Draw",
@@ -4510,8 +4521,8 @@ static int raw_rec_should_preview(void)
         return 0;
     }
 
-    /* disable preview toggle on half shutter press */
-    if (!preview_toggle)
+    /* disable preview toggle on half shutter press when real-time preview is selected */
+    if (!preview_toggle && PREVIEW_CANON)
     {
         return 0;
     }
