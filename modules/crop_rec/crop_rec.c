@@ -174,6 +174,24 @@ static const char crop_choices_help2_5d3[] =
     "3x1 binning: bin every 3 lines, read all columns (extreme anamorphic)\n"
     "FPS override test\n";
 
+/* menu choices for 70D */
+static enum crop_preset crop_presets_70d[] = {
+    CROP_PRESET_OFF,
+    CROP_PRESET_3x3_1X,
+};
+
+static const char * crop_choices_70d[] = {
+    "OFF",
+    "3x3 720p",
+};
+
+static const char crop_choices_help_70d[] =
+    "Change 1080p and 720p movie modes into crop modes (one choice)";
+
+static const char crop_choices_help2_70d[] =
+    "\n"
+    "3x3 binning in 720p (square pixels in RAW, vertical crop)";
+
 /* menu choices for entry level DIGIC 5 models, 650D / 700D / EOS M/M2 / 100D */
 static enum crop_preset crop_presets_DIGIC_5[] = {
     CROP_PRESET_OFF,
@@ -788,23 +806,29 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             case CROP_PRESET_3x3_1X:
             if (is_720p())
             {
-                if (!is_70D)
-                {
-                    /* start/stop scanning line, very large increments */
-                    cmos_new[7] = (is_6D) ? PACK12(37,10) : PACK12(6,29);
-                }
-                if (is_70D)
-                {   /* FIXME: ghosty artifacts when pointing the camera to bright objects then pointing it to darker objects 
-                     * https://www.magiclantern.fm/forum/index.php?topic=14309.msg205843#msg205843 */
-                    cmos_new[0xA] = 0x1F1; // vertical offset/line skipping related, value taken from 1080p mode
-                    cmos_new[0xB] = 0x307; // vertical offset
-                }
+                /* start/stop scanning line, very large increments */
+                cmos_new[7] = (is_6D) ? PACK12(37,10) : PACK12(6,29);
             }
             break; 
         }
     }
-    
-    
+
+    if (is_70D)
+    {
+        switch (crop_preset)
+        {
+            case CROP_PRESET_3x3_1X:
+            if (is_720p())
+            {
+                /* FIXME: ghosty artifacts when pointing the camera to bright objects then pointing it to darker objects 
+                 * https://www.magiclantern.fm/forum/index.php?topic=14309.msg205843#msg205843 */
+                cmos_new[0xA] = 0x1F1; // vertical offset/line skipping related, value taken from 1080p mode
+                cmos_new[0xB] = 0x307; // vertical offset
+            }
+            break; 
+        }
+    }
+
     // 650D / 700D / EOSM/M2 / 100D presets
     // cmos_new[5] used for vertical offset, cmos_new[7] for horizontal offset
     if (is_DIGIC_5)
@@ -1104,7 +1128,7 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
         /* don't patch other video modes */
         return;
         
-       if (is_5D3 || is_basic)
+       if (is_5D3 || is_basic || is_70D)
        {
            if (!cmos_vidmode_ok)
            {
@@ -4273,7 +4297,7 @@ static MENU_UPDATE_FUNC(crop_update)
         }
         else /* non-zoom modes */
         {
-            if (is_basic || is_5D3)
+            if (is_basic || is_70D || is_5D3)
             {
                 if (!is_supported_mode())
                 {
@@ -5912,12 +5936,11 @@ static unsigned int crop_rec_init()
         PathDriveMode = (void *) 0xD945C;   /* argument of PATH_SelectPathDriveMode */
 
         is_70D = 1;
-        is_basic = 1;
-        crop_presets                = crop_presets_basic;
-        crop_rec_menu[0].choices    = crop_choices_basic;
-        crop_rec_menu[0].max        = COUNT(crop_choices_basic) - 1;
-        crop_rec_menu[0].help       = crop_choices_help_basic;
-        crop_rec_menu[0].help2      = crop_choices_help2_basic;
+        crop_presets                = crop_presets_70d;
+        crop_rec_menu[0].choices    = crop_choices_70d;
+        crop_rec_menu[0].max        = COUNT(crop_choices_70d) - 1;
+        crop_rec_menu[0].help       = crop_choices_help_70d;
+        crop_rec_menu[0].help2      = crop_choices_help2_70d;
         
         fps_main_clock = 32000000;
                                        /* 24p,  25p,  30p,  50p,  60p,   x5   c24p, c25p, c30p */
