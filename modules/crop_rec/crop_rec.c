@@ -372,6 +372,14 @@ static int is_supported_mode()
         {
             return 0;
         }
+
+        if (is_5D3)
+        {
+            if (crop_preset == CROP_PRESET_CENTER_Z)
+            {
+                return 0;
+            }
+        }
     }
 
     if (PathDriveMode->zoom == 10)
@@ -565,90 +573,6 @@ static inline int FAST calc_yres_delta()
 
 #define YRES_DELTA calc_yres_delta()
 
-
-static int cmos_vidmode_ok = 0;
-
-/* return value:
- *  1: registers checked and appear OK (1080p/720p video mode)
- *  0: registers checked and they are not OK (other video mode)
- * -1: registers not checked
- */
-static int FAST check_cmos_vidmode(uint16_t* data_buf)
-{
-    int ok = 1;
-    int found = 1;
-    while (*data_buf != 0xFFFF)
-    {
-        int reg = (*data_buf) >> 12;
-        int value = (*data_buf) & 0xFFF;
-        
-        if (is_5D3)
-        {
-            if (reg == 1)
-            {
-                found = 1;
-
-                switch (crop_preset)
-                {
-                    case CROP_PRESET_CENTER_Z:
-                    {
-                        /* detecting the zoom mode is tricky;
-                         * let's just exclude 1080p and 720p for now ... */
-                        if (value == 0x800 ||
-                            value == 0xBC2)
-                        {
-                            ok = 0;
-                        }
-                        break;
-                    }
-
-                    default:
-                    {
-                        if (value != 0x800 &&   /* not 1080p? */
-                            value != 0xBC2)     /* not 720p? */
-                        {
-                            ok = 0;
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-        
-        if (is_basic && !is_6D && !is_70D)
-        {
-            if (reg == 7)
-            {
-                found = 1;
-                /* prevent running in 600D hack crop mode */
-                if (value != 0x800) 
-                {
-                    ok = 0;
-                }
-            }
-        }
-        
-        if (is_70D)
-        {
-            if (reg == 0xa)
-            {
-                found = 1;
-                /* prevent running in other modes than 720p */
-                if (value != 0x5f1) 
-                {
-                    ok = 0;
-                }
-            }
-        }
-        
-        data_buf++;
-    }
-    
-    if (found) return ok;
-    
-    return -1;
-}
-
 int CMOS_5_Debug = 0;
 int CMOS_7_Debug = 0;
 
@@ -670,27 +594,8 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
          * changes in video mode, but not for detecting the zoom change */
         return;
     }
-    
-    /* also check CMOS registers; in zoom mode, we get different values
-     * and this check is instant (no delays).
-     * 
-     * on 5D3, the 640x480 acts like 1080p during standby,
-     * so properties are our only option for that one.
-     */
-     
-    uint16_t* data_buf = (uint16_t*) regs[0];
-    int ret = check_cmos_vidmode(data_buf);
-    
-    if (ret >= 0)
-    {
-        cmos_vidmode_ok = ret;
-    }
-    
-    if (ret != 1)
-    {
-        return;
-    }
 
+    uint16_t* data_buf = (uint16_t*) regs[0];
     int cmos_new[15] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
     
     if (is_5D3)
@@ -1136,14 +1041,6 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     {
         /* don't patch other video modes */
         return;
-        
-       if (is_5D3 || is_basic || is_70D)
-       {
-           if (!cmos_vidmode_ok)
-           {
-               return;
-           }
-       }
     }
 
     if (!is_720p())
