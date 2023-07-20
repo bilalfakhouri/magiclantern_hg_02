@@ -134,7 +134,7 @@ static void ReadClock5D3(uint32_t* regs, uint32_t* stack, uint32_t pc)
     memcpy(uhs_vals, sdr_160MHz2, sizeof(uhs_vals));
 }
 
-static void WriteClock6D(uint32_t* regs, uint32_t* stack, uint32_t pc)
+static void PauseWriteClock(uint32_t* regs, uint32_t* stack, uint32_t pc)
 {
     while (overclock_task_in_progress)
     {
@@ -142,7 +142,7 @@ static void WriteClock6D(uint32_t* regs, uint32_t* stack, uint32_t pc)
     }
 }
 
-static void ReadClock6D(uint32_t* regs, uint32_t* stack, uint32_t pc)
+static void PauseReadClock(uint32_t* regs, uint32_t* stack, uint32_t pc)
 {
     while (overclock_task_in_progress)
     {
@@ -367,10 +367,10 @@ static void sd_overclock_task()
         overclock_task_in_progress = 1;
         
         /* Patch sdReadBlk and sdWriteBlk Now! for pausing SD reads/writes operations on 6D */
-        if (is_camera("6D", "1.1.6"))
+        if (is_camera("6D", "1.1.6") || is_camera("70D", "1.1.2"))
         {
-            patch_hook_function(sd_read_clock, MEM(sd_read_clock), ReadClock6D, "R_Clock");
-            patch_hook_function(sd_write_clock, MEM(sd_write_clock), WriteClock6D, "W_Clock");
+            patch_hook_function(sd_read_clock, MEM(sd_read_clock), PauseReadClock, "R_Clock");
+            patch_hook_function(sd_write_clock, MEM(sd_write_clock), PauseWriteClock, "W_Clock");
         }
         
         /* install the hack */
@@ -402,7 +402,7 @@ static void sd_overclock_task()
         overclock_task_in_progress = 0;
         
         // Overclocking is done, these are not needed anymore
-        if (is_camera("6D", "1.1.6"))
+        if (is_camera("6D", "1.1.6") || is_camera("70D", "1.1.2"))
         {
             msleep(100);
             unpatch_memory(sd_read_clock);
@@ -771,6 +771,8 @@ static unsigned int sd_uhs_init()
         sd_setup_mode_in    = 0xFF33E100;
         sd_setup_mode_reg   = 1;
         sd_set_function     = 0xFF7CE4B8;
+        sd_write_clock      = 0xff7d18a0;   /* NOTE: this is sdDMAWriteBlk, not sdWriteBlk. Patching sdWriteBlk causes CACHE_COLLISION */
+        sd_read_clock       = 0xff7d1e68;   /* sdReadBlk */
         SD_ReConfiguration  = (void *) 0xFF7D086C;
         
         if (sd_overclock)
