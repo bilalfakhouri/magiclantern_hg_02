@@ -177,11 +177,13 @@ static const char crop_choices_help2_5d3[] =
 /* menu choices for 70D */
 static enum crop_preset crop_presets_70d[] = {
     CROP_PRESET_OFF,
+    CROP_PRESET_1x3,
     CROP_PRESET_3x3_1X,
 };
 
 static const char * crop_choices_70d[] = {
     "OFF",
+    "1x3 5.5K",
     "3x3 720p",
 };
 
@@ -190,6 +192,7 @@ static const char crop_choices_help_70d[] =
 
 static const char crop_choices_help2_70d[] =
     "\n"
+    "1x3 5.5K 1832x1816 ~3:1 AR @ 23.976 FPS\n"
     "3x3 binning in 720p (square pixels in RAW, vertical crop)";
 
 /* menu choices for entry level DIGIC 5 models, 650D / 700D / EOS M/M2 / 100D */
@@ -817,6 +820,12 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     {
         switch (crop_preset)
         {
+            case CROP_PRESET_1x3:
+            if (is_1080p())
+            {
+                cmos_new[0xB] = 0x34A; // vertical offset
+            }
+            break;
             case CROP_PRESET_3x3_1X:
             if (is_720p())
             {
@@ -1266,7 +1275,7 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             /* 1x3 binning (read every line, bin every 3 columns) */
             case CROP_PRESET_1x3:
                 /* ADTG2/4[0x800C] = 0: read every line */
-                adtg_new[2] = (struct adtg_new) {6, 0x800C, 0};
+                if ((is_70D && is_1080p()) || is_5D3) adtg_new[2] = (struct adtg_new) {6, 0x800C, 0};
                 break;
 
             /* 3x1 binning (bin every 3 lines, read every column) */
@@ -1336,6 +1345,7 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             case CROP_PRESET_3X_TALL:
             case CROP_PRESET_3x3_1X:
             case CROP_PRESET_3x3_1X_48p:
+            case CROP_PRESET_1x3:
             case CROP_PRESET_3K:
             case CROP_PRESET_UHD:
             case CROP_PRESET_4K_HFPS:
@@ -3148,6 +3158,55 @@ static inline uint32_t reg_override_3X3(uint32_t reg, uint32_t old_val)
     return 0;
 }
 
+/* 70D ENGIO overrides */
+static inline uint32_t reg_override_1x3(uint32_t reg, uint32_t old_val)
+{
+    if (!is_70D)
+    {
+        /* don't patch engio overrides on other models (5D3 in this case) */
+        return 0;
+    }
+
+    if (is_70D)
+    {
+        if (!is_1080p())
+        {
+            /* don't patch other modes */
+            return 0;
+        }
+
+        RAW_V = 0x736; // The image freeze when going above 0x736, because of HeadTimer 3 0xC0F0713C = 0x738, why?! 
+        RAW_H = 0x107;
+        TimerA = 0x27E; // This is the lowest value we can use in 1080p mode, going lower than that will break the image
+        TimerB = 0x827;
+
+        switch (reg)
+        {
+            case 0xC0F06804: return (RAW_V << 16) + RAW_H;
+
+            /* I need to double check these, do they always take their value based on TimerA? */
+            case 0xC0F06824:
+            case 0xC0F06828:
+            case 0xC0F0682C:
+            case 0xC0F06830:
+            {
+                return TimerA;
+            }
+
+            case 0xC0F0713C: return RAW_V + 0x1;
+            case 0xC0F07150: return RAW_V - 0x3A;
+
+            case 0xC0F06014: return TimerB;
+            case 0xC0F06024: return TimerB;
+            case 0xC0F06010: return TimerA;
+            case 0xC0F06008: return TimerA + (TimerA << 16);
+            case 0xC0F0600C: return TimerA + (TimerA << 16);
+        }
+    }
+
+    return 0;
+}
+
 static int engio_vidmode_ok = 0;
 
 static void * get_engio_reg_override_func()
@@ -3157,6 +3216,7 @@ static void * get_engio_reg_override_func()
         (crop_preset == CROP_PRESET_3X_TALL)    ? reg_override_3X_tall    :
         (crop_preset == CROP_PRESET_3x3_1X)     ? reg_override_3x3_tall   :
         (crop_preset == CROP_PRESET_3x3_1X_48p) ? reg_override_3x3_48p    :
+        (crop_preset == CROP_PRESET_1x3)        ? reg_override_1x3        :
         (crop_preset == CROP_PRESET_3K)         ? reg_override_3K         :
         (crop_preset == CROP_PRESET_4K_HFPS)    ? reg_override_4K_hfps    :
         (crop_preset == CROP_PRESET_UHD)        ? reg_override_UHD        :
@@ -4306,6 +4366,13 @@ static MENU_UPDATE_FUNC(crop_update)
                 else if (lv_dispsize != 1)
                 {
                     MENU_SET_WARNING(MENU_WARN_NOT_WORKING, "To use this mode, exit ML menu and press the zoom button (set to x1).");
+                }
+                else if (!is_1080p())
+                {
+                    if (is_70D)
+                    {
+                        if (CROP_PRESET_MENU == CROP_PRESET_1x3) MENU_SET_WARNING(MENU_WARN_NOT_WORKING, "This preset only works in the 1080p mode from Canon menu.");
+                    }
                 }
                 else if (!is_720p())
                 {
