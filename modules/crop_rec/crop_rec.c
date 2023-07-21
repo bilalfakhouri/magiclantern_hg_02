@@ -177,12 +177,14 @@ static const char crop_choices_help2_5d3[] =
 /* menu choices for 70D */
 static enum crop_preset crop_presets_70d[] = {
     CROP_PRESET_OFF,
+    CROP_PRESET_CENTER_Z,
     CROP_PRESET_1x3,
     CROP_PRESET_3x3_1X,
 };
 
 static const char * crop_choices_70d[] = {
     "OFF",
+    "1:1 3.5K centered x5",
     "1x3 5.5K",
     "3x3 720p",
 };
@@ -192,6 +194,7 @@ static const char crop_choices_help_70d[] =
 
 static const char crop_choices_help2_70d[] =
     "\n"
+    "1:1 readout in x5 zoom mode (centered raw, high res, cropped preview)\n"
     "1x3 5.5K 1832x1816 ~3:1 AR @ 23.976 FPS\n"
     "3x3 binning in 720p (square pixels in RAW, vertical crop)";
 
@@ -373,7 +376,7 @@ static int is_supported_mode()
             return 0;
         }
 
-        if (is_5D3)
+        if (is_5D3 || is_70D)
         {
             if (crop_preset == CROP_PRESET_CENTER_Z)
             {
@@ -739,6 +742,10 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                 cmos_new[0xA] = 0x1F1; // vertical offset/line skipping related, value taken from 1080p mode
                 cmos_new[0xB] = 0x307; // vertical offset
             }
+            break; 
+            case CROP_PRESET_CENTER_Z:
+                cmos_new[7]   = 0xC80;          /* horizontal offset */
+                cmos_new[0xb] = 0x289;          /* vertical offset */ 
             break; 
         }
     }
@@ -1806,21 +1813,35 @@ static inline uint32_t reg_override_fps_nocheck(uint32_t reg, uint32_t timerA, u
 
 static inline uint32_t reg_override_zoom_fps(uint32_t reg, uint32_t old_val)
 {
+    int timerA = -1;
+    int timerB = -1;
+
     /* attempt to reconfigure the x5 zoom at the FPS selected in Canon menu */
-    int timerA = 
-        (video_mode_fps == 24) ? 512 :
-        (video_mode_fps == 25) ? 512 :
-        (video_mode_fps == 30) ? 520 :
-        (video_mode_fps == 50) ? 512 :  /* cannot get 50, use 25 */
-        (video_mode_fps == 60) ? 520 :  /* cannot get 60, use 30 */
-                                  -1 ;
-    int timerB =
-        (video_mode_fps == 24) ? 1955 :
-        (video_mode_fps == 25) ? 1875 :
-        (video_mode_fps == 30) ? 1540 :
-        (video_mode_fps == 50) ? 1875 :
-        (video_mode_fps == 60) ? 1540 :
-                                   -1 ;
+    if (video_mode_fps == 24)
+    {
+        if (is_5D3) { timerA = 512; timerB = 1955; }
+        if (is_70D) { timerA = 503; timerB = 2653; }
+    }
+    if (video_mode_fps == 25)
+    {
+        if (is_5D3) { timerA = 512; timerB = 1875; }
+        if (is_70D) { timerA = 503; timerB = 2544; }
+    }
+    if (video_mode_fps == 30)
+    {
+        if (is_5D3) { timerA = 520; timerB = 1540; }
+        if (is_70D) { timerA = 503; timerB = 2122; }
+    }
+    if (video_mode_fps == 50)
+    {
+        if (is_5D3) { timerA = 512; timerB = 1875; } /* cannot get 50, use 25 */
+        if (is_70D) { timerA = 503; timerB = 1588; } /* cannot get 50, use 40 */
+    }
+    if (video_mode_fps == 60)
+    {
+        if (is_5D3) { timerA = 520; timerB = 1540; } /* cannot get 60, use 30 */
+        if (is_70D) { timerA = 503; timerB = 1588; } /* cannot get 60, use 40 */
+    }
 
     return reg_override_fps_nocheck(reg, timerA, timerB, old_val);
 }
@@ -5149,10 +5170,27 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
         settings_changed = 0;
     }
 
-    if (crop_preset == CROP_PRESET_CENTER_Z &&
-        (lv_dispsize == 5 || lv_dispsize == 10))
+    if (is_5D3)
     {
-        center_canon_preview();
+        if (crop_preset == CROP_PRESET_CENTER_Z &&
+        (lv_dispsize == 5 || lv_dispsize == 10))
+        {
+            center_canon_preview();
+        }
+    }
+
+    /* center canon preview on raw buffer for CROP_PRESET_CENTER_Z preset.
+     * FIXME: use Preview_Control_Basic or port center_canon_preview() to 70D */
+    if (is_70D)
+    {
+        if (crop_preset == CROP_PRESET_CENTER_Z && lv_dispsize == 5 && !RECORDING)
+        {
+            if ((shamem_read(0xC0F383D4) != 0x1560141) || shamem_read(0xC0F383DC) != 0x44e0260)
+            {
+                EngDrvOutLV(0xC0F383D4,0x1560141);
+                EngDrvOutLV(0xC0F383DC,0x44e0260);
+            }
+        }
     }
 
     /* 650D / 700D / EOSM/M2 / 100D preferences */
