@@ -4826,7 +4826,16 @@ static unsigned int raw_rec_init()
     settings_sem = create_named_semaphore(0, 1);
     if (cam_dualcard) queue_sem = create_named_semaphore("queue_sem", 1);
 
-    ASSERT(((uint32_t)task_create("compress_task", 0x0F, 0x1000, compress_task, (void*)0) & 1) == 0);
+    if (cam_70d)
+    {
+        /* setting priority to 0x0F gives repeated/corrtuped frames at high resolution/fps modes on 70D */
+        /* 720p60 still gives repeated frames even with 0x11 priority, increasing it doesn't improve it */
+        ASSERT(((uint32_t)task_create("compress_task", 0x11, 0x1000, compress_task, (void*)0) & 1) == 0);
+    }
+    else
+    {
+        ASSERT(((uint32_t)task_create("compress_task", 0x0F, 0x1000, compress_task, (void*)0) & 1) == 0);
+    }
 
     return 0;
 }
