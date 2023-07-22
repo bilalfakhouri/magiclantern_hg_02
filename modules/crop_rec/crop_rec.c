@@ -178,6 +178,7 @@ static const char crop_choices_help2_5d3[] =
 static enum crop_preset crop_presets_70d[] = {
     CROP_PRESET_OFF,
     CROP_PRESET_CENTER_Z,
+    CROP_PRESET_UHD,
     CROP_PRESET_1x3,
     CROP_PRESET_3x3_1X,
 };
@@ -185,6 +186,7 @@ static enum crop_preset crop_presets_70d[] = {
 static const char * crop_choices_70d[] = {
     "OFF",
     "1:1 3.5K centered x5",
+    "1:1 UHD",
     "1x3 5.5K",
     "3x3 720p",
 };
@@ -195,6 +197,7 @@ static const char crop_choices_help_70d[] =
 static const char crop_choices_help2_70d[] =
     "\n"
     "1:1 readout in x5 zoom mode (centered raw, high res, cropped preview)\n"
+    "1:1 4K UHD crop (3840x2160 @ 24p, square raw pixels, preview broken)\n"
     "1x3 5.5K 1832x1816 ~3:1 AR @ 23.976 FPS\n"
     "3x3 binning in 720p (square pixels in RAW, vertical crop)";
 
@@ -353,6 +356,27 @@ static int is_720p()
 
     /* this snippet seems OK with properties */
     return is_movie_mode() && PathDriveMode->resolution_idx == 1;
+}
+
+static int is_x5_zoom()
+{
+    if (PathDriveMode->zoom != 5)
+    {
+        return 0;
+    }
+
+    if (PathDriveMode->S != 8)
+    {
+        return 0;
+    }
+
+    if (PathDriveMode->SM != 0)
+    {
+        return 0;
+    }
+
+    /* this snippet seems OK with properties */
+    return is_movie_mode() && PathDriveMode->zoom == 5;
 }
 
 static int is_supported_mode()
@@ -747,6 +771,11 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                 cmos_new[7]   = 0xC80;          /* horizontal offset */
                 cmos_new[0xb] = 0x289;          /* vertical offset */ 
             break; 
+            case CROP_PRESET_UHD:
+            if (is_x5_zoom()) {
+                cmos_new[7]   = 0xC70;          /* horizontal offset */
+                cmos_new[0xb] = 0x326;          /* vertical offset */  }
+            break; 
         }
     }
 
@@ -1120,7 +1149,7 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
     {
         /* FIXME: remove this kind of hardcoded conditions */
         if ((crop_preset == CROP_PRESET_CENTER_Z && lv_dispsize != 1) ||
-            (crop_preset != CROP_PRESET_CENTER_Z && lv_dispsize == 1) || is_DIGIC_5)
+            (crop_preset != CROP_PRESET_CENTER_Z && lv_dispsize == 1) || is_DIGIC_5 || is_70D)
         {
             shutter_blanking = adjust_shutter_blanking(shutter_blanking);
         }
@@ -1162,7 +1191,7 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             case CROP_PRESET_FULLRES_LV:
                 /* ADTG2/4[0x8000] = 5 (set in one call) */
                 /* ADTG2[0x8806] = 0x6088 on 5D3 (artifacts without it) */
-                adtg_new[2] = (struct adtg_new) {6, 0x8000, 5};
+                if (!is_70D) adtg_new[2] = (struct adtg_new) {6, 0x8000, 5};
                 if (is_5D3) {
                     /* this register is model-specific */
                     adtg_new[3] = (struct adtg_new) {2, 0x8806, 0x6088};
@@ -1696,32 +1725,74 @@ static inline uint32_t reg_override_4K_hfps(uint32_t reg, uint32_t old_val)
 
 static inline uint32_t reg_override_UHD(uint32_t reg, uint32_t old_val)
 {
-    /* FPS timer A, for increasing horizontal resolution */
-    /* trial and error to allow 3840; 536 is too low */
-    int timerA = 
-        (video_mode_fps == 25) ? 547 :
-        (video_mode_fps == 50) ? 546 :
+    if (is_5D3)
+    {
+        /* FPS timer A, for increasing horizontal resolution */
+        /* trial and error to allow 3840; 536 is too low */
+        int timerA = 
+            (video_mode_fps == 25) ? 547 :
+            (video_mode_fps == 50) ? 546 :
                                  550 ;
-    int timerB =
-        (video_mode_fps == 24) ? 1820 :
-        (video_mode_fps == 25) ? 1755 :
-        (video_mode_fps == 30) ? 1456 :
-        (video_mode_fps == 50) ?  879 :
-        (video_mode_fps == 60) ?  728 :
+        int timerB =
+            (video_mode_fps == 24) ? 1820 :
+            (video_mode_fps == 25) ? 1755 :
+            (video_mode_fps == 30) ? 1456 :
+            (video_mode_fps == 50) ?  879 :
+            (video_mode_fps == 60) ?  728 :
                                    -1 ;
 
-    int a = reg_override_fps(reg, timerA, timerB, old_val);
-    if (a) return a;
+        int a = reg_override_fps(reg, timerA, timerB, old_val);
+        if (a) return a;
 
-    switch (reg)
-    {
-        /* raw resolution (end line/column) */
-        /* X: (3840+140)/8 + 0x18, adjusted for 3840 in raw_rec */
-        case 0xC0F06804:
-            return (old_val & 0xFFFF0000) + 0x20A + (YRES_DELTA << 16);
+        switch (reg)
+        {
+            /* raw resolution (end line/column) */
+            /* X: (3840+140)/8 + 0x18, adjusted for 3840 in raw_rec */
+            case 0xC0F06804:
+                return (old_val & 0xFFFF0000) + 0x20A + (YRES_DELTA << 16);
+        }
+
+        return reg_override_common(reg, old_val);
     }
 
-    return reg_override_common(reg, old_val);
+    if (is_70D)
+    {
+       if (!is_x5_zoom())
+        {
+            /* don't patch other modes */
+            return 0;
+        }
+
+        int RAW_V = 0x896;
+        int RAW_H = 0x201;
+        int TimerA = 0x224;
+        int TimerB = 0x97E;
+
+        switch (reg)
+        {
+            case 0xC0F06804: return (RAW_V << 16) + RAW_H;
+
+            case 0xC0F06824:
+            case 0xC0F06828:
+            case 0xC0F0682C:
+            case 0xC0F06830:
+            {
+                return TimerA - 1;
+            }
+
+            case 0xC0F0713C: return RAW_V + 0x1;
+            case 0xC0F07150: return RAW_V - 0x3A;
+            case 0xC0F07064: return RAW_V + 0xB2;
+
+            case 0xC0F06014: return TimerB;
+            case 0xC0F06024: return TimerB;
+            case 0xC0F06010: return TimerA;
+            case 0xC0F06008: return TimerA + (TimerA << 16);
+            case 0xC0F0600C: return TimerA + (TimerA << 16);
+        }
+    }
+
+    return 0;
 }
 
 static inline uint32_t reg_override_fullres_lv(uint32_t reg, uint32_t old_val)
@@ -4266,7 +4337,7 @@ static MENU_UPDATE_FUNC(crop_update)
 
     if (CROP_PRESET_MENU && lv)
     {
-        if (CROP_PRESET_MENU == CROP_PRESET_CENTER_Z || is_DIGIC_5)
+        if (CROP_PRESET_MENU == CROP_PRESET_CENTER_Z || (is_70D && CROP_PRESET_MENU == CROP_PRESET_UHD) || is_DIGIC_5)
         {
             if (lv_dispsize == 1)
             {
