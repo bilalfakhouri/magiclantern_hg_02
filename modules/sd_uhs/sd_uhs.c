@@ -411,6 +411,27 @@ static void sd_overclock_task()
     }
 }
 
+static MENU_UPDATE_FUNC(sd_uhs_update)
+{
+    /* Simple method to check if Canon safe mode get triggered (switched to 48 MHz / 21 MB/s) */
+    /* Safe mode get triggered when a SD card doesn't accpet our overclocking configuration or 
+     * if there is an instabilty with the overclocking setting.                               */
+    /* 0xC0400614 is one of the SD overclocking registers, by default Canon set it to 0x1d000601 
+       when using Canon 48 MHz preset */
+
+    /* 5D3 doesn't have 48 MHz safe mode, instead of that, it locks the access to SD card directly */
+    if (!is_camera("5D3", "*"))
+    {
+        if (turned_on)
+        {
+            if (*(uint32_t*)0xC0400614 == 0x1d000601)
+            {
+                MENU_SET_WARNING(MENU_WARN_NOT_WORKING, "Safe mode was triggered, try lower frequency or different access mode.");
+            }
+        }
+    }
+}
+
 static MENU_UPDATE_FUNC(MID_display)
 {
     MENU_SET_VALUE("%#02x", MID);
@@ -517,6 +538,7 @@ static struct menu_entry sd_uhs_menu[] =
     {
         .name   = "SD Overclock",
         .priv   = &sd_overclock,
+        .update = sd_uhs_update,
         .max    = 3,
         .choices = CHOICES("OFF", "160MHz", "192MHz", "240MHz"),
         .help   = "Choose a preset then restart the camera.",
