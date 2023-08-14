@@ -2694,8 +2694,8 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             {
                 RAW_H         = 0x1DD;
                 RAW_V         = 0x8C7;
-                TimerB        = 0x9CB;
-                TimerA        = 0x213;  // can be lowered even more? need to be fine tuned
+                TimerB        = 0x9DF;
+                TimerA        = 0x20F;
             }
 
             Preview_H     = 1728;      // from mv1080 mode
