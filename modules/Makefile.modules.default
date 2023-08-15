@@ -21,3 +21,4 @@ ML_MODULES ?= \
 	crop_rec \
 	edmac \
     sd_uhs \
+    hdmi_out \
