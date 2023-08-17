@@ -16,8 +16,14 @@ static int is_digic5 = 0;
 static CONFIG_INT("hdmi.patch.enabled", hdmi_patch_enabled, 0);
 static CONFIG_INT("hdmi.output_resolution", output_resolution, 0);
 
-static int Output_480p_patched  = 0;
-static int Output_1080i_patched = 0;
+static int hdmi_output_patch_status = 0;
+
+enum {
+    HDMI_NOT_PATCHED = 0,
+    HDMI_PATCHED_480p = 2,
+    HDMI_PATCHED_1080i = 5,
+};
+
 static uint32_t Output_480p_Force_Address  = 0;
 static uint32_t Output_1080i_Force_Address = 0;
 
@@ -47,36 +53,30 @@ const struct EDID_HDMI_INFO
 
 void patch_HDMI_output()
 {
-    if (output_resolution == 0) // 480p
+    if (output_resolution == 0 && hdmi_output_patch_status != HDMI_PATCHED_480p) // 480p
     {
-        if (!Output_480p_patched)
-        {
-            patch_instruction(Output_480p_Force_Address, 0xe3500005, 0xe3500002,"480p");
-            Output_480p_patched = 1;
-        }
+        patch_instruction(Output_480p_Force_Address, 0xe3500005, 0xe3500002,"480p");
+        hdmi_output_patch_status = HDMI_PATCHED_480p;
     }
 
-    if (output_resolution == 1) // 1080i
+    if (output_resolution == 1 && hdmi_output_patch_status != HDMI_PATCHED_1080i) // 1080i
     {
-        if (!Output_1080i_patched)
-        {
-            patch_instruction(Output_1080i_Force_Address, 0xe3a00002, 0xe3a00005,"1080i");
-            Output_1080i_patched = 1;
-        }
+        patch_instruction(Output_1080i_Force_Address, 0xe3a00002, 0xe3a00005,"1080i");
+        hdmi_output_patch_status = HDMI_PATCHED_1080i;
     }
 }
 
 void unpatch_HDMI_output()
 {
-    if (Output_1080i_patched)
+    if (hdmi_output_patch_status == HDMI_PATCHED_1080i)
     {
         unpatch_memory(Output_1080i_Force_Address);
-        Output_1080i_patched = 0;
+        hdmi_output_patch_status = HDMI_NOT_PATCHED;
     }
-    if (Output_480p_patched)
+    if (hdmi_output_patch_status == HDMI_PATCHED_480p)
     {
         unpatch_memory(Output_480p_Force_Address);
-        Output_480p_patched = 0;
+        hdmi_output_patch_status = HDMI_NOT_PATCHED;
     }
 }
 
@@ -114,8 +114,8 @@ static MENU_UPDATE_FUNC(hdmi_update)
 
     if (EDID_HDMI_INFO->dwVideoCode != 0) // Not LCD, HDMI is connected
     {
-        if ((Output_480p_patched  && EDID_HDMI_INFO->dwVideoCode != 2) ||
-            (Output_1080i_patched && EDID_HDMI_INFO->dwVideoCode != 5)  )
+        if ((hdmi_output_patch_status == HDMI_PATCHED_480p  && EDID_HDMI_INFO->dwVideoCode != 2) ||
+            (hdmi_output_patch_status == HDMI_PATCHED_1080i && EDID_HDMI_INFO->dwVideoCode != 5)  )
         {
             MENU_SET_WARNING(MENU_WARN_ADVICE, "Reconnect HDMI cable or restart camera to apply output setting.");
         }
@@ -126,8 +126,8 @@ static MENU_UPDATE_FUNC(output_resolution_update)
 {
     if (EDID_HDMI_INFO->dwVideoCode != 0) // Not LCD, HDMI is connected
     {
-        if ((Output_480p_patched  && EDID_HDMI_INFO->dwVideoCode != 2) ||
-            (Output_1080i_patched && EDID_HDMI_INFO->dwVideoCode != 5)  )
+        if ((hdmi_output_patch_status == HDMI_PATCHED_480p  && EDID_HDMI_INFO->dwVideoCode != 2) ||
+            (hdmi_output_patch_status == HDMI_PATCHED_1080i && EDID_HDMI_INFO->dwVideoCode != 5)  )
         {
             MENU_SET_WARNING(MENU_WARN_ADVICE, "Reconnect HDMI cable or restart camera to apply output setting.");
         }
@@ -263,9 +263,8 @@ static unsigned int hdmi_out_init()
     /* patch on startup if "HDMI output" was enabled */
     if (hdmi_patch_enabled)
     {
-        if (!Output_480p_patched || !Output_1080i_patched)
+        if (hdmi_output_patch_status == HDMI_NOT_PATCHED)
         {
-            unpatch_HDMI_output();
             patch_HDMI_output();
         }
     }
