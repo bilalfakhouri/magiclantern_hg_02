@@ -10,9 +10,6 @@
 #include <config.h>
 #include <patch.h>
 
-static int is_digic4 = 0;
-static int is_digic5 = 0;
-
 static CONFIG_INT("hdmi.patch.enabled", hdmi_patch_enabled, 0);
 static CONFIG_INT("hdmi.output_resolution", output_resolution, 0);
 
@@ -166,91 +163,80 @@ static unsigned int hdmi_out_init()
     {
         Output_480p_Force_Address = 0xFF33154C;
         Output_1080i_Force_Address = 0xFF33157C;
-        EDID_HDMI_INFO = (void *) 0x648B0;
-        is_digic5 = 1;
+        EDID_HDMI_INFO = (struct EDID_HDMI_INFO *) 0x648B0;
     }
     
     else if (is_camera("650D", "1.0.4"))
     {
         Output_480p_Force_Address = 0xFF32EB28;
         Output_1080i_Force_Address = 0xFF32EB58;
-        EDID_HDMI_INFO = (void *) 0x63F7C;
-        is_digic5 = 1;
+        EDID_HDMI_INFO = (struct EDID_HDMI_INFO *) 0x63F7C;
     }
     
     else if (is_camera("600D", "1.0.2"))
     {
         Output_480p_Force_Address = 0xFF1EE158;
         Output_1080i_Force_Address = 0xFF1EE188;
-        EDID_HDMI_INFO = (void *) 0x2C4C0; 
-        is_digic4 = 1;
+        EDID_HDMI_INFO = (struct EDID_HDMI_INFO *) 0x2C4C0; 
     }
 
     else if (is_camera("550D", "1.0.9"))
     {
         Output_480p_Force_Address = 0xFF1CDF8C;
         Output_1080i_Force_Address = 0xFF1CDFBC;
-        EDID_HDMI_INFO = (void *) 0x3BC60; 
-        is_digic4 = 1;
+        EDID_HDMI_INFO = (struct EDID_HDMI_INFO *) 0x3BC60; 
     }
 
     else if (is_camera("100D", "1.0.1"))
     {
         Output_480p_Force_Address = 0xFF324798;
         Output_1080i_Force_Address = 0xFF3247C8;
-        EDID_HDMI_INFO = (void *) 0xA3C0C;
-        is_digic5 = 1;
+        EDID_HDMI_INFO = (struct EDID_HDMI_INFO *) 0xA3C0C;
     }
     
     else if (is_camera("EOSM", "2.0.2"))
     {
         Output_480p_Force_Address = 0xFF33298C;
         Output_1080i_Force_Address = 0xFF3329BC;
-        EDID_HDMI_INFO = (void *) 0x821CC;
-        is_digic5 = 1;
+        EDID_HDMI_INFO = (struct EDID_HDMI_INFO *) 0x821CC;
     }
     
     else if (is_camera("6D", "1.1.6"))
     {
         Output_480p_Force_Address = 0xFF32340C;
         Output_1080i_Force_Address = 0xFF32343C;
-        EDID_HDMI_INFO = (void *) 0xAECA4;
-        is_digic5 = 1;
+        EDID_HDMI_INFO = (struct EDID_HDMI_INFO *) 0xAECA4;
     }
     
     else if (is_camera("5D2", "2.1.2"))
     {
         Output_480p_Force_Address = 0xFF1B1500;
         Output_1080i_Force_Address = 0xFF1B1530;
-        EDID_HDMI_INFO = (void *) 0x34384;
-        is_digic4 = 1;
+        EDID_HDMI_INFO = (struct EDID_HDMI_INFO *) 0x34384;
     }
     
     else if (is_camera("5D3", "1.1.3"))
     {
         Output_480p_Force_Address = 0xFF2F8750;
         Output_1080i_Force_Address = 0xFF2F8780;
-        EDID_HDMI_INFO = (void *) 0x5198C; 
-        is_digic5 = 1;
+        EDID_HDMI_INFO = (struct EDID_HDMI_INFO *) 0x5198C; 
     }
 
     else if (is_camera("60D", "1.1.1"))
     {
         Output_480p_Force_Address = 0xFF1D1CE8;
         Output_1080i_Force_Address = 0xFF1D1D18;
-        EDID_HDMI_INFO = (void *) 0x49D08;
-        is_digic4 = 1;
+        EDID_HDMI_INFO = (struct EDID_HDMI_INFO *) 0x49D08;
     }
 
     else if (is_camera("70D", "1.1.2"))
     {
         Output_480p_Force_Address = 0xFF337AD0;
         Output_1080i_Force_Address = 0xFF337B00;
-        EDID_HDMI_INFO = (void *) 0xD2264; 
-        is_digic5 = 1;
+        EDID_HDMI_INFO = (struct EDID_HDMI_INFO *) 0xD2264; 
     }
 
-    if (Output_480p_Force_Address || Output_1080i_Force_Address)
+    if (Output_480p_Force_Address && Output_1080i_Force_Address)
     {
         menu_add("Display", hdmi_out_menu, COUNT(hdmi_out_menu));
     }
