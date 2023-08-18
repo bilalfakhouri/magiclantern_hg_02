@@ -238,6 +238,12 @@ static unsigned int hdmi_out_init()
         EDID_HDMI_INFO = (struct EDID_HDMI_INFO *) 0x5198C; 
     }
 
+    else if (is_camera("5D3", "1.2.3"))
+    {
+        Set_HDMI_Code = 0xFF2FBFC8;
+        EDID_HDMI_INFO = (struct EDID_HDMI_INFO *) 0x519E4; 
+    }
+
     else if (is_camera("50D", "1.0.9"))
     {
         Set_HDMI_Code = 0xFF19C840;
