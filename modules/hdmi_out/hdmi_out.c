@@ -11,7 +11,9 @@
 #include <patch.h>
 
 #define OUTPUT_480p  0
-#define OUTPUT_1080i 1
+#define OUTPUT_1080i_50Hz 1
+#define OUTPUT_1080i_60Hz 2
+#define OUTPUT_1080p_24Hz 3
 
 static CONFIG_INT("hdmi.patch.enabled", hdmi_patch_enabled, 0);
 static CONFIG_INT("hdmi.output_resolution", output_resolution, 0);
@@ -22,7 +24,9 @@ enum {
     HDMI_NOT_PATCHED = 0,
     HDMI_PATCHED = 1,
     HDMI_PATCHED_480p = 2,
-    HDMI_PATCHED_1080i = 5,
+    HDMI_PATCHED_1080i_50Hz = 20,
+    HDMI_PATCHED_1080i_60Hz = 5,
+    HDMI_PATCHED_1080p_24Hz = 32, // Only on 5D3 1.2.3
 };
 
 static uint32_t Set_HDMI_Code = 0;
@@ -63,11 +67,25 @@ static void Set_HDMI_Code_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             regs[0] = 2; 
             hdmi_output_patch_status = HDMI_PATCHED_480p;
         }
-        if (output_resolution == OUTPUT_1080i) // if ML menu selection is set to 1080i
+        if (output_resolution == OUTPUT_1080i_50Hz) // if ML menu selection is set to 1080i 50 Hz
         {
-            // force 1080i HDMI code which is 5
+            // force 1080i 50Hz HDMI code which is 20
+            regs[0] = 20; 
+            hdmi_output_patch_status = HDMI_PATCHED_1080i_50Hz;
+        }
+        if (output_resolution == OUTPUT_1080i_60Hz) // if ML menu selection is set to 1080i 60 Hz
+        {
+            // force 1080i 60Hz HDMI code which is 5
             regs[0] = 5; 
-            hdmi_output_patch_status = HDMI_PATCHED_1080i;
+            hdmi_output_patch_status = HDMI_PATCHED_1080i_60Hz;
+        }
+
+        /* ony works on 5D3 1.2.3 */
+        if (output_resolution == OUTPUT_1080p_24Hz) // if ML menu selection is set to 1080p 24 Hz
+        {
+            // force 1080p 24Hz HDMI code which is 32
+            regs[0] = 32; 
+            hdmi_output_patch_status = HDMI_PATCHED_1080p_24Hz;
         }
     }
 }
@@ -115,8 +133,10 @@ static MENU_UPDATE_FUNC(hdmi_update)
     {
         if (EDID_HDMI_INFO->dwVideoCode != 0) // Not LCD, HDMI is connected
         {
-            if ((output_resolution == OUTPUT_480p  && EDID_HDMI_INFO->dwVideoCode != 2) ||
-                (output_resolution == OUTPUT_1080i && EDID_HDMI_INFO->dwVideoCode != 5)  )
+            if ((output_resolution == OUTPUT_480p       && EDID_HDMI_INFO->dwVideoCode != 2)  ||
+                (output_resolution == OUTPUT_1080i_50Hz && EDID_HDMI_INFO->dwVideoCode != 20) ||
+                (output_resolution == OUTPUT_1080i_60Hz && EDID_HDMI_INFO->dwVideoCode != 5)  || 
+                (output_resolution == OUTPUT_1080p_24Hz && EDID_HDMI_INFO->dwVideoCode != 32)  )
             {
                 MENU_SET_WARNING(MENU_WARN_ADVICE, "Reconnect HDMI cable or restart camera to apply output setting.");
             }
@@ -130,8 +150,10 @@ static MENU_UPDATE_FUNC(output_resolution_update)
     {
         if (EDID_HDMI_INFO->dwVideoCode != 0) // Not LCD, HDMI is connected
         {
-            if ((output_resolution == OUTPUT_480p  && EDID_HDMI_INFO->dwVideoCode != 2) ||
-                (output_resolution == OUTPUT_1080i && EDID_HDMI_INFO->dwVideoCode != 5)  )
+            if ((output_resolution == OUTPUT_480p       && EDID_HDMI_INFO->dwVideoCode != 2)  ||
+                (output_resolution == OUTPUT_1080i_50Hz && EDID_HDMI_INFO->dwVideoCode != 20) ||
+                (output_resolution == OUTPUT_1080i_60Hz && EDID_HDMI_INFO->dwVideoCode != 5)  || 
+                (output_resolution == OUTPUT_1080p_24Hz && EDID_HDMI_INFO->dwVideoCode != 32)  )
             {
                 MENU_SET_WARNING(MENU_WARN_ADVICE, "Reconnect HDMI cable or restart camera to apply output setting.");
             }
@@ -152,12 +174,14 @@ static struct menu_entry hdmi_out_menu[] =
             {
                 .name       = "Output resolution",
                 .update     = output_resolution_update,
-                .choices    = CHOICES("480p", "1080i"),
-                .max        = 1,
+                .choices    = CHOICES("480p", "1080i 50Hz", "1080i 60Hz", "1080p 24Hz"),
+                .max        = 3,
                 .priv       = &output_resolution,
                 .help       = "Select an output resolution for HDMI displays.",
                 .help2      = "480p: 720x480 output.\n"
-                              "1080i: 1920x1080i output.",
+                              "1080i 50Hz: 1920x1080i @ 50Hz output.\n"
+                              "1080i 60Hz: 1920x1080i @ 60Hz output.\n"
+                              "1080p 24Hz: 1920x1080p @ 24Hz output.",
             },
             MENU_EOL,
         },
@@ -260,6 +284,13 @@ static unsigned int hdmi_out_init()
     {
         Set_HDMI_Code = 0xFF3369DC;
         EDID_HDMI_INFO = (struct EDID_HDMI_INFO *) 0xD2264; 
+    }
+
+    /* hide 1080p24 for not supported models */
+    if (!is_camera("5D3", "1.2.3"))
+    {
+        hdmi_out_menu[0].children[0].max = 2;
+        if (output_resolution == 3) output_resolution = 0;
     }
 
     if (Set_HDMI_Code)
