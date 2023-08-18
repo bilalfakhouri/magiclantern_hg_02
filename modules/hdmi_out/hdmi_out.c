@@ -193,6 +193,13 @@ static unsigned int hdmi_out_init()
         Output_1080i_Force_Address = 0xFF3247C8;
         EDID_HDMI_INFO = (struct EDID_HDMI_INFO *) 0xA3C0C;
     }
+
+    else if (is_camera("1200D", "1.0.2"))
+    {
+        Output_480p_Force_Address = 0xFF2A8DC4;
+        Output_1080i_Force_Address = 0xFF2A8DF4;
+        EDID_HDMI_INFO = (struct EDID_HDMI_INFO *) 0x2E148;
+    }
     
     else if (is_camera("EOSM", "2.0.2"))
     {
@@ -227,6 +234,13 @@ static unsigned int hdmi_out_init()
         Output_480p_Force_Address = 0xFF1D1CE8;
         Output_1080i_Force_Address = 0xFF1D1D18;
         EDID_HDMI_INFO = (struct EDID_HDMI_INFO *) 0x49D08;
+    }
+
+    else if (is_camera("50D", "1.0.9"))
+    {
+        Output_480p_Force_Address = 0xFF9888D8;
+        Output_1080i_Force_Address = 0xFF988904;
+        EDID_HDMI_INFO = (struct EDID_HDMI_INFO *) 0x31654;
     }
 
     else if (is_camera("70D", "1.1.2"))
