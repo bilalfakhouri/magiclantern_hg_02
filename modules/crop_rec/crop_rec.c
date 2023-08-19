@@ -1763,7 +1763,7 @@ static inline uint32_t reg_override_UHD(uint32_t reg, uint32_t old_val)
             return 0;
         }
 
-        int RAW_V = 0x896;
+        int RAW_V = 0x88E;
         int RAW_H = 0x201;
         int TimerA = 0x224;
         int TimerB = 0x97E;
