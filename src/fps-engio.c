@@ -262,6 +262,9 @@ static void fps_read_current_timer_values();
     // to achieve a "snappy" autofocus by doubling the fps
     // MV720 is not LV so we need to extend the definition for the LCD.
     #define FPS_TIMER_B_MIN (ZOOM ? 1450 : MV1080CROP ? 1750 : MV720 || (lv && lv_dispsize==1 && !is_movie_mode()) ? 990 : 1970)
+#elif defined(CONFIG_EOSM2) // using 100D values for now
+    #define TG_FREQ_BASE 32000000
+    #define FPS_TIMER_A_MIN (ZOOM ? 724 : MV1080CROP ? 540 : 520)
 #elif defined(CONFIG_500D)
     #define TG_FREQ_BASE 32000000    // not 100% sure
     #define FPS_TIMER_A_MIN MIN(fps_timer_a_orig - (ZOOM ? 0 : 10), ZOOM ? 1400 : video_mode_resolution == 0 ? 1284 : 1348)
@@ -2128,7 +2131,7 @@ void set_frame_iso(int iso)
 
 int can_set_frame_iso()
 {
-    #ifdef CONFIG_EOSM
+    #if defined(CONFIG_EOSM) || defined(CONFIG_EOSM2)
     if (!RECORDING_H264) return 0;  /* EOS-M is stubborn, http://www.magiclantern.fm/forum/index.php?topic=5200.msg104816#msg104816 */
     #endif
     
@@ -2166,7 +2169,7 @@ void set_frame_shutter(int shutter_reciprocal)
 
 int can_set_frame_shutter_timer()
 {
-    #ifdef CONFIG_EOSM
+    #if defined(CONFIG_EOSM) || defined(CONFIG_EOSM2)
     if (!RECORDING_H264) return 0;  /* EOS-M is stubborn, http://www.magiclantern.fm/forum/index.php?topic=5200.msg104816#msg104816 */
     #endif
 

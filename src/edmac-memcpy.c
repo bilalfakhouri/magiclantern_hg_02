@@ -19,7 +19,7 @@ uint32_t edmac_write_chan = 0x03;
 R 2-15
 W 3-8 10-15
 */
-#elif defined(CONFIG_650D) || defined(CONFIG_EOSM) || defined(CONFIG_700D) || defined(CONFIG_100D)
+#elif defined(CONFIG_650D) || defined(CONFIG_EOSM) || defined(CONFIG_EOSM2) || defined(CONFIG_700D) || defined(CONFIG_100D)
 uint32_t edmac_read_chan = 0x19;
 uint32_t edmac_write_chan = 0x13;
 //~ r 2 3 5 7 8 9 10 11-13
@@ -367,7 +367,7 @@ static void edmac_slurp_complete_cbr (void* ctx)
 void edmac_raw_slurp(void* dst, int w, int h)
 {
     /* see wiki, register map, EDMAC what the flags mean. they are for setting up copy block size */
-#if defined(CONFIG_650D) || defined(CONFIG_700D) || defined(CONFIG_EOSM) || defined(CONFIG_100D)
+#if defined(CONFIG_650D) || defined(CONFIG_700D) || defined(CONFIG_EOSM) || defined(CONFIG_EOSM2) || defined(CONFIG_100D)
     uint32_t dmaFlags = EDMAC_2_BYTES_PER_TRANSFER;
 #elif defined(CONFIG_6D)
     uint32_t dmaFlags = EDMAC_4_BYTES_PER_TRANSFER;

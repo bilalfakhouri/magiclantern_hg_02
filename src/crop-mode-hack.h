@@ -5,7 +5,7 @@
  * @defgroup FEATURE_CROP_MODE_HACK Video crop mode hack
  *
  * This hack brings video crop mode back to cameras that
- * initially didn't support it (e.g. 650D 700D 100D EOSM) 
+ * initially didn't support it (e.g. 650D 700D 100D EOSM EOSM2) 
  *
  * To make this feature work you should 
  * #define FEATURE_CROP_MODE_HACK
