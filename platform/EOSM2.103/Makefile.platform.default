@@ -1,8 +1,5 @@
 #Makefile.setup.platform for EOS M2
 
-# Definitions for version 103
-ML_MODULES_SYM_NAME=m2_$(FW_VERSION).sym
-
 ifeq ($(FW_VERSION),103)
 CANON_NAME_FIR=EOSM2103.FIR
 ROMBASEADDR		= 0xFF0C0000
