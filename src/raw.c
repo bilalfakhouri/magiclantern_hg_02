@@ -163,7 +163,7 @@ static int (*dual_iso_get_dr_improvement)() = MODULE_FUNCTION(dual_iso_get_dr_im
 /* all cameras using CONFIG_EDMAC_RAW_SLURP should be able to handle this */
 /* SRM_BUFFER_SIZE matches the full-res image size, as 14-bit uncompressed (actually a bit larger, but not much) */
 #define CONFIG_ALLOCATE_RAW_LV_BUFFER
-#define RAW_LV_BUFFER_ALLOC_SIZE (SRM_BUFFER_SIZE - 0x1000)
+#define RAW_LV_BUFFER_ALLOC_SIZE (raw_info.width * raw_info.height * 14 / 8 + 0x1000)
 
 
 #else // "Traditional" RAW LV buffer detection (no CONFIG_EDMAC_RAW_SLURP)
@@ -634,6 +634,10 @@ static void raw_lv_free_buffer()
     raw_lv_buffer_size = 0;
 }
 
+#ifdef CONFIG_ALLOCATE_RAW_LV_BUFFER
+int old_RAW_LV_BUFFER_ALLOC_SIZE;
+#endif
+
 /* requires raw_sem */
 static void raw_lv_realloc_buffer()
 {
@@ -678,12 +682,28 @@ static void raw_lv_realloc_buffer()
         return;
     }
 
-    if (raw_lv_buffer_size >= required_size)
+    if (raw_lv_buffer == (void *) DEFAULT_RAW_BUFFER)
     {
-        /* no need for a larger buffer */
-        allocating_new_buffer_is_needed = 0;
-        return;
+        if (raw_lv_buffer_size >= required_size)
+        {
+            /* no need for a larger buffer */
+            allocating_new_buffer_is_needed = 0;
+            return;
+        }
     }
+    
+#ifdef CONFIG_ALLOCATE_RAW_LV_BUFFER
+    /* if we are using raw_allocated_lv_buffer and we didn't change RAW resolution (from crop_rec) */
+    if (raw_allocated_lv_buffer && (raw_lv_buffer == (void *) raw_allocated_lv_buffer))
+    {
+        if (old_RAW_LV_BUFFER_ALLOC_SIZE == (raw_info.width * raw_info.height * 14 / 8 + 0x1000))
+        {
+            /* no need to change the buffer */
+            allocating_new_buffer_is_needed = 0;
+            return;
+        }
+    }
+#endif
 
     printf("Default raw buffer too small (%s", format_memory_size(raw_lv_buffer_size));
     printf(", need %dx%d %s) - reallocating.\n", width, height, format_memory_size(required_size));
@@ -692,10 +712,13 @@ static void raw_lv_realloc_buffer()
     allocating_new_buffer_is_needed = 1; // flag to tell mlv_lite to free its buffers while we allocate a new buufer
 #endif 
 
-    if (raw_lv_buffer && raw_lv_buffer != (void *) DEFAULT_RAW_BUFFER)
+    if (DEFAULT_RAW_BUFFER_SIZE >= required_size)
     {
-        ASSERT(0);
-        return;
+        if (raw_lv_buffer && raw_lv_buffer != (void *) DEFAULT_RAW_BUFFER)
+        {
+            ASSERT(0);
+            return;
+        }
     }
 
 #ifdef CONFIG_ALLOCATE_RAW_LV_BUFFER
@@ -707,6 +730,7 @@ static void raw_lv_realloc_buffer()
     }
     raw_lv_buffer = raw_allocated_lv_buffer;
     raw_lv_buffer_size = RAW_LV_BUFFER_ALLOC_SIZE;
+    old_RAW_LV_BUFFER_ALLOC_SIZE = RAW_LV_BUFFER_ALLOC_SIZE;
     allocating_new_buffer_is_needed = 0;
     return;
 #endif /* CONFIG_ALLOCATE_RAW_LV_BUFFER */
