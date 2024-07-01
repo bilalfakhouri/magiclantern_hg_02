@@ -768,14 +768,14 @@ static unsigned int sd_uhs_init()
     
     if (is_camera("EOSM2", "1.0.3"))
     {
-        CID_hook            = 0xff693c58;
+        CID_hook            = 0xff693c10; // original address was ff693c58, changed it to ff693c10 to avoid cache collision
         GPIO                = 0xff349a10;
         GPIO_cmp            = 0xff349a18;
-        sd_setup_mode       = 0xff349550;
+        sd_setup_mode       = 0xff3495cc; // original address was ff349550, changed it to ff3495cc to avoid cache collision with crop_rec.mo
         sd_setup_mode_in    = 0xff349624;
         sd_setup_mode_reg   = 1;
         sd_set_function     = 0xff692d7c;
-        sd_write_clock      = 0xff696448;   /* sdWriteBlk */
+        sd_write_clock      = 0xff696164;   /* NOTE: this is sdDMAWriteBlk, not sdWriteBlk. Patching sdWriteBlk causes CACHE_COLLISION */
         sd_read_clock       = 0xff69672c;   /* sdReadBlk */
         SD_ReConfiguration  = (void *) 0xff695130;
         
