@@ -435,30 +435,6 @@ static int is_supported_mode()
     return 1;
 }
 
-/* These appear to hold the selected HDMI configuration before applying it
- * we can detect LCD, 480p or 1080i outputs early from here, cool!
- *
- * This LOG from 700D when connecting HDMI to 480p ouput:
- *DisplayMgr:ff330104:88:16: [EDID] dwVideoCode = 2
- *DisplayMgr:ff330118:88:16: [EDID] dwHsize = 720
- *DisplayMgr:ff33012c:88:16: [EDID] dwVsize = 480
- *DisplayMgr:ff330148:88:16: [EDID] ScaningMode = EDID_NON_INTERLACE(p)
- *DisplayMgr:ff330194:88:16: [EDID] VerticalFreq = EDID_FREQ_60Hz
- *DisplayMgr:ff3301b0:88:16: [EDID] AspectRatio = EDID_ASPECT_4x3
- *DisplayMgr:ff3301cc:88:16: [EDID] AudioMode = EDID_AUDIO_LINEAR_PCM
- *DisplayMgr:ff331580:88:16: [EDID] ColorMode = EDID_COLOR_RGB */
-const struct EDID_HDMI_INFO
-{
-    uint32_t dwVideoCode;   /* 0 LCD, 2 480p, 5 1080i */
-    uint32_t dwHsize;       /* LCD = 0, 480p = 720, 1080i = 1920 */
-    uint32_t dwVsize;       /* LCD = 0, 480p = 480, 1080i = 1080 */
-    uint32_t ScaningMode;   /* 0 = EDID_NON_INTERLACE(p), 1 = EDID_INTERLACE(i) */
-    uint32_t VerticalFreq;
-    uint32_t AspectRatio;   /* 0 = EDID_ASPECT_4x3, 1 = EDID_ASPECT_16x9 */
-    uint32_t AudioMode;
-    uint32_t ColorMode;
-} * EDID_HDMI_INFO = 0;
-
 static int32_t  target_yres = 0;
 static int32_t  delta_adtg0 = 0;
 static int32_t  delta_adtg1 = 0;
@@ -6177,8 +6153,6 @@ static unsigned int crop_rec_init()
         HIV_Vertical_Photo_Address = 0x4FE5F070;
         HIV_Vertical_Address_hook = 0xFF500D04;
         
-        EDID_HDMI_INFO = (void *) 0x821CC;
-        
         Shift_x5_LCD = 0xFF96EA3C;
         Shift_x5_HDMI_480p = 0xFF96F3FC;
         Shift_x5_HDMI_1080i_Full = 0xFF96FF54;
@@ -6217,9 +6191,7 @@ static unsigned int crop_rec_init()
         EDMAC_9_Vertical_2 = is_camera("700D", "1.1.5") ? 0x3E230 : 0x3E150;
         HIV_Vertical_Photo_Address = 0x4205E098;
         HIV_Vertical_Address_hook = is_camera("700D", "1.1.5") ? 0xFF4F2A04 : 0xFF4EF224;
-        
-        EDID_HDMI_INFO = (void *) (is_camera("700D", "1.1.5") ? 0x648B0 : 0x63F7C);
-        
+
         /* I know these look ugly, but we want something works for now, right? , it's not that bad */
         Shift_x5_LCD = is_camera("700D", "1.1.5") ? 0xFF962A74 : 0xFF955894;
         Shift_x5_HDMI_480p = is_camera("700D", "1.1.5") ? 0xFF963434 : 0xFF956254;
@@ -6261,8 +6233,6 @@ static unsigned int crop_rec_init()
         HIV_Vertical_Photo_Address = 0x4144F9E4;
         HIV_Vertical_Address_hook = 0xFF50CCD4;
         
-        EDID_HDMI_INFO = (void *) 0xA3C0C;
-        
         Shift_x5_LCD = 0xFF98F5EC;
         Shift_x5_HDMI_480p = 0xFF98FFAC;
         Shift_x5_HDMI_1080i_Full = 0xFF990B04;
@@ -6303,8 +6273,6 @@ static unsigned int crop_rec_init()
         /* FIXME: find the addresses */
         //HIV_Vertical_Photo_Address = ;
         //HIV_Vertical_Address_hook = ;
-        
-        //EDID_HDMI_INFO = (void *) ;
         
         Shift_x5_LCD = 0xFFB87550;
         Shift_x5_HDMI_480p = 0xFFB87F10;
