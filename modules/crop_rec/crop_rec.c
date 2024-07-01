@@ -32,6 +32,7 @@ static int is_700D = 0;
 static int is_650D = 0;
 static int is_100D = 0;
 static int is_EOSM = 0;
+static int is_EOSM2 = 0;
 static int is_basic = 0;
 
 static CONFIG_INT("crop.preset", crop_preset_index, 0);
@@ -299,7 +300,7 @@ const struct PathDriveMode
     uint32_t unk_2c;
     uint32_t unk_30;
     uint32_t OutputType;   /*  SelectPath: 0 LCD, 1 VIDEO(NTSC), 2 VIDEO(PAL), 3 HDMI(1080i FULL), 4 HDMI(1080i INFO), 5 HDMI(720p FULL), 6 HDMI(720p INFO), 7 HDMI(480), 8 HDMI(576) */
-    uint32_t unk_38;
+    uint32_t OutputType_EOSM2; /* This is used as OutputType for EOS M2 */
     uint32_t unk_3c;
     uint32_t unk_40;
     uint32_t DT;            /* 100D, EOSM: ? */
@@ -395,7 +396,7 @@ static int is_supported_mode()
     /* 650D / 700D / EOSM/M2 / 100D prests will only work in x5 mode, don't patch x1 */
     if (PathDriveMode->zoom == 1)
     {
-        if (is_650D || is_700D || is_EOSM || is_100D) 
+        if (is_650D || is_700D || is_EOSM || is_EOSM2 || is_100D) 
         {
             return 0;
         }
@@ -1237,7 +1238,7 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
             switch (crop_preset)
             {
                 case CROP_PRESET_1X3:
-                if (is_650D || is_700D || is_100D || is_EOSM)
+                if (is_650D || is_700D || is_100D || is_EOSM || is_EOSM2)
                 {
                     adtg_new[2] = (struct adtg_new) {2, 0x800C, 0};
                     adtg_new[3] = (struct adtg_new) {2, 0x8000, 0x6};
@@ -1260,7 +1261,7 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                 break;
                 
                 case CROP_PRESET_3X3:
-                if (is_650D || is_700D || is_100D || is_EOSM)
+                if (is_650D || is_700D || is_100D || is_EOSM || is_EOSM2)
                 {
                     adtg_new[2] = (struct adtg_new) {2, 0x800C, 0x2};
                     adtg_new[3] = (struct adtg_new) {2, 0x8000, 0x6};
@@ -2021,9 +2022,9 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
             if (Framerate_30) TimerB = 0x5D3;
         }
 
-        if (is_100D)
+        if (is_100D || is_EOSM2)
         {
-            RAW_H         = 0x2a1;
+            RAW_H         = 0x2A1;
             RAW_V         = 0x459;
             TimerA        = 0x2DB;
             if (Framerate_24) TimerB = 0x71E;
@@ -2082,6 +2083,17 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
             if (Framerate_30) TimerB = 0x623;  // 30 Doesn't work, make it 25
         }
 
+        if (is_EOSM2)
+        {
+            RAW_H         = 0x2FB;
+            RAW_V         = 0x4E9;
+            TimerB        = 0x661;
+            TimerA        = 0x32F;
+            if (Framerate_24) TimerB = 0x662;
+            if (Framerate_25) TimerB = 0x61F;
+            if (Framerate_30) TimerB = 0x61F;  // 30 Doesn't work, make it 25
+        }
+
         Preview_H         = 2868;  // black bar above 2868
         Preview_V         = 1226;
         Preview_V_Recover = 171;   // trial and error
@@ -2115,6 +2127,14 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
             RAW_V    = 0x53D;
             TimerB   = 0x60B;
             TimerA   = 0x35D;
+        }
+
+        if (is_EOSM2)
+        {
+            RAW_H    = 0x32B;
+            RAW_V    = 0x53B;
+            TimerB   = 0x608;
+            TimerA   = 0x35F;
         }
 
         Preview_H         = 2868;  // black bar above 2868
@@ -2157,6 +2177,16 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
             if (Framerate_30) TimerB = 0x6CE;  // 30 Doesn't work, make it 25
         }
 
+        if (is_EOSM2)
+        {
+            RAW_H    = 0x2AB;
+            RAW_V    = 0x5BF;
+            TimerA   = 0x2DF;
+            if (Framerate_24) TimerB = 0x714;
+            if (Framerate_25) TimerB = 0x6CA;
+            if (Framerate_30) TimerB = 0x6CA;  // 30 Doesn't work, make it 25
+        }
+
         Preview_H     = 2552;  // 2556 causes preview artifacts
         Preview_V     = 1440;
         Preview_R     = 0x19000E;
@@ -2194,6 +2224,16 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
             if (Framerate_30) TimerB = 0x743;
         }
 
+        if (is_EOSM2)
+        {
+            RAW_H    = 0x20B;
+            RAW_V    = 0x51F;
+            TimerA   = 0x23F;
+            if (Framerate_24) TimerB = 0x90C;
+            if (Framerate_25) TimerB = 0x8AD;
+            if (Framerate_30) TimerB = 0x73C;
+        }
+
         Preview_H     = 1916;
         Preview_V     = 1280;
         Preview_R     = 0x19000D;
@@ -2222,6 +2262,14 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
         {
             RAW_H    = 0x541;
             RAW_V    = 0xDB7;
+            TimerB   = 0x1DD6;
+            TimerA   = 0x573;
+        }
+
+        if (is_EOSM2)
+        {
+            RAW_H    = 0x541;
+            RAW_V    = 0xDB5;
             TimerB   = 0x1DD6;
             TimerA   = 0x573;
         }
@@ -2344,6 +2392,14 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 TimerA        = 0x1FF;  // lowering TimerA under 0x1FF --> black image (RAW data), anyway to exceed minimal Timer A limit?
             }
 
+            if (is_EOSM2)
+            {
+                RAW_H         = 0x1A3; /*  @ 22.250 FPS */
+                RAW_V         = 0xA09;
+                TimerB        = 0xB07;
+                TimerA        = 0x1FF;
+            }
+
             Preview_H     = 1500;
             Preview_V     = 2538;
             Preview_R     = 0x1D000D;
@@ -2396,6 +2452,20 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 YUV_HD_S_H    = 0x105015B;
                 YUV_HD_S_V    = 0x105036E;
             }
+
+            if (is_EOSM2)
+            {
+                RAW_H         = 0x183;  /* 1376x2322 to achieve 23.976 FPS */
+                RAW_V         = 0x931;
+                TimerB        = 0xA2E;
+                TimerA        = 0x1FF;
+
+                Preview_H     = 1372;
+                Preview_V     = 2322;
+                Preview_R     = 0x1D000D;
+                YUV_HD_S_H    = 0x105015B;
+                YUV_HD_S_V    = 0x105036D;
+            }
         }
 
         if (Anam_Medium) /* 1280x2160 @ 23.976 and 25 FPS */
@@ -2424,6 +2494,16 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             {
                 RAW_H         = 0x16B;
                 RAW_V         = 0x891;
+                TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2E;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
+            }
+
+            if (is_EOSM2)
+            {
+                RAW_H         = 0x16B;
+                RAW_V         = 0x88F;
                 TimerA        = 0x1FF;
                 if (Framerate_24) TimerB = 0xA2E;
                 if (Framerate_25) TimerB = 0x9C3;
@@ -2462,6 +2542,14 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             {
                 RAW_H         = 0x1BB; /* @ 23.300 FPS */
                 RAW_V         = 0x981;
+                TimerB        = 0xA79;
+                TimerA        = 0x1FF;
+            }
+
+            if (is_EOSM2)
+            {
+                RAW_H         = 0x1BB; /* @ 23.300 FPS */
+                RAW_V         = 0x97F;
                 TimerB        = 0xA79;
                 TimerA        = 0x1FF;
             }
@@ -2505,6 +2593,16 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
             }
 
+            if (is_EOSM2)
+            {
+                RAW_H         = 0x19B;
+                RAW_V         = 0x8BF;
+                TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2D;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
+            }
+
             Preview_H     = 1468;
             Preview_V     = 2208;
             Preview_R     = 0x1D000D;
@@ -2538,6 +2636,16 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             {
                 RAW_H         = 0x17F;
                 RAW_V         = 0x819;
+                TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2D;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
+            }
+
+            if (is_EOSM2)
+            {
+                RAW_H         = 0x17F;
+                RAW_V         = 0x817;
                 TimerA        = 0x1FF;
                 if (Framerate_24) TimerB = 0xA2D;
                 if (Framerate_25) TimerB = 0x9C3;
@@ -2597,6 +2705,20 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 YUV_HD_S_H    = 0x10501A3;
                 YUV_HD_S_V    = 0x1050359;
             }
+
+            if (is_EOSM2) /* 1664x2268 @ 23.976 FPS */
+            {
+                RAW_H         = 0x1CB;
+                RAW_V         = 0x8FB;
+                TimerB        = 0xA2D;
+                TimerA        = 0x1FF;
+
+                Preview_H     = 1660;
+                Preview_V     = 2268;
+                Preview_R     = 0x1D000D;
+                YUV_HD_S_H    = 0x10501A3;
+                YUV_HD_S_V    = 0x1050359;
+            }
         }
 
         if (Anam_Higher) /* 1552x2216 @ 23.976 FPS */
@@ -2625,6 +2747,16 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             {
                 RAW_H         = 0x1AF;
                 RAW_V         = 0x865;
+                TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2E;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
+            }
+
+            if (is_EOSM2)
+            {
+                RAW_H         = 0x1AF;
+                RAW_V         = 0x863;
                 TimerA        = 0x1FF;
                 if (Framerate_24) TimerB = 0xA2E;
                 if (Framerate_25) TimerB = 0x9C3;
@@ -2670,6 +2802,16 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
             }
 
+            if (is_EOSM2)
+            {
+                RAW_H         = 0x18F;
+                RAW_V         = 0x7B5;
+                TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2E;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
+            }
+
             Preview_H     = 1420;
             Preview_V     = 1942;
             Preview_R     = 0x1D000D;
@@ -2696,6 +2838,14 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 RAW_V         = 0x8C7;
                 TimerB        = 0x9DF;
                 TimerA        = 0x20F;
+            }
+
+            if (is_EOSM2)
+            {
+                RAW_H         = 0x1DD;
+                RAW_V         = 0x8C5;
+                TimerB        = 0x9D5;
+                TimerA        = 0x211;
             }
 
             Preview_H     = 1728;      // from mv1080 mode
@@ -2736,7 +2886,17 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 if (Framerate_25) TimerB = 0x9C3;
                 if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
             }
-            
+
+            if (is_EOSM2)
+            {
+                RAW_H         = 0x1BB;
+                RAW_V         = 0x817;
+                TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2D;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
+            }
+
             Preview_H     = 1596;
             Preview_V     = 2040;
             Preview_R     = 0x1D000D;
@@ -2776,6 +2936,16 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
             }
 
+            if (is_EOSM2)
+            {
+                RAW_H         = 0x19B;
+                RAW_V         = 0x775;
+                TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2D;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
+            }
+
             Preview_H     = 1468;
             Preview_V     = 1878;
             Preview_R     = 0x1D000D;
@@ -2802,6 +2972,14 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 RAW_V         = 0x8A3;
                 TimerB        = 0x9CB;
                 TimerA        = 0x213;  // can be lowered even more? need to be fine tuned
+            }
+
+            if (is_EOSM2)
+            {
+                RAW_H         = 0x1DD;
+                RAW_V         = 0x8A1;
+                TimerB        = 0x9D5;
+                TimerA        = 0x211;
             }
 
             Preview_H     = 1728;      // from mv1080 mode
@@ -2843,6 +3021,16 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
                 if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
             }
 
+            if (is_EOSM2)
+            {
+                RAW_H         = 0x1BB;
+                RAW_V         = 0x7F7;
+                TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2D;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
+            }
+
             Preview_H     = 1596;
             Preview_V     = 2008;
             Preview_R     = 0x1D000D;
@@ -2876,6 +3064,16 @@ static inline uint32_t reg_override_1X3(uint32_t reg, uint32_t old_val)
             {
                 RAW_H         = 0x19B;
                 RAW_V         = 0x757;
+                TimerA        = 0x1FF;
+                if (Framerate_24) TimerB = 0xA2D;
+                if (Framerate_25) TimerB = 0x9C3;
+                if (Framerate_30) TimerB = 0x9C3; // 30 Doesn't work, make it 25
+            }
+
+            if (is_EOSM2)
+            {
+                RAW_H         = 0x19B;
+                RAW_V         = 0x755;
                 TimerA        = 0x1FF;
                 if (Framerate_24) TimerB = 0xA2D;
                 if (Framerate_25) TimerB = 0x9C3;
@@ -2978,6 +3176,14 @@ static inline uint32_t reg_override_3X3(uint32_t reg, uint32_t old_val)
                 TimerA        = 0x20F;
             }
 
+            if (is_EOSM2) // 1736x976 @ 46.300 FPS
+            {
+                RAW_H         = 0x1DD;
+                RAW_V         = 0x3EF;
+                TimerB        = 0x51C;
+                TimerA        = 0x211;
+            }
+
             Preview_H     = 1728;      // from mv1080 mode
             Preview_V     = 976;
             Preview_R     = 0x1D000E;  // from mv1080 mode
@@ -3001,7 +3207,15 @@ static inline uint32_t reg_override_3X3(uint32_t reg, uint32_t old_val)
                 TimerB        = 0x4BB;
                 TimerA        = 0x20F;
             }
-        
+
+            if (is_EOSM2)
+            {
+                RAW_H         = 0x1DD;
+                RAW_V         = 0x383;
+                TimerB        = 0x4BB;
+                TimerA        = 0x211;
+            }
+
             Preview_H     = 1728;
             Preview_V     = 868;
             Preview_R     = 0x1D000E;
@@ -3025,7 +3239,15 @@ static inline uint32_t reg_override_3X3(uint32_t reg, uint32_t old_val)
                 TimerB        = 0x461;
                 TimerA        = 0x20F;
             }
-        
+
+            if (is_EOSM2)
+            {
+                RAW_H         = 0x1DD;
+                RAW_V         = 0x335;
+                TimerB        = 0x461;
+                TimerA        = 0x211;
+            }
+
             Preview_H     = 1728;
             Preview_V     = 790;
             Preview_R     = 0x1D000E;
@@ -3049,7 +3271,15 @@ static inline uint32_t reg_override_3X3(uint32_t reg, uint32_t old_val)
                 TimerB        = 0x441;
                 TimerA        = 0x20F;
             }
-        
+
+            if (is_EOSM2) // 1736x738 @ 55.6 FPS
+            {
+                RAW_H         = 0x1DD;
+                RAW_V         = 0x301;
+                TimerB        = 0x441;
+                TimerA        = 0x211;
+            }
+
             Preview_H     = 1728;
             Preview_V     = 738;
             Preview_R     = 0x1D000E;
@@ -3073,7 +3303,15 @@ static inline uint32_t reg_override_3X3(uint32_t reg, uint32_t old_val)
                 TimerB        = 0x413;
                 TimerA        = 0x20F;
             }
-        
+
+            if (is_EOSM2) // 1736x694 @ 58 FPS
+            {
+                RAW_H         = 0x1DD;
+                RAW_V         = 0x2D5;
+                TimerB        = 0x413;
+                TimerA        = 0x211;
+            }
+
             Preview_H     = 1728;
             Preview_V     = 694;
             Preview_R     = 0x1D000E;
@@ -3098,10 +3336,21 @@ static inline uint32_t reg_override_3X3(uint32_t reg, uint32_t old_val)
             RAW_H         = 0x1DD;
             RAW_V         = 0x4A9;
         }
-        
-        if (Framerate_24) {TimerA = 0x20F; TimerB = 0x9DE;}              
-        if (Framerate_25) {TimerA = 0x27F; TimerB = 0x7CF;}
-        if (Framerate_30) {TimerA = 0x20F; TimerB = 0x7E4;}
+
+        if (is_EOSM2)
+        {
+            RAW_H         = 0x1DD;
+            RAW_V         = 0x4A7;
+            if (Framerate_24) {TimerA = 0x211; TimerB = 0x9D5;}              
+            if (Framerate_25) {TimerA = 0x27F; TimerB = 0x7CF;}
+            if (Framerate_30) {TimerA = 0x211; TimerB = 0x7DD;}
+        }
+        else
+        {
+            if (Framerate_24) {TimerA = 0x20F; TimerB = 0x9DE;}              
+            if (Framerate_25) {TimerA = 0x27F; TimerB = 0x7CF;}
+            if (Framerate_30) {TimerA = 0x20F; TimerB = 0x7E4;}
+        }
 
         Preview_H     = 1728;      // from mv1080 mode
         Preview_V     = 1152;      // from mv1080 mode
@@ -3452,12 +3701,17 @@ static void FAST EngDrvOut_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                 {
                     regs[1] = 0x1595b00; // Size 0xC0F26810  = 0x3237e  is being set in EngDrvOuts_hook
                 }
-            
+
                 if (is_100D)
                 {
                     regs[1] = 0x2000000; // Size 0xC0F26810  = 0x1f32da is being set in EngDrvOuts_hook
                 }
-            
+
+                if (is_EOSM2)
+                {
+                    regs[1] = 0xfa0000; // Size 0xC0F26810  = 0x1f32da is being set in EngDrvOuts_hook
+                }
+
                 change_buffer_now = 0;
             }
         }
@@ -3481,7 +3735,7 @@ static void FAST EngDrvOut_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                 case 0x8024: 
                 if (is_700D || is_EOSM || is_650D)
                              regs[1] = ((RAW_V - 1) << 16)  + RAW_H - 0x11;                 
-                if (is_100D) regs[1] = ((RAW_V - 5) << 16)  + RAW_H - 0x1A;                 break;
+                if (is_100D || is_EOSM2) regs[1] = ((RAW_V - 5) << 16)  + RAW_H - 0x1A;     break;
                 case 0x83D4: regs[1] =   Preview_R;                                         break;
                 case 0x83DC: regs[1] = ((Preview_V + 0x1c) << 16)  + Preview_H / 4 + 0x48
                                                                    + REG_C0F383DC_Tuning;   break;
@@ -3513,7 +3767,7 @@ static void FAST EngDrvOut_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                 case 0x8024: 
                 if (is_700D || is_EOSM || is_650D)
                              regs[1] = ((RAW_V - 1) << 16)  + RAW_H - 0x11;                 
-                if (is_100D) regs[1] = ((RAW_V - 5) << 16)  + RAW_H - 0x1A;                 break;
+                if (is_100D || is_EOSM2) regs[1] = ((RAW_V - 5) << 16)  + RAW_H - 0x1A;     break;
                 
                 /* used here to center Canon cropped preview on RAW buffer */
                 case 0x83D4: regs[1] =  (Preview_y1 << 16) + Preview_x1;                    break;
@@ -3580,7 +3834,7 @@ static void FAST EngDrvOuts_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                     *(uint32_t*) (regs[1] + 4) = 0x3237e;
                 }
 
-                if (is_100D)
+                if (is_100D || is_EOSM2)
                 {
                     *(uint32_t*) (regs[1] + 4) = 0x1f32da;
                 }
@@ -3600,7 +3854,7 @@ void CheckPreviewRegsValuesAndForce()
     if (PathDriveMode->zoom != 5) return;
     if (Preview_Control_Basic) return;
 
-    if (is_100D)                       REG_C0F38024_Val = ((RAW_V - 5) << 16)  + RAW_H - 0x1A;
+    if (is_100D || is_EOSM2)           REG_C0F38024_Val = ((RAW_V - 5) << 16)  + RAW_H - 0x1A;
     if (is_650D || is_700D || is_EOSM) REG_C0F38024_Val = ((RAW_V - 1) << 16)  + RAW_H - 0x11;
 
     if (shamem_read(0xC0F38070) != ((Preview_V + 0x9) << 16) + Preview_H / 4 + 5      ||
@@ -3690,9 +3944,20 @@ static void Change_HIV_V_Address(uint32_t* regs, uint32_t* stack, uint32_t pc)
 
 int is_LCD_Output()
 {
-    if (PathDriveMode->OutputType == 0)
+    if (is_EOSM2)
     {
-        return 1;
+        if (PathDriveMode->OutputType_EOSM2 == 0)
+        {
+            return 1;
+        }
+    }
+
+    else
+    {
+        if (PathDriveMode->OutputType == 0)
+        {
+            return 1;
+        }
     }
 
     return 0;
@@ -3700,9 +3965,20 @@ int is_LCD_Output()
 
 int is_480p_Output()
 {
-    if (PathDriveMode->OutputType == 7)
+    if (is_EOSM2)
     {
-        return 1;
+        if (PathDriveMode->OutputType_EOSM2 == 7)
+        {
+            return 1;
+        }
+    }
+
+    else
+    {
+        if (PathDriveMode->OutputType == 7)
+        {
+            return 1;
+        }
     }
 
     return 0;
@@ -3710,9 +3986,20 @@ int is_480p_Output()
 
 int is_1080i_Full_Output()
 {
-    if (PathDriveMode->OutputType == 3)
+    if (is_EOSM2)
     {
-        return 1;
+        if (PathDriveMode->OutputType_EOSM2 == 3)
+        {
+            return 1;
+        }
+    }
+
+    else
+    {
+        if (PathDriveMode->OutputType == 3)
+        {
+            return 1;
+        }
     }
 
     return 0;
@@ -3720,9 +4007,20 @@ int is_1080i_Full_Output()
 
 int is_1080i_Info_Output()
 {
-    if (PathDriveMode->OutputType == 4)
+    if (is_EOSM2)
     {
-        return 1;
+        if (PathDriveMode->OutputType_EOSM2 == 4)
+        {
+            return 1;
+        }
+    }
+
+    else
+    {
+        if (PathDriveMode->OutputType == 4)
+        {
+            return 1;
+        }
     }
 
     return 0;
@@ -4005,8 +4303,16 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
 
     if (is_1080i_Full_Output())
     {
-        DefaultShift  = 0x12C;
-        DefaultClear  = 0x12C;
+        if (is_EOSM2)
+        {
+            DefaultShift  = 0x138; // 0x138 on EOS M2 ?!
+        }
+        else
+        {
+            DefaultShift  = 0x12C;
+        }
+
+        DefaultClear  = 0x12C; 
         NewClearVal   = 0xCA8;
         ShiftAddress  = Shift_x5_HDMI_1080i_Full;
         ClearAddress  = Clear_Vram_x5_HDMI_1080i_Full;
@@ -4414,14 +4720,14 @@ static MENU_UPDATE_FUNC(crop_preset_1x3_res_update)
         {
             MENU_SET_VALUE("4.5K");
             if (is_650D || is_700D)MENU_SET_HELP("1504x2538 @ 23.976 FPS");
-            if (is_EOSM || is_100D)MENU_SET_HELP("1504x2538 @ 22.250 FPS");
+            if (is_EOSM || is_100D || is_EOSM2) MENU_SET_HELP("1504x2538 @ 22.250 FPS");
         }      
 
         if (crop_preset_1x3_res_menu == 1) // Anam_Higher
         {
             MENU_SET_VALUE("4.2K");
             if (is_650D || is_700D)MENU_SET_HELP("1392x2350 @ 23.976 and 25 FPS");
-            if (is_EOSM || is_100D)MENU_SET_HELP("1376x2322 @ 23.976 FPS");
+            if (is_EOSM || is_100D || is_EOSM2) MENU_SET_HELP("1376x2322 @ 23.976 FPS");
         }
 
         if (crop_preset_1x3_res_menu == 2) // Anam_Medium
@@ -4437,7 +4743,7 @@ static MENU_UPDATE_FUNC(crop_preset_1x3_res_update)
         {
             MENU_SET_VALUE("4.8K");
             if (is_650D || is_700D)MENU_SET_HELP("1600x2400 @ 23.976 FPS");
-            if (is_EOSM || is_100D)MENU_SET_HELP("1600x2400 @ 23.300 FPS");
+            if (is_EOSM || is_100D || is_EOSM2) MENU_SET_HELP("1600x2400 @ 23.300 FPS");
         }
 
         if (crop_preset_1x3_res_menu == 1) // Anam_Higher
@@ -4459,7 +4765,7 @@ static MENU_UPDATE_FUNC(crop_preset_1x3_res_update)
         {
             MENU_SET_VALUE("5K");
             if (is_650D || is_700D)MENU_SET_HELP("1680x2290 @ 23.976 FPS");
-            if (is_EOSM || is_100D)MENU_SET_HELP("1664x2268 @ 23.976 FPS");
+            if (is_EOSM || is_100D || is_EOSM2) MENU_SET_HELP("1664x2268 @ 23.976 FPS");
         }
 
         if (crop_preset_1x3_res_menu == 1) // Anam_Higher
@@ -4570,7 +4876,7 @@ static MENU_UPDATE_FUNC(crop_preset_fps_update)
             if (crop_preset_1x3_res_menu == 0) // Anam_Highest
             {
                 if (is_650D || is_700D) MENU_SET_VALUE("23.976 FPS");
-                if (is_EOSM || is_100D) MENU_SET_VALUE("22.250 FPS");
+                if (is_EOSM || is_100D || is_EOSM2) MENU_SET_VALUE("22.250 FPS");
                 if (crop_preset_fps_menu != 0)
                 {
                     MENU_SET_WARNING(MENU_WARN_ADVICE, "25 and 30 FPS don't work in current preset.");
@@ -4588,7 +4894,7 @@ static MENU_UPDATE_FUNC(crop_preset_fps_update)
                     }
                 }
 
-                if (is_100D || is_EOSM)
+                if (is_100D || is_EOSM2 || is_EOSM)
                 {
                     if (crop_preset_fps_menu > 0)
                     {
@@ -4613,7 +4919,7 @@ static MENU_UPDATE_FUNC(crop_preset_fps_update)
             if (crop_preset_1x3_res_menu == 0) // Anam_Highest
             {
                 if (is_650D || is_700D) MENU_SET_VALUE("23.976 FPS");
-                if (is_EOSM || is_100D) MENU_SET_VALUE("23.300 FPS");
+                if (is_EOSM || is_100D || is_EOSM2) MENU_SET_VALUE("23.300 FPS");
                 if (crop_preset_fps_menu != 0)
                 {
                     MENU_SET_WARNING(MENU_WARN_ADVICE, "25 and 30 FPS don't work in current preset.");
@@ -4686,7 +4992,7 @@ static MENU_UPDATE_FUNC(crop_preset_fps_update)
                 if (crop_preset_ar_menu == 4) MENU_SET_VALUE("60 FPS");     // AR_2_39_1  // actually 2.50:1 aspect ratio
             }
 
-            if (is_100D)
+            if (is_100D || is_EOSM2)
             {
                 if (crop_preset_ar_menu == 0) MENU_SET_VALUE("46.300 FPS"); // AR_16_9
                 if (crop_preset_ar_menu == 1) MENU_SET_VALUE("50 FPS");     // AR_2_1
@@ -5228,9 +5534,25 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
             {
                 info_led_on();
                 gui_uilock(UILOCK_EVERYTHING);
+
                 int old_zoom = lv_dispsize;
-                set_zoom(lv_dispsize == 1 ? 5 : 1);
-                set_zoom(old_zoom);
+                if (is_EOSM2)
+                {
+                    /* let's use these for now for EOS M2, it's more reliable which switching among prests e.g. among 1x3 and 1:1
+                       sometime and for some reaseon refreshing LV with set_zoom doesn't apply the preset correctly for EOS M2 */
+                    PauseLiveView();
+                    ResumeLiveView();
+
+                    /* clear stuck Canon overlays after LV refresh for EOS M2 */
+                    msleep(500);
+                    clrscr();
+                }
+                else
+                {
+                    set_zoom(lv_dispsize == 1 ? 5 : 1);
+                    set_zoom(old_zoom);
+                }
+
                 gui_uilock(UILOCK_NONE);
                 info_led_off();
             }
@@ -5273,7 +5595,7 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
             if (lv_dispsize == 1)
             {
                 gui_uilock(UILOCK_EVERYTHING);
-                msleep(1100); 
+                msleep(1100);
                 gui_uilock(UILOCK_NONE);
             }
 
@@ -5957,14 +6279,50 @@ static unsigned int crop_rec_init()
         crop_rec_menu[0].choices    = crop_choices_DIGIC_5;
         crop_rec_menu[0].max        = COUNT(crop_choices_DIGIC_5) - 1;
         crop_rec_menu[0].help       = crop_choices_help_DIGIC_5;
+    }
+    else if (is_camera("EOSM2", "1.0.3"))
+    {
+        CMOS_WRITE = 0x432A4;
+        MEM_CMOS_WRITE = 0xE92D41F0;
+
+        ADTG_WRITE = 0x42E34;
+        MEM_ADTG_WRITE = 0xE51F7224;
+
+		ENGIO_WRITE = 0xFF2C6F44;
+        MEM_ENGIO_WRITE = 0xE51FC15C;
         
-        fps_main_clock = 32000000;
+        ENG_DRV_OUT = 0xFF2C6C2C;
+        ENG_DRV_OUTS = 0xFF2C6D50;
         
-                                       /* 24p,  25p,  30p,  50p,  60p,   x5, c24p, c25p, c30p */
-        memcpy(default_timerA, (int[]) {  520,  640,  520,  640,  528,  732,  600,  576,  600 }, 36);
-        memcpy(default_timerB, (int[]) { 2566, 2000, 2053, 1000, 1011, 1460, 2224, 2222, 1779 }, 36);
-                                   /* or 2567        2054        1012        2225  2223  1780 */
-    }       
+        PathDriveMode = (void *) 0xDE6B4;   /* argument of PATH_SelectPathDriveMode */
+        PATH_SelectPathDriveMode = 0x193DC; // it's being called from RAM
+        
+        EDMAC_9_Vertical_1 = 0xA1450;
+        EDMAC_9_Vertical_2 = 0xA1480;
+        
+        /* FIXME: find the addresses */
+        //HIV_Vertical_Photo_Address = ;
+        //HIV_Vertical_Address_hook = ;
+        
+        //EDID_HDMI_INFO = (void *) ;
+        
+        Shift_x5_LCD = 0xFFB87550;
+        Shift_x5_HDMI_480p = 0xFFB87F10;
+        Shift_x5_HDMI_1080i_Full = 0xFFb88A68;
+        Shift_x5_HDMI_1080i_Info = 0xFFB8906C;
+
+        Clear_Vram_x5_LCD = 0xFFB87574;
+        Clear_Vram_x5_HDMI_480p = 0xFFB87F34;
+        Clear_Vram_x5_HDMI_1080i_Full = 0xFFb88A8C;
+        Clear_Vram_x5_HDMI_1080i_Info = 0xFFB89090;
+        
+        is_EOSM2 = 1;
+        is_DIGIC_5 = 1;
+        crop_presets                = crop_presets_DIGIC_5;
+        crop_rec_menu[0].choices    = crop_choices_DIGIC_5;
+        crop_rec_menu[0].max        = COUNT(crop_choices_DIGIC_5) - 1;
+        crop_rec_menu[0].help       = crop_choices_help_DIGIC_5;
+    }
     else if (is_camera("6D", "1.1.6"))
     {
         CMOS_WRITE = 0x2420C;
@@ -6030,6 +6388,15 @@ static unsigned int crop_rec_init()
                                    /* or 2528        2023        1012        2445        1956 */
     }
 
+    if (is_100D || is_EOSM2)
+    {
+        fps_main_clock = 32000000;
+                                       /* 24p,  25p,  30p,  50p,  60p,   x5, c24p, c25p, c30p */
+        memcpy(default_timerA, (int[]) {  520,  640,  520,  640,  528,  732,  600,  576,  600 }, 36);
+        memcpy(default_timerB, (int[]) { 2566, 2000, 2053, 1000, 1011, 1460, 2224, 2222, 1779 }, 36);
+                                   /* or 2567        2054        1012        2225  2223  1780 */
+    }
+
     /* FPS in x5 zoom may be model-dependent; assume exact */
     default_fps_1k[5] = (uint64_t) fps_main_clock * 1000ULL / default_timerA[5] / default_timerB[5];
 
@@ -6074,7 +6441,7 @@ static unsigned int crop_rec_init()
     if (is_DIGIC_5)
     {
         /* hide 1080p preset for 650D / 700D / 100D (they don't need it) */
-        if (!is_EOSM)
+        if (!is_EOSM && !is_EOSM2)
         {
             crop_rec_menu[0].children[2].max = 0;
             crop_preset_3x3_res_menu = 0;
