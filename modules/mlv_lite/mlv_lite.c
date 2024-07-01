@@ -90,6 +90,7 @@ extern WEAK_FUNC(ret_0) void mlv_play_file(char *filename);
 
 /* camera-specific tricks */
 static int cam_eos_m = 0;
+static int cam_eos_m2 = 0;
 static int cam_5d2 = 0;
 static int cam_50d = 0;
 static int cam_500d = 0;
@@ -594,7 +595,7 @@ int crop_rec_cropmarks()
 {
     if (crop_rec_is_enabled() && lv_dispsize == 5)
     {
-        if (cam_650d || cam_700d || cam_eos_m || cam_100d)
+        if (cam_650d || cam_700d || cam_eos_m || cam_eos_m2 || cam_100d)
         {
             /* only for 1080p 3x3 preset for now */
             if (raw_info.width - 72 == 1736 && raw_info.height - 28 == 1160) 
@@ -1608,7 +1609,7 @@ int Full_Res_LV()
 {
     /* picture quality must be set to RAW for entry-level cams from Canon menu to gain an extra SRM memory chunk */
     /* https://www.magiclantern.fm/forum/index.php?topic=26521.msg239231#msg239231 */
-    if (cam_650d || cam_700d || cam_100d || cam_eos_m)
+    if (cam_650d || cam_700d || cam_100d || cam_eos_m || cam_eos_m2)
     {
         if (raw_info.width > 5208 && raw_info.height > 3478)
         {
@@ -2311,6 +2312,7 @@ void hack_liveview(int unhack)
             cam_650d ? 0xFF527E38 :
             cam_6d   ? 0xFF52C684 :
             cam_eos_m ? 0xFF539C1C :
+            cam_eos_m2 ? 0xFF6C4118 :
             cam_700d ? 0xFF52BB60 :
             cam_7d  ? 0xFF345788 :
             cam_60d ? 0xff36fa3c :
@@ -3513,7 +3515,7 @@ void raw_video_rec_task(uint32_t thread)
             if (crop_rec_is_enabled())
             {
                 /* our crop_rec for entry-level models work only in x5 mode */
-                if (cam_100d || cam_650d || cam_700d || cam_eos_m)
+                if (cam_100d || cam_650d || cam_700d || cam_eos_m || cam_eos_m2)
                 {
                     set_lv_zoom(5);
                 }
@@ -4039,7 +4041,7 @@ cleanup:
          * refreshing LiveView will make WhiteBalance work again in this case, the following code does it         */
         if (crop_rec_is_enabled())
         {
-            if (cam_650d || cam_700d || cam_eos_m || cam_100d) // what about other models?
+            if (cam_650d || cam_700d || cam_eos_m || cam_eos_m2 || cam_100d) // what about other models?
             {
                 if (lv_dispsize == 5)
                 {
@@ -4731,6 +4733,21 @@ static unsigned int raw_rec_init()
         default_height_720p = 726;
     }
     
+    if (is_camera("EOSM2", "1.0.3"))
+    {
+        lvfaceEnd  = (void *) 0xFF176DC8;
+        aewbSuspend = (void *) 0xFF261D48;
+        CartridgeCancel = (void *) 0xFFD37624;
+        more_hacks_are_supported = 1;
+        
+        /* fixme: these are dummy values from 100D */
+        default_width_1080p = 1808;
+        default_height_1080p = 726;
+        default_width_x5 = 2592;
+        default_height_x5 = 1107;
+        default_height_720p = 726;
+    }
+    
     if (is_camera("70D", "1.1.2"))
     {
         lvfaceEnd  = (void *) 0xFF1702D8;
@@ -4747,6 +4764,7 @@ static unsigned int raw_rec_init()
     }
     
     cam_eos_m = is_camera("EOSM", "2.0.2");
+    cam_eos_m2= is_camera("EOSM2","1.0.3");
     cam_5d2   = is_camera("5D2",  "2.1.2");
     cam_50d   = is_camera("50D",  "1.0.9");
     cam_550d  = is_camera("550D", "1.0.9");
