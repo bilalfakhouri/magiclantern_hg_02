@@ -238,7 +238,7 @@ static unsigned int hdmi_out_init()
         EDID_HDMI_INFO = (struct EDID_HDMI_INFO *) 0x821CC;
     }
 
-    else if (is_camera("EOSM2", "1.0.4"))
+    else if (is_camera("EOSM2", "1.0.3"))
     {
         Set_HDMI_Code = 0xFF3418F4;
         EDID_HDMI_INFO = (struct EDID_HDMI_INFO *) 0xD75C4;
