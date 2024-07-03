@@ -4427,6 +4427,12 @@ static void FAST PATH_SelectPathDriveMode_hook(uint32_t* regs, uint32_t* stack, 
             Clear_Artifacts_ON = 0;
         }
     }
+
+    /* enable Canon overlays in x10 mode */
+    if (PathDriveMode->zoom == 10 && canon_gui_front_buffer_disabled())
+    {
+        canon_gui_enable_front_buffer(0);
+    }
 }
 
 static int patch_active = 0;
@@ -4496,11 +4502,10 @@ static void update_patch()
         {
             uninstall_patches();
 
-            /* turn off Kill Canon GUI setting */
-            extern int kill_canon_gui_mode;
-            if (kill_canon_gui_mode != 0)
+            /* turn on Canon overlays if disabled */
+            if (canon_gui_front_buffer_disabled())
             {
-                kill_canon_gui_mode = 0;
+                canon_gui_enable_front_buffer(0);
             }
 
             patch_active = 0;
@@ -4515,15 +4520,10 @@ static void update_patch()
         {
             uninstall_patches();
 
-            /* enable Canon overlays (turn off Kill Canon GUI setting) */
-            extern int kill_canon_gui_mode;
-            if (kill_canon_gui_mode != 0)
+            /* turn on Canon overlays if disabled */
+            if (canon_gui_front_buffer_disabled())
             {
-                kill_canon_gui_mode = 0;
-                if (canon_gui_front_buffer_disabled())
-                {
-                    canon_gui_enable_front_buffer(0);
-                }
+                canon_gui_enable_front_buffer(0);
             }
 
             patch_active = 0;
@@ -5633,19 +5633,17 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
         }
 
         /* disable Canon overlays in x5 mode for cleaner preview */
-        extern int kill_canon_gui_mode;
-        if (lv && patch_active && CROP_PRESET_MENU)
+        if (patch_active && CROP_PRESET_MENU && !RECORDING)
         {
-            if (PathDriveMode->zoom == 5 && kill_canon_gui_mode != 1)
+            if (PathDriveMode->zoom == 5)
             {
-                kill_canon_gui_mode = 1;
-            }
-
-            /* enable Canon overlays in x10 mode */
-            if (PathDriveMode->zoom == 10 && kill_canon_gui_mode != 0)
-            {
-                kill_canon_gui_mode = 0;
-                if (canon_gui_front_buffer_disabled())
+                if (!canon_gui_front_buffer_disabled() && lv_disp_mode == 0)
+                {
+                    get_yuv422_vram();
+                    canon_gui_disable_front_buffer();
+                    clrscr();
+                }
+                if (canon_gui_front_buffer_disabled() && lv_disp_mode == 1)
                 {
                     canon_gui_enable_front_buffer(0);
                 }
@@ -5684,8 +5682,6 @@ static unsigned int crop_rec_polling_cbr(unsigned int unused)
 /* customize buttons and buttons shortcuts, FIXME: implement these as feature in ML core? */
 static unsigned int crop_rec_keypress_cbr(unsigned int key)
 {
-    extern int kill_canon_gui_mode;
-
     /* we need to use customize buttons in LiveView while ML isn't showing and when using Crop mood */
     if (lv)
     {
@@ -5700,11 +5696,10 @@ static unsigned int crop_rec_keypress_cbr(unsigned int key)
                 {
                     set_zoom(10);
 
-                    /* Enable Canon overlays in x10 mode */
-                    kill_canon_gui_mode = 0;
+                    /* enable Canon overlays in x10 mode */
                     if (canon_gui_front_buffer_disabled())
                     {
-                            canon_gui_enable_front_buffer(0);
+                        canon_gui_enable_front_buffer(0);
                     }
 
                     return 0;
@@ -5722,7 +5717,12 @@ static unsigned int crop_rec_keypress_cbr(unsigned int key)
                     set_zoom(5);
 
                     /* Disable Canon overlays in x5 mode */
-                    kill_canon_gui_mode = 1;
+                    if (!canon_gui_front_buffer_disabled())
+                    {
+                        get_yuv422_vram();
+                        canon_gui_disable_front_buffer();
+                        clrscr();
+                    }
 
                     return 0;
                 }
