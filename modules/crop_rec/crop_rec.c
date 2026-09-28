@@ -1998,10 +1998,20 @@ static inline uint32_t reg_override_1X1(uint32_t reg, uint32_t old_val)
             if (Framerate_30) TimerB = 0x5D3;
         }
 
-        if (is_100D || is_EOSM2)
+        if (is_100D)
         {
             RAW_H         = 0x2A1;
             RAW_V         = 0x459;
+            TimerA        = 0x2DB;
+            if (Framerate_24) TimerB = 0x71E;
+            if (Framerate_25) TimerB = 0x6D3;
+            if (Framerate_30) TimerB = 0x5B3;
+        }
+
+        if (is_EOSM2)
+        {
+            RAW_H         = 0x2A1;
+            RAW_V         = 0x457;
             TimerA        = 0x2DB;
             if (Framerate_24) TimerB = 0x71E;
             if (Framerate_25) TimerB = 0x6D3;
